@@ -7,7 +7,7 @@ use apalis::prelude::*;
 use axum::{middleware, routing::{get, post}, Router};
 use misskey_api::{middleware::AppState, rate_limit::RateLimiterState, router as api_router, streaming_handler, StreamingState, SseBroadcaster};
 use misskey_common::Config;
-use misskey_core::{AccountService, AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DeliveryService, DriveService, EmojiService, FollowingService, GalleryService, InstanceService, MessagingService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService, PageService, PollService, ReactionService, ScheduledNoteService, TwoFactorService, UserListService, UserService, WebAuthnConfig, WebAuthnService, WebhookService, WordFilterService};
+use misskey_core::{AccountService, AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DeliveryService, DriveService, EmojiService, FollowingService, GalleryService, GroupService, InstanceService, MessagingService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService, PageService, PollService, ReactionService, ScheduledNoteService, TwoFactorService, UserListService, UserService, WebAuthnConfig, WebAuthnService, WebhookService, WordFilterService};
 use misskey_federation::{
     followers_handler, following_handler, inbox_handler, nodeinfo_2_1, outbox_handler,
     user_inbox_handler, user_handler, webfinger_handler, well_known_nodeinfo, CollectionState,
@@ -15,7 +15,7 @@ use misskey_federation::{
 };
 use misskey_db::repositories::{
     AnnouncementRepository, AntennaRepository, BlockingRepository, ChannelRepository, ClipRepository, DriveFileRepository, DriveFolderRepository,
-    EmojiRepository, FollowRequestRepository, FollowingRepository, InstanceRepository, MessagingRepository,
+    EmojiRepository, FollowRequestRepository, FollowingRepository, GroupRepository, InstanceRepository, MessagingRepository,
     MutingRepository, NoteFavoriteRepository, NoteRepository, NotificationRepository, OAuthRepository,
     PollRepository, PollVoteRepository, ReactionRepository, ScheduledNoteRepository, SecurityKeyRepository, UserKeypairRepository,
     UserListRepository, UserProfileRepository, UserRepository, ModerationRepository,
@@ -111,6 +111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let webhook_repo = WebhookRepository::new(Arc::clone(&db));
     let page_repo = PageRepository::new(Arc::clone(&db));
     let gallery_repo = GalleryRepository::new(Arc::clone(&db));
+    let group_repo = GroupRepository::new(Arc::clone(&db));
 
     // Initialize services
     let user_service = UserService::new(
@@ -202,6 +203,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize Gallery service
     let gallery_service = GalleryService::new(gallery_repo);
 
+    // Initialize Group service
+    let group_service = GroupService::new(group_repo);
+
     // Initialize Translation service (optional, based on config)
     // For now, we set it to None. Users can configure translation in their config.
     let translation_service: Option<misskey_core::TranslationService> = None;
@@ -263,6 +267,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         translation_service,
         push_notification_service,
         account_service,
+        group_service,
         streaming,
         sse_broadcaster,
     };

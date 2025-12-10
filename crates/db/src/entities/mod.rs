@@ -43,6 +43,9 @@ pub mod gallery_post;
 pub mod gallery_like;
 pub mod webhook;
 pub mod push_subscription;
+pub mod group;
+pub mod group_member;
+pub mod group_invite;
 
 pub use abuse_report::Entity as AbuseReport;
 pub use announcement::Entity as Announcement;
@@ -87,3 +90,6 @@ pub use gallery_post::Entity as GalleryPost;
 pub use gallery_like::Entity as GalleryLike;
 pub use webhook::Entity as Webhook;
 pub use push_subscription::Entity as PushSubscription;
+pub use group::Entity as Group;
+pub use group_member::Entity as GroupMember;
+pub use group_invite::Entity as GroupInvite;

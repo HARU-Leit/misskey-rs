@@ -36,6 +36,7 @@ pub mod push_notification;
 pub mod email;
 pub mod media;
 pub mod account;
+pub mod group;
 
 pub use announcement::AnnouncementService;
 pub use account::{
@@ -101,4 +102,8 @@ pub use email::{
 pub use media::{
     ExifData, ImageDimensions, ImageFormat, ImageMetadata, ImageProcessingOptions, MediaConfig,
     MediaService, MediaStatusResponse, ProcessedImage, ThumbnailSize, VideoMetadata,
+};
+pub use group::{
+    CreateGroupInput, GroupResponse, GroupService, InviteUserInput, JoinRequestInput,
+    UpdateGroupInput, UpdateMemberRoleInput,
 };

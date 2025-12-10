@@ -32,6 +32,7 @@ pub mod page;
 pub mod gallery;
 pub mod webhook;
 pub mod push_subscription;
+pub mod group;
 
 pub use announcement::AnnouncementRepository;
 pub use antenna::AntennaRepository;
@@ -65,3 +66,4 @@ pub use page::PageRepository;
 pub use gallery::GalleryRepository;
 pub use webhook::WebhookRepository;
 pub use push_subscription::PushSubscriptionRepository;
+pub use group::GroupRepository;
