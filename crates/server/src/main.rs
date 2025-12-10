@@ -7,15 +7,16 @@ use apalis::prelude::*;
 use axum::{middleware, routing::{get, post}, Router};
 use misskey_api::{middleware::AppState, rate_limit::RateLimiterState, router as api_router, streaming_handler, StreamingState, SseBroadcaster};
 use misskey_common::Config;
-use misskey_core::{AccountService, AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DeliveryService, DriveService, EmojiService, FollowingService, GalleryService, InstanceService, MessagingService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService, PageService, PollService, ReactionService, ScheduledNoteService, TwoFactorService, UserListService, UserService, WebAuthnConfig, WebAuthnService, WebhookService, WordFilterService};
+use misskey_core::{AccountService, AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DeliveryService, DriveService, EmojiService, FollowingService, GalleryService, GroupService, InstanceService, MessagingService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService, PageService, PollService, ReactionService, ScheduledNoteService, TwoFactorService, UserListService, UserService, WebAuthnConfig, WebAuthnService, WebhookService, WordFilterService};
 use misskey_federation::{
-    followers_handler, following_handler, inbox_handler, nodeinfo_2_1, outbox_handler,
-    user_inbox_handler, user_handler, webfinger_handler, well_known_nodeinfo, CollectionState,
-    InboxState, NodeInfoState, UserApState, WebfingerState,
+    clip_handler, clips_list_handler, followers_handler, following_handler, inbox_handler,
+    nodeinfo_2_1, outbox_handler, user_inbox_handler, user_handler, webfinger_handler,
+    well_known_nodeinfo, ClipCollectionState, CollectionState, InboxState, NodeInfoState,
+    UserApState, WebfingerState,
 };
 use misskey_db::repositories::{
     AnnouncementRepository, AntennaRepository, BlockingRepository, ChannelRepository, ClipRepository, DriveFileRepository, DriveFolderRepository,
-    EmojiRepository, FollowRequestRepository, FollowingRepository, InstanceRepository, MessagingRepository,
+    EmojiRepository, FollowRequestRepository, FollowingRepository, GroupRepository, InstanceRepository, MessagingRepository,
     MutingRepository, NoteFavoriteRepository, NoteRepository, NotificationRepository, OAuthRepository,
     PollRepository, PollVoteRepository, ReactionRepository, ScheduledNoteRepository, SecurityKeyRepository, UserKeypairRepository,
     UserListRepository, UserProfileRepository, UserRepository, ModerationRepository,
@@ -111,6 +112,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let webhook_repo = WebhookRepository::new(Arc::clone(&db));
     let page_repo = PageRepository::new(Arc::clone(&db));
     let gallery_repo = GalleryRepository::new(Arc::clone(&db));
+    let group_repo = GroupRepository::new(Arc::clone(&db));
 
     // Initialize services
     let user_service = UserService::new(
@@ -170,7 +172,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let emoji_service = EmojiService::new(emoji_repo);
     let announcement_service = AnnouncementService::new(announcement_repo);
     let messaging_service = MessagingService::new(messaging_repo, user_repo.clone(), blocking_repo);
-    let clip_service = ClipService::new(clip_repo);
+    let clip_service = ClipService::new(clip_repo.clone());
     let antenna_service = AntennaService::new(antenna_repo);
     let channel_service = ChannelService::new(channel_repo);
     let instance_service = InstanceService::new(instance_repo, user_repo.clone());
@@ -201,6 +203,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Initialize Gallery service
     let gallery_service = GalleryService::new(gallery_repo);
+
+    // Initialize Group service
+    let group_service = GroupService::new(group_repo);
 
     // Initialize Translation service (optional, based on config)
     // For now, we set it to None. Users can configure translation in their config.
@@ -263,6 +268,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         translation_service,
         push_notification_service,
         account_service,
+        group_service,
         streaming,
         sse_broadcaster,
     };
@@ -290,6 +296,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         user_repo.clone(),
         note_repo.clone(),
         following_repo.clone(),
+        drive_file_repo.clone(),
+        base_url.clone(),
+    );
+
+    // Create clip collection state for ActivityPub clip collections
+    let clip_collection_state = ClipCollectionState::new(
+        user_repo.clone(),
+        clip_repo.clone(),
+        note_repo.clone(),
         drive_file_repo.clone(),
         base_url.clone(),
     );
@@ -336,6 +351,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route(
             "/users/{username}/following",
             get(following_handler).with_state(collection_state),
+        )
+        // ActivityPub clip collection endpoints
+        .route(
+            "/users/{username}/clips",
+            get(clips_list_handler).with_state(clip_collection_state.clone()),
+        )
+        .route(
+            "/users/{username}/clips/{clip_id}",
+            get(clip_handler).with_state(clip_collection_state),
         )
         // ActivityPub inbox endpoints
         .route(

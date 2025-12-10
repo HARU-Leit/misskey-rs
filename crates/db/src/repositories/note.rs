@@ -46,6 +46,19 @@ impl NoteRepository {
             .map_err(|e| AppError::Database(e.to_string()))
     }
 
+    /// Find notes by IDs.
+    pub async fn find_by_ids(&self, ids: &[String]) -> AppResult<Vec<note::Model>> {
+        if ids.is_empty() {
+            return Ok(vec![]);
+        }
+
+        Note::find()
+            .filter(note::Column::Id.is_in(ids.to_vec()))
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
     /// Create a new note.
     pub async fn create(&self, model: note::ActiveModel) -> AppResult<note::Model> {
         model

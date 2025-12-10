@@ -80,6 +80,16 @@ impl ClipRepository {
             .map_err(|e| AppError::Database(e.to_string()))
     }
 
+    /// Count public clips by user ID.
+    pub async fn count_public_by_user(&self, user_id: &str) -> AppResult<u64> {
+        Clip::find()
+            .filter(clip::Column::UserId.eq(user_id))
+            .filter(clip::Column::IsPublic.eq(true))
+            .count(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
     /// Create a new clip.
     pub async fn create(
         &self,

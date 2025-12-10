@@ -2,9 +2,10 @@
 
 use axum::{extract::State, routing::post, Json, Router};
 use misskey_common::AppResult;
-use misskey_core::{note::CreateNoteInput, UpdateNoteInput};
+use misskey_core::{note::CreateNoteInput, AntennaService, UpdateNoteInput};
 use misskey_db::entities::{note, note_edit};
 use serde::{Deserialize, Serialize};
+use tracing::debug;
 
 use crate::{extractors::AuthUser, middleware::AppState, response::ApiResponse};
 
@@ -90,7 +91,53 @@ async fn create(
     State(state): State<AppState>,
     Json(req): Json<CreateNoteRequest>,
 ) -> AppResult<ApiResponse<NoteResponse>> {
+    // Store input data for antenna processing
+    let text = req.input.text.clone();
+    let reply_id = req.input.reply_id.clone();
+    let file_ids = req.input.file_ids.clone();
+
+    // Create the note
     let note = state.note_service.create(&user.id, req.input).await?;
+
+    // Process note against antennas (fire and forget - don't block response)
+    let antenna_service = state.antenna_service.clone();
+    let note_id = note.id.clone();
+    let note_user_id = user.id.clone();
+    let note_user_host = user.host.clone();
+
+    tokio::spawn(async move {
+        // Get user list memberships for list-based antennas
+        // TODO: Implement user_list_service.get_list_memberships_for_user()
+        let list_memberships: Vec<String> = vec![];
+
+        let context = AntennaService::create_note_context(
+            text.as_deref(),
+            &note_user_id,
+            note_user_host.as_deref(),
+            reply_id.as_deref(),
+            &file_ids,
+            &list_memberships,
+        );
+
+        match antenna_service
+            .process_note_for_all_antennas(&note_id, &context)
+            .await
+        {
+            Ok(matched_antennas) => {
+                if !matched_antennas.is_empty() {
+                    debug!(
+                        note_id = %note_id,
+                        matched_count = matched_antennas.len(),
+                        "Note matched antennas"
+                    );
+                }
+            }
+            Err(e) => {
+                tracing::error!(error = %e, note_id = %note_id, "Failed to process note for antennas");
+            }
+        }
+    });
+
     Ok(ApiResponse::ok(note.into()))
 }
 

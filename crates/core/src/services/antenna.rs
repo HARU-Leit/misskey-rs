@@ -503,6 +503,50 @@ impl AntennaService {
         self.antenna_repo.find_all_active().await
     }
 
+    /// Process a note against all active antennas.
+    ///
+    /// This method checks if the note matches any active antennas and adds it to
+    /// matching antennas. It's designed to be called after a note is created.
+    ///
+    /// Returns the list of antenna IDs that the note was added to.
+    pub async fn process_note_for_all_antennas(
+        &self,
+        note_id: &str,
+        context: &NoteMatchContext,
+    ) -> AppResult<Vec<String>> {
+        let antennas = self.get_all_active_antennas().await?;
+        let mut matched_antenna_ids = Vec::new();
+
+        for antenna in antennas {
+            if let Ok(true) = self.process_note(&antenna, note_id, context).await {
+                matched_antenna_ids.push(antenna.id);
+            }
+        }
+
+        Ok(matched_antenna_ids)
+    }
+
+    /// Create a NoteMatchContext from note data.
+    ///
+    /// Helper method to build the context needed for antenna matching.
+    pub fn create_note_context(
+        text: Option<&str>,
+        user_id: &str,
+        user_host: Option<&str>,
+        reply_id: Option<&str>,
+        file_ids: &[String],
+        user_list_memberships: &[String],
+    ) -> NoteMatchContext {
+        NoteMatchContext {
+            text: text.unwrap_or("").to_string(),
+            user_id: user_id.to_string(),
+            user_host: user_host.map(|s| s.to_string()),
+            is_reply: reply_id.is_some(),
+            has_files: !file_ids.is_empty(),
+            list_memberships: user_list_memberships.to_vec(),
+        }
+    }
+
     // ==================== Helper Methods ====================
 
     fn validate_keywords(&self, keywords: &[Vec<String>]) -> AppResult<()> {

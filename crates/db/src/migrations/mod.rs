@@ -34,6 +34,7 @@ mod m20250101_000029_create_page_table;
 mod m20250101_000030_create_gallery_table;
 mod m20250101_000031_create_push_subscription_table;
 mod m20250101_000032_add_account_migration_fields;
+mod m20250101_000033_create_group_table;
 
 pub struct Migrator;
 
@@ -73,6 +74,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250101_000030_create_gallery_table::Migration),
             Box::new(m20250101_000031_create_push_subscription_table::Migration),
             Box::new(m20250101_000032_add_account_migration_fields::Migration),
+            Box::new(m20250101_000033_create_group_table::Migration),
         ]
     }
 }

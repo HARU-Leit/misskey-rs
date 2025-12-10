@@ -35,6 +35,7 @@ mod webhooks;
 mod translation;
 mod sw;
 mod account;
+mod groups;
 
 use axum::Router;
 
@@ -77,6 +78,7 @@ pub fn router() -> Router<AppState> {
         .nest("/translate", translation::router())
         .nest("/sw", sw::router())
         .nest("/i/account", account::router())
+        .nest("/groups", groups::router())
         .nest("/streaming/sse", sse::router())
         .nest("/metrics", metrics::router())
         // Mastodon-compatible API
