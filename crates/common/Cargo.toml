@@ -1,0 +1,60 @@
+[package]
+name = "misskey-common"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+# Web
+axum.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Error Handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Logging
+tracing.workspace = true
+
+# Utilities
+chrono.workspace = true
+uuid.workspace = true
+ulid.workspace = true
+url.workspace = true
+
+# Config
+config.workspace = true
+dotenvy.workspace = true
+
+# Validation
+validator.workspace = true
+
+# Cryptography (RSA for ActivityPub signatures)
+rsa = { version = "0.9", features = ["pem", "sha2"] }
+rand = "0.8"
+base64 = "0.22"
+sha2 = "0.10"
+
+# URL preview
+reqwest.workspace = true
+regex.workspace = true
+once_cell.workspace = true
+
+# Storage
+tokio = { workspace = true, features = ["fs"] }
+async-trait = "0.1"
+md5 = "0.7"
+
+# S3 (optional)
+aws-sdk-s3 = { version = "1.0", optional = true }
+aws-config = { version = "1.0", optional = true }
+
+[features]
+default = []
+s3 = ["aws-sdk-s3", "aws-config"]
+
+[lints]
+workspace = true

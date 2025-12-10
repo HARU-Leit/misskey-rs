@@ -1,0 +1,36 @@
+# Misskey-rs Default Configuration
+# Copy this file to config/local.toml and modify as needed
+
+[server]
+# Public URL of the server (cannot be changed after first start)
+url = "http://localhost:3000"
+# Port to listen on
+port = 3000
+# Host to bind to
+host = "0.0.0.0"
+
+[database]
+# PostgreSQL connection URL
+url = "postgres://misskey:misskey@localhost:5432/misskey"
+# Maximum number of connections in the pool
+max_connections = 100
+# Minimum number of connections to keep
+min_connections = 5
+
+[redis]
+# Redis connection URL
+url = "redis://localhost:6379"
+# Key prefix for all Redis keys
+prefix = "misskey"
+
+[federation]
+# Enable ActivityPub federation
+enabled = true
+# Instance name (required)
+instance_name = "Misskey-rs"
+# Instance description (optional)
+instance_description = "A Rust implementation of Misskey"
+# Maintainer name (optional)
+maintainer_name = ""
+# Maintainer email (optional)
+maintainer_email = ""

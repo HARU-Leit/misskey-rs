@@ -1,0 +1,10 @@
+# Development Configuration (Docker Compose)
+# These settings override default.toml when MISSKEY_ENV=development
+
+[database]
+# Use 'db' container hostname in Docker Compose
+url = "postgres://misskey:misskey@db:5432/misskey"
+
+[redis]
+# Use 'redis' container hostname in Docker Compose
+url = "redis://redis:6379"

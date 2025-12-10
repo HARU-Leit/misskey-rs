@@ -1,0 +1,148 @@
+# Test environment Docker Compose configuration
+#
+# Basic tests:
+#   docker-compose -f docker-compose.test.yml up -d
+#   cargo test
+#   docker-compose -f docker-compose.test.yml down -v
+#
+# Federation tests (2 instances):
+#   docker-compose -f docker-compose.test.yml --profile federation up -d
+#   cargo test --features federation-test
+#   docker-compose -f docker-compose.test.yml --profile federation down -v
+
+services:
+  test-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: misskey_test
+      POSTGRES_PASSWORD: misskey_test
+      POSTGRES_DB: misskey_test
+    ports:
+      - "5433:5432"  # Use different port to avoid conflicts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U misskey_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data  # Use tmpfs for faster tests
+
+  test-redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"  # Use different port to avoid conflicts
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ============================================
+  # Federation Testing (2 instances)
+  # ============================================
+
+  # Instance 1: alpha.local
+  test-db-1:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: misskey_test
+      POSTGRES_PASSWORD: misskey_test
+      POSTGRES_DB: misskey_alpha
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U misskey_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data
+    profiles:
+      - federation
+
+  test-redis-1:
+    image: redis:7-alpine
+    ports:
+      - "6381:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    profiles:
+      - federation
+
+  alpha:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      MISSKEY_URL: http://alpha:3001
+      DATABASE_URL: postgres://misskey_test:misskey_test@test-db-1:5432/misskey_alpha
+      REDIS_URL: redis://test-redis-1:6379
+      INSTANCE_NAME: Alpha Instance
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      test-db-1:
+        condition: service_healthy
+      test-redis-1:
+        condition: service_healthy
+    profiles:
+      - federation
+
+  # Instance 2: beta.local
+  test-db-2:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: misskey_test
+      POSTGRES_PASSWORD: misskey_test
+      POSTGRES_DB: misskey_beta
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U misskey_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data
+    profiles:
+      - federation
+
+  test-redis-2:
+    image: redis:7-alpine
+    ports:
+      - "6382:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    profiles:
+      - federation
+
+  beta:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      MISSKEY_URL: http://beta:3002
+      DATABASE_URL: postgres://misskey_test:misskey_test@test-db-2:5432/misskey_beta
+      REDIS_URL: redis://test-redis-2:6379
+      INSTANCE_NAME: Beta Instance
+      PORT: 3002
+    ports:
+      - "3002:3002"
+    depends_on:
+      test-db-2:
+        condition: service_healthy
+      test-redis-2:
+        condition: service_healthy
+    profiles:
+      - federation
+
+networks:
+  default:
+    name: misskey_test_network

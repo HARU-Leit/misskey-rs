@@ -1,0 +1,22 @@
+# Misskey-rs Test Configuration
+
+[server]
+url = "http://localhost:3000"
+port = 3000
+bind = "127.0.0.1"
+
+[database]
+url = "postgres://misskey:misskey@localhost:5432/misskey_test"
+max_connections = 10
+min_connections = 1
+
+[redis]
+url = "redis://localhost:6379"
+database = 1
+
+[federation]
+enabled = false
+fetch_timeout_ms = 5000
+deliver_concurrency = 4
+blocked_hosts = []
+allowed_hosts = []

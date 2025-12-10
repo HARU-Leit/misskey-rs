@@ -1,0 +1,56 @@
+[package]
+name = "misskey-federation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = []
+# Enable local federation tests (requires 2 running instances)
+federation-test = []
+
+[dependencies]
+misskey-common = { workspace = true }
+misskey-db = { workspace = true }
+
+# ActivityPub
+activitypub_federation.workspace = true
+
+# Redis (for caching)
+fred.workspace = true
+
+# Database
+sea-orm.workspace = true
+
+# Async
+async-trait.workspace = true
+
+# Web
+axum.workspace = true
+url.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Utilities
+chrono.workspace = true
+uuid.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+# HTTP Signature
+reqwest.workspace = true
+sha2.workspace = true
+base64.workspace = true
+rsa.workspace = true
+pkcs8.workspace = true
+signature.workspace = true
+rand.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+reqwest = { workspace = true, features = ["json"] }
+
+[lints]
+workspace = true

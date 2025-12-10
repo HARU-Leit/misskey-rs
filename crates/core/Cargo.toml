@@ -1,0 +1,63 @@
+[package]
+name = "misskey-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+misskey-common = { workspace = true }
+misskey-db = { workspace = true }
+
+# Async
+tokio.workspace = true
+async-trait.workspace = true
+
+# Database
+sea-orm.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Utilities
+chrono.workspace = true
+uuid.workspace = true
+ulid = "1.1"
+thiserror.workspace = true
+tracing.workspace = true
+validator.workspace = true
+
+# Security
+argon2.workspace = true
+
+# Hashing
+md5 = "0.7"
+
+# Regex & Pattern Matching
+regex.workspace = true
+aho-corasick = "1.1"
+
+# 2FA
+totp-rs.workspace = true
+rand.workspace = true
+
+# WebAuthn/Passkey
+webauthn-rs.workspace = true
+webauthn-rs-proto.workspace = true
+base64.workspace = true
+url.workspace = true
+sha2.workspace = true
+
+# Webhook
+hmac.workspace = true
+hex.workspace = true
+reqwest.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }
+sea-orm = { workspace = true, features = ["mock"] }
+misskey-db = { workspace = true, features = ["test-utils"] }
+maplit = "1.0"
+
+[lints]
+workspace = true

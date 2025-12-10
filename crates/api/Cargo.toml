@@ -1,0 +1,40 @@
+[package]
+name = "misskey-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+misskey-common = { workspace = true }
+misskey-db = { workspace = true }
+misskey-core = { workspace = true }
+
+# Web
+axum.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+
+# Async
+tokio.workspace = true
+async-trait.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Utilities
+chrono.workspace = true
+uuid.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+validator.workspace = true
+futures.workspace = true
+tokio-stream.workspace = true
+
+[dev-dependencies]
+sea-orm = { workspace = true, features = ["mock"] }
+tower = { workspace = true, features = ["util"] }
+tokio = { workspace = true, features = ["rt", "macros"] }
+
+[lints]
+workspace = true

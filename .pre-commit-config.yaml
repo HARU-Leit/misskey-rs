@@ -1,0 +1,29 @@
+# Pre-commit hooks for misskey-rs
+# Install: pip install pre-commit && pre-commit install
+
+repos:
+  - repo: local
+    hooks:
+      - id: rustfmt
+        name: rustfmt
+        description: Format Rust code with rustfmt
+        entry: cargo fmt --
+        language: system
+        types: [rust]
+        pass_filenames: true
+
+      - id: clippy
+        name: clippy
+        description: Lint Rust code with clippy
+        entry: cargo clippy --all-targets --all-features -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      - id: cargo-check
+        name: cargo check
+        description: Check Rust code compiles
+        entry: cargo check --all-targets
+        language: system
+        types: [rust]
+        pass_filenames: false

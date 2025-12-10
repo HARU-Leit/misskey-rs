@@ -1,0 +1,42 @@
+[package]
+name = "misskey-queue"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+misskey-common = { workspace = true }
+misskey-db = { workspace = true }
+misskey-core = { workspace = true }
+misskey-federation = { workspace = true }
+
+# Job Queue
+apalis.workspace = true
+apalis-redis.workspace = true
+
+# Redis
+fred.workspace = true
+
+# Async
+tokio.workspace = true
+async-trait.workspace = true
+
+# HTTP Client
+reqwest.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Utilities
+chrono.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+url.workspace = true
+futures.workspace = true
+
+# Database
+sea-orm.workspace = true
+
+[lints]
+workspace = true

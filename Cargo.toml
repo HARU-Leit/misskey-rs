@@ -1,0 +1,163 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/common",
+    "crates/db",
+    "crates/core",
+    "crates/federation",
+    "crates/api",
+    "crates/queue",
+    "crates/mfm",
+    "crates/server",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Misskey-rs Contributors"]
+license = "AGPL-3.0"
+repository = "https://github.com/example/misskey-rs"
+rust-version = "1.85"
+
+[workspace.dependencies]
+# Web Framework
+axum = { version = "0.8", features = ["macros", "ws", "multipart"] }
+axum-extra = { version = "0.10", features = ["typed-header", "cookie"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = [
+    "cors",
+    "trace",
+    "timeout",
+    "compression-gzip",
+    "limit",
+] }
+
+# ActivityPub
+activitypub_federation = { version = "0.6", features = ["axum"] }
+
+# Database
+sea-orm = { version = "1.1", features = [
+    "sqlx-postgres",
+    "runtime-tokio-rustls",
+    "macros",
+    "with-chrono",
+    "with-json",
+    "with-uuid",
+] }
+sea-orm-migration = "1.1"
+
+# Redis
+fred = { version = "10", features = ["subscriber-client"] }
+
+# Job Queue
+apalis = { version = "0.7", features = ["limit", "tracing", "retry"] }
+apalis-redis = "0.7"
+redis = { version = "0.32", features = ["tokio-comp"] }
+
+# Runtime
+tokio = { version = "1", features = ["full"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# HTTP Client
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+
+# Validation
+validator = { version = "0.19", features = ["derive"] }
+
+# Error Handling
+thiserror = "2"
+anyhow = "1"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Utilities
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+ulid = "1"
+url = { version = "2", features = ["serde"] }
+async-trait = "0.1"
+futures = "0.3"
+tokio-stream = { version = "0.1", features = ["sync"] }
+bytes = "1"
+
+# Security
+argon2 = "0.5"
+jsonwebtoken = "9"
+base64 = "0.22"
+sha2 = "0.10"
+rsa = "0.9"
+pkcs8 = { version = "0.10", features = ["pem"] }
+signature = "2"
+rand = "0.8"
+
+# Config
+config = "0.14"
+dotenvy = "0.15"
+
+# MFM
+regex = "1"
+once_cell = "1"
+
+# 2FA
+totp-rs = { version = "5", features = ["gen_secret", "otpauth", "qr"] }
+
+# WebAuthn/Passkey
+webauthn-rs = { version = "0.5", features = ["danger-allow-state-serialisation"] }
+webauthn-rs-proto = "0.5"
+
+# HMAC
+hmac = "0.12"
+hex = "0.4"
+
+# Internal crates
+misskey-common = { path = "crates/common" }
+misskey-db = { path = "crates/db" }
+misskey-core = { path = "crates/core" }
+misskey-federation = { path = "crates/federation" }
+misskey-api = { path = "crates/api" }
+misskey-queue = { path = "crates/queue" }
+misskey-mfm = { path = "crates/mfm" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+all = "warn"
+pedantic = "warn"
+nursery = "warn"
+redundant_clone = "warn"
+clone_on_ref_ptr = "warn"
+implicit_clone = "warn"
+cloned_instead_of_copied = "warn"
+unwrap_used = "deny"
+expect_used = "warn"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true
+panic = "abort"
+
+# Profile for profiling (release with debug symbols)
+[profile.profiling]
+inherits = "release"
+debug = true
+strip = false
+
+# Profile for benchmarks
+[profile.bench]
+debug = true

@@ -1,0 +1,51 @@
+version: "3.9"
+
+# Development compose file - use with: docker compose -f docker-compose.dev.yml up
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: misskey
+      POSTGRES_PASSWORD: misskey
+      POSTGRES_DB: misskey
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U misskey"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Meilisearch for full-text search
+  meilisearch:
+    image: getmeili/meilisearch:v1.6
+    environment:
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: true
+    volumes:
+      - meilisearch_data:/meili_data
+    ports:
+      - "7700:7700"
+    profiles:
+      - search
+
+volumes:
+  postgres_data:
+  redis_data:
+  meilisearch_data:

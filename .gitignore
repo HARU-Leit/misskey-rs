@@ -1,0 +1,44 @@
+# Build artifacts
+/target/
+**/*.rs.bk
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local configuration
+config/local.toml
+config/production.toml
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage
+*.profraw
+lcov.info
+coverage/
+
+# Cargo lock for libraries (keep for binaries)
+# Cargo.lock
+
+# Secrets
+*.pem
+*.key
+secrets/
