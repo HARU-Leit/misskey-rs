@@ -58,7 +58,7 @@
   - [x] POST `/clips/reorder` - クリップ順序変更
   - [x] POST `/clips/reorder-notes` - クリップ内ノート順序変更
   - [x] POST `/clips/find-note` - ノートが含まれるクリップを検索
-- [ ] ActivityPub対応（Collection）
+- [x] ActivityPub対応（Collection）
 - [ ] **[拡張]** クリップ内検索機能
 - [x] **[拡張]** ノートの順序変更
 - [ ] **[拡張]** クリップ間ノート移動/コピー
@@ -196,7 +196,7 @@
   - [x] 返信含む/除外
 - [x] **[拡張]** マッチングの高速化（Aho-Corasickアルゴリズム）
 - [x] マイグレーション作成
-- [ ] ノート作成時のアンテナマッチング処理（バックグラウンド）
+- [x] ノート作成時のアンテナマッチング処理（バックグラウンド）
 - [ ] **[拡張]** ビジュアルクエリビルダー（複雑な条件をGUIで）
 - [ ] **[拡張]** アンテナのプレビュー（作成前にマッチ確認）
 - [ ] **[拡張]** アンテナテンプレート（「イラスト」「技術」など）
@@ -650,7 +650,7 @@
 
 ---
 
-## Phase 6: グループ機能（上位互換）
+## Phase 6: グループ機能（上位互換）✅ 実装済み
 
 **本家の課題:**
 - グループ機能が廃止された
@@ -659,31 +659,40 @@
 **改善実装（新規設計）:**
 
 ### 6.1 グループ基盤
-- [ ] グループエンティティ作成 (`group`)
-- [ ] グループメンバーエンティティ作成 (`group_member`)
-- [ ] グループ招待エンティティ作成 (`group_invite`)
-- [ ] グループリポジトリ実装
-- [ ] グループサービス実装
+- [x] グループエンティティ作成 (`group`)
+- [x] グループメンバーエンティティ作成 (`group_member`)
+- [x] グループ招待エンティティ作成 (`group_invite`)
+- [x] グループリポジトリ実装
+- [x] グループサービス実装
 
 ### 6.2 グループAPI
-- [ ] APIエンドポイント実装
-  - [ ] POST `/groups/create` - グループ作成
-  - [ ] POST `/groups/update` - グループ更新
-  - [ ] POST `/groups/delete` - グループ削除
-  - [ ] POST `/groups/show` - グループ詳細
-  - [ ] POST `/groups/owned` - 自分のグループ
-  - [ ] POST `/groups/joined` - 参加中グループ
-  - [ ] POST `/groups/invite` - 招待
-  - [ ] POST `/groups/invitations/accept` - 招待承認
-  - [ ] POST `/groups/invitations/reject` - 招待拒否
-  - [ ] POST `/groups/leave` - グループ退出
-  - [ ] POST `/groups/transfer` - オーナー移譲
-  - [ ] POST `/groups/members` - メンバー一覧
-  - [ ] POST `/groups/kick` - メンバー追放
+- [x] APIエンドポイント実装
+  - [x] POST `/groups/create` - グループ作成
+  - [x] POST `/groups/update` - グループ更新
+  - [x] POST `/groups/delete` - グループ削除
+  - [x] POST `/groups/show` - グループ詳細
+  - [x] POST `/groups/owned` - 自分のグループ
+  - [x] POST `/groups/joined` - 参加中グループ
+  - [x] POST `/groups/invite` - 招待
+  - [x] POST `/groups/invitations/accept` - 招待承認
+  - [x] POST `/groups/invitations/reject` - 招待拒否
+  - [x] POST `/groups/leave` - グループ退出
+  - [x] POST `/groups/transfer` - オーナー移譲
+  - [x] POST `/groups/members` - メンバー一覧
+  - [x] POST `/groups/kick` - メンバー追放
+  - [x] POST `/groups/featured` - おすすめグループ
+  - [x] POST `/groups/search` - グループ検索
+  - [x] POST `/groups/join` - グループ参加（オープンの場合）
+  - [x] POST `/groups/request` - 参加リクエスト（承認制の場合）
+  - [x] POST `/groups/requests/approve` - 参加リクエスト承認
+  - [x] POST `/groups/requests/reject` - 参加リクエスト拒否
+  - [x] POST `/groups/invitations` - 招待一覧
+  - [x] POST `/groups/requests` - リクエスト一覧
+  - [x] POST `/groups/members/update-role` - メンバーロール更新
 
 ### 6.3 グループ拡張機能
-- [ ] **[拡張]** グループタイプ（オープン/招待制/承認制）
-- [ ] **[拡張]** ロールシステム（管理者/モデレーター/メンバー）
+- [x] **[拡張]** グループタイプ（オープン/招待制/承認制）
+- [x] **[拡張]** ロールシステム（管理者/モデレーター/メンバー）
 - [ ] **[拡張]** グループ内限定ノート
 - [ ] **[拡張]** グループDM（グループチャット）
 - [ ] **[拡張]** グループイベント/カレンダー
@@ -828,9 +837,9 @@
 | Phase 3: セキュリティ強化 | 4 | 4 | 100% |
 | Phase 4: 高度な機能 | 6 | 6 | 100% |
 | Phase 5: アカウント管理 | 4 | 4 | 100% |
-| Phase 6: グループ機能 | 3 | 0 | 0% |
+| Phase 6: グループ機能 | 3 | 3 | 100% |
 | Phase 7: 独自機能 | 10 | 1 | 10% |
-| **合計** | **35** | **23** | **66%** |
+| **合計** | **35** | **26** | **74%** |
 
 ---
 

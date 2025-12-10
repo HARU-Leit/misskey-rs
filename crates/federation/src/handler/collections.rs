@@ -6,7 +6,7 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use misskey_db::repositories::{DriveFileRepository, FollowingRepository, NoteRepository, UserRepository};
+use misskey_db::repositories::{ClipRepository, DriveFileRepository, FollowingRepository, NoteRepository, UserRepository};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 use url::Url;
@@ -512,6 +512,353 @@ pub async fn following_handler(
         kind: "OrderedCollection".to_string(),
         id: following_url,
         total_items,
+        first: Some(first),
+        last: None,
+    };
+
+    (
+        StatusCode::OK,
+        [(
+            "Content-Type",
+            "application/activity+json; charset=utf-8",
+        )],
+        Json(collection),
+    )
+        .into_response()
+}
+
+/// State required for clip collection handler.
+#[derive(Clone)]
+pub struct ClipCollectionState {
+    pub user_repo: UserRepository,
+    pub clip_repo: ClipRepository,
+    pub note_repo: NoteRepository,
+    pub drive_file_repo: DriveFileRepository,
+    pub url_config: UrlConfig,
+}
+
+impl ClipCollectionState {
+    /// Create a new clip collection state.
+    #[must_use]
+    pub const fn new(
+        user_repo: UserRepository,
+        clip_repo: ClipRepository,
+        note_repo: NoteRepository,
+        drive_file_repo: DriveFileRepository,
+        base_url: Url,
+    ) -> Self {
+        Self {
+            user_repo,
+            clip_repo,
+            note_repo,
+            drive_file_repo,
+            url_config: UrlConfig::new(base_url),
+        }
+    }
+}
+
+/// Handle GET /users/{username}/clips/{clip_id} - User's clip as ActivityPub Collection.
+pub async fn clip_handler(
+    State(state): State<ClipCollectionState>,
+    Path((username, clip_id)): Path<(String, String)>,
+    Query(query): Query<CollectionQuery>,
+) -> impl IntoResponse {
+    info!(username = %username, clip_id = %clip_id, "ActivityPub clip lookup");
+
+    // Find user by username (local users only)
+    let user = match state
+        .user_repo
+        .find_by_username_and_host(&username, None)
+        .await
+    {
+        Ok(Some(u)) => u,
+        Ok(None) => {
+            info!(username = %username, "User not found");
+            return (StatusCode::NOT_FOUND, "User not found").into_response();
+        }
+        Err(e) => {
+            error!(error = %e, "Failed to fetch user");
+            return (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response();
+        }
+    };
+
+    if user.is_suspended {
+        return (StatusCode::GONE, "User is suspended").into_response();
+    }
+
+    // Find clip by ID
+    let clip = match state.clip_repo.find_by_id(&clip_id).await {
+        Ok(Some(c)) => c,
+        Ok(None) => {
+            info!(clip_id = %clip_id, "Clip not found");
+            return (StatusCode::NOT_FOUND, "Clip not found").into_response();
+        }
+        Err(e) => {
+            error!(error = %e, "Failed to fetch clip");
+            return (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response();
+        }
+    };
+
+    // Verify clip belongs to user
+    if clip.user_id != user.id {
+        return (StatusCode::NOT_FOUND, "Clip not found").into_response();
+    }
+
+    // Only public clips are accessible via ActivityPub
+    if !clip.is_public {
+        return (StatusCode::FORBIDDEN, "Clip is not public").into_response();
+    }
+
+    let clip_url = state
+        .url_config
+        .base_url
+        .join(&format!("/users/{}/clips/{}", username, clip_id))
+        .expect("valid URL");
+
+    // If page=true, return a page of notes in the clip
+    if query.page == Some(true) {
+        let limit = 20u64;
+
+        // Get notes in this clip
+        let clip_notes = match state
+            .clip_repo
+            .find_notes_in_clip(&clip_id, limit, 0)
+            .await
+        {
+            Ok(n) => n,
+            Err(e) => {
+                error!(error = %e, "Failed to fetch clip notes");
+                return (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response();
+            }
+        };
+
+        // Get the actual notes
+        let note_ids: Vec<String> = clip_notes.iter().map(|cn| cn.note_id.clone()).collect();
+        let notes = match state.note_repo.find_by_ids(&note_ids).await {
+            Ok(n) => n,
+            Err(e) => {
+                error!(error = %e, "Failed to fetch notes");
+                return (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response();
+            }
+        };
+
+        // Convert notes to AP objects
+        let mut items: Vec<serde_json::Value> = Vec::new();
+        for note in &notes {
+            // Get files for this note
+            let file_ids: Vec<String> =
+                serde_json::from_value(note.file_ids.clone()).unwrap_or_default();
+            let files = if file_ids.is_empty() {
+                vec![]
+            } else {
+                state
+                    .drive_file_repo
+                    .find_by_ids(&file_ids)
+                    .await
+                    .unwrap_or_default()
+            };
+
+            // Get note author
+            let author_username = match state.user_repo.find_by_id(&note.user_id).await {
+                Ok(Some(u)) => u.username,
+                _ => "unknown".to_string(),
+            };
+
+            let ap_note = note.to_ap_note(&state.url_config, &author_username, &files);
+            items.push(serde_json::to_value(&ap_note).unwrap_or_default());
+        }
+
+        let mut page_url = clip_url.clone();
+        page_url.set_query(Some("page=true"));
+
+        let next = if clip_notes.len() == limit as usize {
+            clip_notes.last().map(|cn| {
+                let mut next_url = clip_url.clone();
+                next_url.set_query(Some(&format!("page=true&max_id={}", cn.id)));
+                next_url
+            })
+        } else {
+            None
+        };
+
+        let page = OrderedCollectionPage {
+            context: activitystreams_context(),
+            kind: "OrderedCollectionPage".to_string(),
+            id: page_url,
+            part_of: clip_url,
+            prev: None,
+            next,
+            ordered_items: items,
+        };
+
+        return (
+            StatusCode::OK,
+            [(
+                "Content-Type",
+                "application/activity+json; charset=utf-8",
+            )],
+            Json(page),
+        )
+            .into_response();
+    }
+
+    // Return collection summary
+    let total_items = clip.notes_count as u64;
+    let first = {
+        let mut first_url = clip_url.clone();
+        first_url.set_query(Some("page=true"));
+        first_url
+    };
+
+    // Build a collection with clip metadata
+    let collection = serde_json::json!({
+        "@context": activitystreams_context(),
+        "type": "OrderedCollection",
+        "id": clip_url.to_string(),
+        "name": clip.name,
+        "summary": clip.description,
+        "totalItems": total_items,
+        "first": first.to_string(),
+        "attributedTo": state.url_config.user_url(&username).to_string(),
+        "published": clip.created_at.to_rfc3339(),
+    });
+
+    (
+        StatusCode::OK,
+        [(
+            "Content-Type",
+            "application/activity+json; charset=utf-8",
+        )],
+        Json(collection),
+    )
+        .into_response()
+}
+
+/// Handle GET /users/{username}/clips - List of user's public clips.
+pub async fn clips_list_handler(
+    State(state): State<ClipCollectionState>,
+    Path(username): Path<String>,
+    Query(query): Query<CollectionQuery>,
+) -> impl IntoResponse {
+    info!(username = %username, "ActivityPub clips list lookup");
+
+    // Find user by username (local users only)
+    let user = match state
+        .user_repo
+        .find_by_username_and_host(&username, None)
+        .await
+    {
+        Ok(Some(u)) => u,
+        Ok(None) => {
+            info!(username = %username, "User not found");
+            return (StatusCode::NOT_FOUND, "User not found").into_response();
+        }
+        Err(e) => {
+            error!(error = %e, "Failed to fetch user");
+            return (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response();
+        }
+    };
+
+    if user.is_suspended {
+        return (StatusCode::GONE, "User is suspended").into_response();
+    }
+
+    let clips_url = state
+        .url_config
+        .base_url
+        .join(&format!("/users/{}/clips", username))
+        .expect("valid URL");
+
+    // If page=true, return a page of clips
+    if query.page == Some(true) {
+        let limit = 20u64;
+
+        // Get public clips for this user
+        let clips = match state
+            .clip_repo
+            .find_public_by_user(&user.id, limit, 0)
+            .await
+        {
+            Ok(c) => c,
+            Err(e) => {
+                error!(error = %e, "Failed to fetch clips");
+                return (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response();
+            }
+        };
+
+        // Convert clips to Collection references
+        let items: Vec<serde_json::Value> = clips
+            .iter()
+            .map(|c| {
+                let clip_url = state
+                    .url_config
+                    .base_url
+                    .join(&format!("/users/{}/clips/{}", username, c.id))
+                    .expect("valid URL");
+                serde_json::json!({
+                    "type": "OrderedCollection",
+                    "id": clip_url.to_string(),
+                    "name": c.name,
+                    "summary": c.description,
+                    "totalItems": c.notes_count,
+                })
+            })
+            .collect();
+
+        let mut page_url = clips_url.clone();
+        page_url.set_query(Some("page=true"));
+
+        let next = if clips.len() == limit as usize {
+            clips.last().map(|c| {
+                let mut next_url = clips_url.clone();
+                next_url.set_query(Some(&format!("page=true&max_id={}", c.id)));
+                next_url
+            })
+        } else {
+            None
+        };
+
+        let page = OrderedCollectionPage {
+            context: activitystreams_context(),
+            kind: "OrderedCollectionPage".to_string(),
+            id: page_url,
+            part_of: clips_url,
+            prev: None,
+            next,
+            ordered_items: items,
+        };
+
+        return (
+            StatusCode::OK,
+            [(
+                "Content-Type",
+                "application/activity+json; charset=utf-8",
+            )],
+            Json(page),
+        )
+            .into_response();
+    }
+
+    // Return collection summary
+    let clip_count = match state.clip_repo.count_public_by_user(&user.id).await {
+        Ok(c) => c,
+        Err(e) => {
+            error!(error = %e, "Failed to count clips");
+            return (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response();
+        }
+    };
+
+    let first = {
+        let mut first_url = clips_url.clone();
+        first_url.set_query(Some("page=true"));
+        first_url
+    };
+
+    let collection = OrderedCollection {
+        context: activitystreams_context(),
+        kind: "OrderedCollection".to_string(),
+        id: clips_url,
+        total_items: clip_count,
         first: Some(first),
         last: None,
     };

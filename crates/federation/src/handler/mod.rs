@@ -7,8 +7,8 @@ mod user;
 mod webfinger;
 
 pub use collections::{
-    followers_handler, following_handler, outbox_handler, CollectionState, OrderedCollection,
-    OrderedCollectionPage,
+    clip_handler, clips_list_handler, followers_handler, following_handler, outbox_handler,
+    ClipCollectionState, CollectionState, OrderedCollection, OrderedCollectionPage,
 };
 pub use inbox::{inbox_handler, user_inbox_handler, InboxActivity, InboxState};
 pub use nodeinfo::{nodeinfo_2_1, well_known_nodeinfo, NodeInfoState};
