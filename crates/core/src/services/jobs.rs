@@ -242,13 +242,12 @@ async fn process_webhook(
         return;
     };
 
-    match webhook_service.deliver(user_id, event_type, &payload).await {
-        Ok(count) => {
+    match webhook_service.trigger(user_id, event_type, payload).await {
+        Ok(()) => {
             debug!(
                 user_id = %user_id,
                 event_type = %event_type,
-                success_count = %count,
-                "Webhooks delivered"
+                "Webhooks triggered"
             );
         }
         Err(e) => {

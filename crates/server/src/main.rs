@@ -7,7 +7,7 @@ use apalis::prelude::*;
 use axum::{middleware, routing::{get, post}, Router};
 use misskey_api::{middleware::AppState, rate_limit::RateLimiterState, router as api_router, streaming_handler, StreamingState, SseBroadcaster};
 use misskey_common::Config;
-use misskey_core::{AccountService, AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DeliveryService, DriveService, EmojiService, FollowingService, GalleryService, GroupService, InstanceService, MessagingService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService, PageService, PollService, ReactionService, ScheduledNoteService, TwoFactorService, UserListService, UserService, WebAuthnConfig, WebAuthnService, WebhookService, WordFilterService};
+use misskey_core::{AccountService, AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DeliveryService, DriveService, EmojiService, FollowingService, GalleryService, GroupService, InstanceService, MessagingService, MetaSettingsService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService, PageService, PollService, ReactionService, RegistrationApprovalService, ScheduledNoteService, TwoFactorService, UserListService, UserService, WebAuthnConfig, WebAuthnService, WebhookService, WordFilterService};
 use misskey_federation::{
     clip_handler, clips_list_handler, followers_handler, following_handler, inbox_handler,
     nodeinfo_2_1, outbox_handler, user_inbox_handler, user_handler, webfinger_handler,
@@ -30,7 +30,7 @@ use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
-use tracing::{info, warn};
+use tracing::info;
 use url::Url;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -259,6 +259,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         &config,
     ));
 
+    // Initialize MetaSettings service
+    let meta_settings_service = MetaSettingsService::new(db.clone());
+
+    // Initialize RegistrationApproval service
+    let registration_approval_service = RegistrationApprovalService::new(db.clone());
+
     // Initialize streaming state
     let streaming = StreamingState::new();
 
@@ -302,6 +308,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         push_notification_service,
         account_service,
         group_service,
+        meta_settings_service,
+        registration_approval_service,
         streaming,
         sse_broadcaster,
     };
