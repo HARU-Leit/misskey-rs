@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (管理機能強化実装完了)
+*Last Updated: 2025-12-11* (Mastodon互換API完全対応)
 
 ---
 
@@ -34,9 +34,14 @@
 
 | タスク | 状況 | 参照 |
 |--------|------|------|
-| メディア添付API | 🔧 60%実装 | IMPLEMENTATION_STATUS.md |
+| メディア添付API | ✅ 完了 | media.rs |
 | OAuth 2.0完全対応 | ✅ 完了 | - |
-| 残りエンドポイント（favorites, blocks, mutes等） | 未実装 | FORK_FEATURES.md |
+| Statuses API (CRUD/context) | ✅ 完了 | statuses.rs |
+| Accounts API (follow/block/mute) | ✅ 完了 | accounts.rs |
+| Favourites API | ✅ 完了 | favourites.rs |
+| Blocks/Mutes API | ✅ 完了 | blocks.rs, mutes.rs |
+| Bookmarks API | ✅ 完了 | bookmarks.rs |
+| Timelines API | ✅ 完了 | timelines.rs |
 
 ### 管理機能強化
 
@@ -160,7 +165,7 @@
 | メッセージングのブロックチェック | messaging.rs:81 | IMPLEMENTATION_STATUS.md |
 | ドライブのファイル実体削除 | drive.rs:218 | IMPLEMENTATION_STATUS.md |
 | NodeInfo実統計取得 | ✅ 実装済 | nodeinfo.rs |
-| Mastodon API base_url設定 | timelines.rs | IMPLEMENTATION_STATUS.md |
+| Mastodon API base_url設定 | ✅ TODO残 | timelines.rs |
 
 ---
 
@@ -188,13 +193,21 @@
 - メディアNSFW強制マーク（`force_nsfw_media`）
 - 管理APIエンドポイント（`/admin/meta`, `/admin/registration-approvals/*`）
 
+### Mastodon互換API (100%完了)
+- メディア添付API（アップロード/取得/更新）
+- Statuses API（作成/取得/削除/コンテキスト）
+- Accounts API（フォロー/ブロック/ミュート/関係性）
+- Favourites/Bookmarks API
+- Blocks/Mutes リスト取得
+- Timelines API（home/public）
+
 ---
 
 ## 次のアクション推奨
 
 1. **フェデレーション**: ActivityPub Update activity対応 → ノート編集が他サーバーに反映
-2. **Mastodon互換**: メディア添付API完成 → 既存クライアントの完全対応
-3. **パフォーマンス**: URLプレビューキャッシュ → 外部リンク表示高速化
+2. **パフォーマンス**: URLプレビューキャッシュ → 外部リンク表示高速化
+3. **タイムライン**: バブルタイムライン → 信頼インスタンス間の連携強化
 
 ---
 
