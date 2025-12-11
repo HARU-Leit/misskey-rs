@@ -94,6 +94,10 @@ pub struct Model {
     #[sea_orm(default_value = false)]
     pub hide_bots: bool,
 
+    /// Default reaction emoji (e.g., "👍", ":like:", custom emoji shortcode)
+    #[sea_orm(nullable)]
+    pub default_reaction: Option<String>,
+
     pub created_at: DateTimeWithTimeZone,
 
     #[sea_orm(nullable)]

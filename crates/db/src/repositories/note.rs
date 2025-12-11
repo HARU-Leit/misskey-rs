@@ -949,7 +949,7 @@ mod tests {
         );
 
         let repo = NoteRepository::new(db);
-        let result = repo.find_local_public(10, None).await.unwrap();
+        let result = repo.find_local_public(10, None, None).await.unwrap();
 
         assert_eq!(result.len(), 2);
     }

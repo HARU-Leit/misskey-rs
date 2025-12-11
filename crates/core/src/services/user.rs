@@ -71,6 +71,10 @@ pub struct UpdateUserInput {
 
     /// Hide notes from bot accounts in timeline
     pub hide_bots: Option<bool>,
+
+    /// Default reaction emoji (e.g., "👍", ":like:", custom emoji shortcode)
+    #[validate(length(max = 256))]
+    pub default_reaction: Option<String>,
 }
 
 impl UserService {
@@ -260,7 +264,8 @@ impl UserService {
         active.updated_at = Set(Some(chrono::Utc::now().into()));
 
         // Update profile fields if provided
-        if input.pronouns.is_some() || input.hide_bots.is_some() {
+        if input.pronouns.is_some() || input.hide_bots.is_some() || input.default_reaction.is_some()
+        {
             let profile = self.profile_repo.get_by_user_id(id).await?;
             let mut profile_active: user_profile::ActiveModel = profile.into();
 
@@ -269,6 +274,15 @@ impl UserService {
             }
             if let Some(hide_bots) = input.hide_bots {
                 profile_active.hide_bots = Set(hide_bots);
+            }
+            if let Some(default_reaction) = input.default_reaction {
+                // Allow empty string to clear the default reaction
+                let value = if default_reaction.is_empty() {
+                    None
+                } else {
+                    Some(default_reaction)
+                };
+                profile_active.default_reaction = Set(value);
             }
 
             profile_active.updated_at = Set(Some(chrono::Utc::now().into()));
@@ -370,6 +384,14 @@ impl UserService {
         } else {
             Ok(None)
         }
+    }
+
+    /// Get the default reaction setting for a user.
+    ///
+    /// Returns the user's preferred reaction emoji, or None if not set.
+    pub async fn get_default_reaction(&self, user_id: &str) -> AppResult<Option<String>> {
+        let profile = self.profile_repo.find_by_user_id(user_id).await?;
+        Ok(profile.and_then(|p| p.default_reaction))
     }
 }
 
@@ -647,6 +669,7 @@ mod tests {
             is_locked: None,
             pronouns: None,
             hide_bots: None,
+            default_reaction: None,
         };
         assert!(input.validate().is_err());
 
@@ -663,7 +686,25 @@ mod tests {
             is_locked: Some(false),
             pronouns: Some("they/them".to_string()),
             hide_bots: Some(true),
+            default_reaction: Some("👍".to_string()),
         };
         assert!(input.validate().is_ok());
+
+        // Test default_reaction too long
+        let input = UpdateUserInput {
+            name: None,
+            description: None,
+            avatar_id: None,
+            banner_id: None,
+            avatar_url: None,
+            banner_url: None,
+            is_bot: None,
+            is_cat: None,
+            is_locked: None,
+            pronouns: None,
+            hide_bots: None,
+            default_reaction: Some("a".repeat(300)),
+        };
+        assert!(input.validate().is_err());
     }
 }

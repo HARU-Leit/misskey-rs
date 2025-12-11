@@ -1234,7 +1234,7 @@ mod tests {
 
         let service = NoteService::new(note_repo, user_repo, following_repo);
 
-        let result = service.local_timeline(10, None).await.unwrap();
+        let result = service.local_timeline(10, None, None).await.unwrap();
         assert_eq!(result.len(), 2);
     }
 
@@ -1271,7 +1271,7 @@ mod tests {
 
         let service = NoteService::new(note_repo, user_repo, following_repo);
 
-        let result = service.home_timeline("user1", 10, None).await.unwrap();
+        let result = service.home_timeline("user1", 10, None, None).await.unwrap();
         assert_eq!(result.len(), 2);
     }
 

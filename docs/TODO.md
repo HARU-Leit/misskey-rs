@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (ActivityPub Move activity実装)
+*Last Updated: 2025-12-11* (デフォルトリアクション設定実装)
 
 ---
 
@@ -76,7 +76,7 @@
 | タスク | 状況 | 参照 |
 |--------|------|------|
 | ドライブ検索（ファイル名/説明） | ✅ 完了 | drive.rs |
-| インスタンス指定アンテナ | 未実装 | FORK_FEATURES.md |
+| インスタンス指定アンテナ | ✅ 完了 | antenna.rs (AntennaSource::Instances) |
 | Meilisearch連携 | 未実装 | FORK_FEATURES.md |
 
 ### UI/UX API対応
@@ -84,7 +84,7 @@
 | タスク | 状況 | 参照 |
 |--------|------|------|
 | ワンボタンいいね（Like/Reaction分離） | 未実装 | FORK_FEATURES.md |
-| デフォルトリアクション設定 | 未実装 | FORK_FEATURES.md |
+| デフォルトリアクション設定 | ✅ 完了 | user_profile, users.rs |
 | ユーザー単位Authorized Fetch | 未実装 | FORK_FEATURES.md |
 
 ### データ管理
@@ -223,14 +223,18 @@
 
 ### 検索機能強化 (2025-12-11)
 - **ドライブ検索** - `/api/drive/files/find`エンドポイントでファイル名・説明（comment）による検索が可能。MIMEタイプ（`type`パラメータ）やフォルダーID（`folderId`）でのフィルタリング対応。ページネーション（`limit`, `untilId`）もサポート
+- **インスタンス指定アンテナ** - アンテナのソースタイプとして`instances`を選択可能。指定したリモートインスタンスからのノートのみをマッチングできる。`AntennaSource::Instances`列挙値と`instances`フィールド（JSON配列）で実装
+
+### UI/UX設定 (2025-12-11)
+- **デフォルトリアクション設定** - ユーザーごとにデフォルトリアクション絵文字を設定可能。`user_profile.default_reaction`フィールドに絵文字（Unicode絵文字またはカスタム絵文字ショートコード）を保存。`/api/users/update`エンドポイントの`defaultReaction`パラメータで設定可能
 
 ---
 
 ## 次のアクション推奨
 
 1. **フェデレーション**: チャンネルのフェデレーション（Group actor）
-2. **検索**: インスタンス指定アンテナ
-3. **検索**: Meilisearch連携
+2. **検索**: Meilisearch連携
+3. **データ管理**: ノートエクスポート（JSON/CSV）
 
 ---
 
