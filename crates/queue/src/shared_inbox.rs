@@ -3,6 +3,8 @@
 //! When delivering to multiple users on the same server, we can use
 //! the server's shared inbox to send the activity only once.
 
+#![allow(missing_docs)]
+
 use std::collections::HashMap;
 use url::Url;
 

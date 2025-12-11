@@ -3,6 +3,8 @@
 //! Provides replay attack protection and per-instance rate limiting
 //! for incoming `ActivityPub` activities.
 
+#![allow(missing_docs)]
+
 use chrono::{DateTime, Duration, Utc};
 use fred::clients::Client as RedisClient;
 use fred::interfaces::KeysInterface;

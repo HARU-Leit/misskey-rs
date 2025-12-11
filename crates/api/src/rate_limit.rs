@@ -2,6 +2,8 @@
 //!
 //! Provides per-user and per-IP rate limiting for API endpoints.
 
+#![allow(missing_docs)]
+
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Arc;

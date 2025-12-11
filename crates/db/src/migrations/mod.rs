@@ -1,4 +1,8 @@
 //! Database migrations.
+//!
+//! Schema migrations for the database.
+
+#![allow(missing_docs)]
 
 use sea_orm_migration::prelude::*;
 

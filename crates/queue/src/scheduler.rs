@@ -1,5 +1,7 @@
 //! Scheduled jobs for periodic maintenance tasks.
 
+#![allow(missing_docs)]
+
 use std::sync::Arc;
 use std::time::Duration;
 

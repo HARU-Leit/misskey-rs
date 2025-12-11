@@ -1,5 +1,7 @@
 //! Activity processors for handling incoming `ActivityPub` activities.
 
+#![allow(missing_docs)]
+
 mod accept;
 mod actor_fetcher;
 mod announce;

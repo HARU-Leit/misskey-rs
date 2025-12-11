@@ -2,6 +2,8 @@
 //!
 //! Handles sending signed HTTP requests to remote `ActivityPub` inboxes.
 
+#![allow(missing_docs)]
+
 use crate::signature::HttpSigner;
 use reqwest::Client;
 use serde_json::Value;

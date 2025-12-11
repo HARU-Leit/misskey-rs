@@ -1,5 +1,7 @@
 //! API endpoints.
 
+#![allow(missing_docs)]
+
 mod admin;
 mod announcements;
 mod antennas;

@@ -1,5 +1,7 @@
 //! Business logic services.
 
+#![allow(missing_docs)]
+
 pub mod announcement;
 pub mod antenna;
 pub mod blocking;

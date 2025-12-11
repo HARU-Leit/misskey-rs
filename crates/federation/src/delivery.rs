@@ -2,6 +2,8 @@
 //!
 //! Handles creating and queueing activities for delivery to remote servers.
 
+#![allow(missing_docs)]
+
 use misskey_common::{AppResult, IdGenerator};
 use misskey_db::{
     entities::{note, user},

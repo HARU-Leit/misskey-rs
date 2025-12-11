@@ -3,6 +3,8 @@
 //! Provides compatibility with Mastodon clients by implementing
 //! a subset of the Mastodon API v1.
 
+#![allow(missing_docs)]
+
 mod accounts;
 mod blocks;
 mod bookmarks;

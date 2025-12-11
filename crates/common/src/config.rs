@@ -16,6 +16,7 @@ pub struct Config {
     pub federation: FederationConfig,
 }
 
+/// Server configuration.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ServerConfig {
     /// Host to bind to.
@@ -28,6 +29,7 @@ pub struct ServerConfig {
     pub url: String,
 }
 
+/// Database connection configuration.
 #[derive(Debug, Clone, Deserialize)]
 pub struct DatabaseConfig {
     /// `PostgreSQL` connection URL.
@@ -40,6 +42,7 @@ pub struct DatabaseConfig {
     pub min_connections: u32,
 }
 
+/// Redis configuration.
 #[derive(Debug, Clone, Deserialize)]
 pub struct RedisConfig {
     /// Redis connection URL.
@@ -49,6 +52,7 @@ pub struct RedisConfig {
     pub prefix: String,
 }
 
+/// Federation configuration.
 #[derive(Debug, Clone, Deserialize)]
 pub struct FederationConfig {
     /// Whether federation is enabled.

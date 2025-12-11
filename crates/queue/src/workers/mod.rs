@@ -1,5 +1,7 @@
 //! Job workers.
 
+#![allow(missing_docs)]
+
 mod deliver;
 mod inbox;
 

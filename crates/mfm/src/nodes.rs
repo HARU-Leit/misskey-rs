@@ -31,70 +31,130 @@ impl MfmNode {
 #[serde(tag = "type", content = "props", rename_all = "camelCase")]
 pub enum MfmNodeType {
     /// Plain text.
-    Text { text: String },
+    Text {
+        /// The text content.
+        text: String,
+    },
 
     /// Bold text (**text** or __text__).
-    Bold { children: Vec<MfmNode> },
+    Bold {
+        /// Child nodes within the bold formatting.
+        children: Vec<MfmNode>,
+    },
 
     /// Italic text (*text* or _text_).
-    Italic { children: Vec<MfmNode> },
+    Italic {
+        /// Child nodes within the italic formatting.
+        children: Vec<MfmNode>,
+    },
 
     /// Strikethrough text (~~text~~).
-    Strike { children: Vec<MfmNode> },
+    Strike {
+        /// Child nodes within the strikethrough formatting.
+        children: Vec<MfmNode>,
+    },
 
     /// Inline code (`code`).
-    InlineCode { code: String },
+    InlineCode {
+        /// The code content.
+        code: String,
+    },
 
     /// Code block (```code```).
-    CodeBlock { code: String, lang: Option<String> },
+    CodeBlock {
+        /// The code content.
+        code: String,
+        /// The programming language (if specified).
+        lang: Option<String>,
+    },
 
     /// Quote (> text).
-    Quote { children: Vec<MfmNode> },
+    Quote {
+        /// Child nodes within the quote.
+        children: Vec<MfmNode>,
+    },
 
     /// Mention (@user or @user@host).
     Mention {
+        /// The username being mentioned.
         username: String,
+        /// The host of the mentioned user (for federated mentions).
         host: Option<String>,
+        /// The full account string (e.g., "@user@host").
         acct: String,
     },
 
     /// Hashtag (#tag).
-    Hashtag { tag: String },
+    Hashtag {
+        /// The tag name (without the # prefix).
+        tag: String,
+    },
 
     /// URL.
-    Url { url: String, bracket: bool },
+    Url {
+        /// The URL string.
+        url: String,
+        /// Whether the URL is wrapped in angle brackets.
+        bracket: bool,
+    },
 
     /// Link [text](url).
     Link {
+        /// The URL the link points to.
         url: String,
+        /// Child nodes (the link text).
         children: Vec<MfmNode>,
+        /// Whether the link should be silent (no preview).
         silent: bool,
     },
 
     /// Custom emoji (:emoji:).
-    Emoji { name: String },
+    Emoji {
+        /// The emoji name (without colons).
+        name: String,
+    },
 
     /// Unicode emoji.
-    UnicodeEmoji { emoji: String },
+    UnicodeEmoji {
+        /// The Unicode emoji character(s).
+        emoji: String,
+    },
 
     /// Misskey function $[fn.name args content].
     Fn {
+        /// The function name.
         name: String,
+        /// The function arguments.
         args: std::collections::HashMap<String, String>,
+        /// Child nodes within the function.
         children: Vec<MfmNode>,
     },
 
     /// Plain block (no MFM processing).
-    Plain { text: String },
+    Plain {
+        /// The plain text content.
+        text: String,
+    },
 
-    /// Center block (<center>).
-    Center { children: Vec<MfmNode> },
+    /// Center block (`<center>`).
+    Center {
+        /// Child nodes within the center block.
+        children: Vec<MfmNode>,
+    },
 
-    /// Small text (<small>).
-    Small { children: Vec<MfmNode> },
+    /// Small text (`<small>`).
+    Small {
+        /// Child nodes within the small text block.
+        children: Vec<MfmNode>,
+    },
 
     /// Search block (search keyword).
-    Search { query: String, content: String },
+    Search {
+        /// The search query.
+        query: String,
+        /// The full content of the search line.
+        content: String,
+    },
 
     /// Line break.
     LineBreak,
