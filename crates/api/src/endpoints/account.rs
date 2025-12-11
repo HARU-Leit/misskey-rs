@@ -376,6 +376,152 @@ async fn import_following(
     Ok(ApiResponse::ok(job))
 }
 
+/// Request to import blocking/muting list.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportListRequest {
+    /// CSV data (Mastodon format or simple list)
+    pub data: String,
+}
+
+/// Import result summary.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportResult {
+    /// Total items processed
+    pub total: u32,
+    /// Successfully imported
+    pub imported: u32,
+    /// Skipped (already exists)
+    pub skipped: u32,
+    /// Failed to import
+    pub failed: u32,
+    /// Error details
+    pub errors: Vec<ImportErrorDetail>,
+}
+
+/// Import error detail.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportErrorDetail {
+    /// Line number or index
+    pub index: u32,
+    /// Account identifier
+    pub account: String,
+    /// Error message
+    pub error: String,
+}
+
+/// Import blocking list from CSV (Mastodon format supported).
+async fn import_blocking(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<ImportListRequest>,
+) -> AppResult<ApiResponse<ImportResult>> {
+    let accounts = AccountService::parse_mastodon_csv(&req.data);
+
+    let mut result = ImportResult {
+        total: accounts.len() as u32,
+        imported: 0,
+        skipped: 0,
+        failed: 0,
+        errors: Vec::new(),
+    };
+
+    for (index, acct) in accounts.iter().enumerate() {
+        let (username, host) = AccountService::parse_acct(acct);
+        let host_ref = host.as_deref();
+
+        // Find user
+        match state
+            .user_service
+            .get_by_username(&username, host_ref)
+            .await
+        {
+            Ok(target) => {
+                // Try to block
+                match state.blocking_service.block(&user.id, &target.id).await {
+                    Ok(_) => result.imported += 1,
+                    Err(misskey_common::AppError::Conflict(_)) => result.skipped += 1,
+                    Err(e) => {
+                        result.failed += 1;
+                        result.errors.push(ImportErrorDetail {
+                            index: index as u32,
+                            account: acct.clone(),
+                            error: e.to_string(),
+                        });
+                    }
+                }
+            }
+            Err(_) => {
+                result.failed += 1;
+                result.errors.push(ImportErrorDetail {
+                    index: index as u32,
+                    account: acct.clone(),
+                    error: "User not found".to_string(),
+                });
+            }
+        }
+    }
+
+    Ok(ApiResponse::ok(result))
+}
+
+/// Import muting list from CSV (Mastodon format supported).
+async fn import_muting(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<ImportListRequest>,
+) -> AppResult<ApiResponse<ImportResult>> {
+    let accounts = AccountService::parse_mastodon_csv(&req.data);
+
+    let mut result = ImportResult {
+        total: accounts.len() as u32,
+        imported: 0,
+        skipped: 0,
+        failed: 0,
+        errors: Vec::new(),
+    };
+
+    for (index, acct) in accounts.iter().enumerate() {
+        let (username, host) = AccountService::parse_acct(acct);
+        let host_ref = host.as_deref();
+
+        // Find user
+        match state
+            .user_service
+            .get_by_username(&username, host_ref)
+            .await
+        {
+            Ok(target) => {
+                // Try to mute (permanent)
+                match state.muting_service.mute(&user.id, &target.id, None).await {
+                    Ok(_) => result.imported += 1,
+                    Err(misskey_common::AppError::Conflict(_)) => result.skipped += 1,
+                    Err(e) => {
+                        result.failed += 1;
+                        result.errors.push(ImportErrorDetail {
+                            index: index as u32,
+                            account: acct.clone(),
+                            error: e.to_string(),
+                        });
+                    }
+                }
+            }
+            Err(_) => {
+                result.failed += 1;
+                result.errors.push(ImportErrorDetail {
+                    index: index as u32,
+                    account: acct.clone(),
+                    error: "User not found".to_string(),
+                });
+            }
+        }
+    }
+
+    Ok(ApiResponse::ok(result))
+}
+
 /// Request to get import job status.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -538,6 +684,8 @@ pub fn router() -> Router<AppState> {
         // Import
         .route("/import", post(create_import))
         .route("/import/following", post(import_following))
+        .route("/import/blocking", post(import_blocking))
+        .route("/import/muting", post(import_muting))
         .route("/import/status", post(import_status))
         // Info
         .route("/data-types", post(available_data_types))

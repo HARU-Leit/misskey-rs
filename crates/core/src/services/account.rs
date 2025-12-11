@@ -1135,6 +1135,65 @@ impl AccountService {
             job_id
         )))
     }
+
+    /// Parse Mastodon-format CSV data (handles header row and column extraction).
+    ///
+    /// Mastodon exports CSVs with headers like "Account address" or "account".
+    /// This function extracts the account addresses from the first column.
+    ///
+    /// Supported formats:
+    /// - Simple list: one account per line (username@host)
+    /// - Mastodon CSV: header row + comma-separated data
+    pub fn parse_mastodon_csv(data: &str) -> Vec<String> {
+        let mut accounts = Vec::new();
+        let lines: Vec<&str> = data.lines().collect();
+
+        if lines.is_empty() {
+            return accounts;
+        }
+
+        // Check if first line looks like a header
+        let first_line = lines[0].trim().to_lowercase();
+        let has_header = first_line.contains("account")
+            || first_line.contains("address")
+            || first_line.starts_with('#');
+
+        let start_index = if has_header { 1 } else { 0 };
+
+        for line in lines.into_iter().skip(start_index) {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+
+            // Handle CSV format: extract first column
+            let account = if line.contains(',') {
+                // CSV format: get first column
+                let parts: Vec<&str> = line.splitn(2, ',').collect();
+                parts[0].trim().trim_matches('"')
+            } else {
+                // Simple format: whole line is the account
+                line
+            };
+
+            if !account.is_empty() {
+                accounts.push(account.to_string());
+            }
+        }
+
+        accounts
+    }
+
+    /// Parse account string into (username, host) tuple.
+    pub fn parse_acct(acct: &str) -> (String, Option<String>) {
+        let acct = acct.trim().trim_start_matches('@');
+        if acct.contains('@') {
+            let parts: Vec<&str> = acct.splitn(2, '@').collect();
+            (parts[0].to_string(), Some(parts.get(1).copied().unwrap_or("").to_string()))
+        } else {
+            (acct.to_string(), None)
+        }
+    }
 }
 
 /// Response for migration status.

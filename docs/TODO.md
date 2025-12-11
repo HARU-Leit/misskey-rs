@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (ブロック/ミュートエクスポート実装)
+*Last Updated: 2025-12-11* (Mastodon形式インポート実装)
 
 ---
 
@@ -93,7 +93,7 @@
 |--------|------|------|
 | ノートエクスポート（JSON/CSV） | ✅ 完了 | account.rs |
 | ブロック/ミュートエクスポート | ✅ 完了 | account.rs |
-| Mastodon形式インポート | 未実装 | MISSING_FEATURES.md |
+| Mastodon形式インポート | ✅ 完了 | account.rs |
 
 ---
 
@@ -231,6 +231,7 @@
 ### データ管理 (2025-12-11)
 - **ノートエクスポート（JSON/CSV）** - `/api/i/account/export/notes`エンドポイントでユーザーのノートをエクスポート可能。JSON形式（デフォルト）とCSV形式をサポート。各ノートはID、テキスト、CW、公開範囲、返信先、リノート先、ファイルID、タグ、URI、URL、作成日時、更新日時を含む。`limit`パラメータで最大件数指定（デフォルト10000）、`format`パラメータで形式選択（`json`または`csv`）。
 - **ブロック/ミュートエクスポート** - `/api/i/account/export/blocking`および`/api/i/account/export/muting`エンドポイントでブロック・ミュートしているユーザーをエクスポート可能。`ExportedFollow`形式（acct、uri）で最大10000件まで出力。
+- **Mastodon形式インポート** - `/api/i/account/import/blocking`および`/api/i/account/import/muting`エンドポイントでMastodon形式CSVからブロック・ミュートリストをインポート可能。ヘッダー行付きCSV（`Account address`列）またはシンプルな1行1acct形式に対応。インポート結果としてtotal/imported/skipped/failedカウントとエラー詳細を返却。
 
 ---
 
@@ -238,7 +239,7 @@
 
 1. **フェデレーション**: チャンネルのフェデレーション（Group actor）
 2. **検索**: Meilisearch連携
-3. **データ管理**: Mastodon形式インポート
+3. **UI/UX**: ワンボタンいいね（Like/Reaction分離）
 
 ---
 
