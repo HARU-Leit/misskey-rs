@@ -11,7 +11,6 @@ use misskey_db::{
 };
 use sea_orm::Set;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::DeliveryService;
 
@@ -378,28 +377,112 @@ impl AccountService {
         let migration_id = crate::generate_id();
         let now = Utc::now();
 
-        let migration = MigrationRecord {
-            id: migration_id,
+        let mut migration = MigrationRecord {
+            id: migration_id.clone(),
             source_account_id: user_id.to_string(),
             target_account_uri: input.target_uri.clone(),
-            status: MigrationStatus::Pending,
+            status: MigrationStatus::InProgress,
             created_at: now,
             completed_at: None,
             error: None,
         };
 
-        // TODO: In a full implementation:
-        // 1. Store migration record in database
-        // 2. Verify target account exists and accepts migration
-        // 3. Send Move activity to followers
-        // 4. Update user's movedToUri field
-        // 5. Optionally set also_known_as on target
+        // Update user profile's moved_to_uri field
+        let profile = self.profile_repo.find_by_user_id(user_id).await?;
+        match profile {
+            Some(p) => {
+                let mut active: user_profile::ActiveModel = p.into();
+                active.moved_to_uri = Set(Some(input.target_uri.clone()));
+                active.updated_at = Set(Some(Utc::now().into()));
+                self.profile_repo.update(active).await?;
+            }
+            None => {
+                // Create profile with moved_to_uri
+                let model = user_profile::ActiveModel {
+                    user_id: Set(user_id.to_string()),
+                    password: Set(None),
+                    email: Set(None),
+                    email_verified: Set(false),
+                    two_factor_secret: Set(None),
+                    two_factor_enabled: Set(false),
+                    two_factor_pending: Set(None),
+                    two_factor_backup_codes: Set(None),
+                    auto_accept_followed: Set(false),
+                    always_mark_nsfw: Set(false),
+                    pinned_page_ids: Set(serde_json::json!([])),
+                    pinned_note_ids: Set(serde_json::json!([])),
+                    fields: Set(serde_json::json!([])),
+                    muted_words: Set(serde_json::json!([])),
+                    user_css: Set(None),
+                    birthday: Set(None),
+                    location: Set(None),
+                    lang: Set(None),
+                    pronouns: Set(None),
+                    also_known_as: Set(None),
+                    moved_to_uri: Set(Some(input.target_uri.clone())),
+                    hide_bots: Set(false),
+                    created_at: Set(Utc::now().into()),
+                    updated_at: Set(None),
+                };
+                self.profile_repo.create(model).await?;
+            }
+        }
+
+        // Build Move activity
+        let actor_url = format!("{}/users/{}", self.server_url, user.id);
+        let activity_id = format!("{}/move/{}", actor_url, crate::generate_id());
+        let followers_url = format!("{}/followers", actor_url);
+
+        let move_activity = serde_json::json!({
+            "@context": "https://www.w3.org/ns/activitystreams",
+            "id": activity_id,
+            "type": "Move",
+            "actor": actor_url,
+            "object": actor_url,
+            "target": input.target_uri,
+            "to": ["https://www.w3.org/ns/activitystreams#Public"],
+            "cc": [followers_url]
+        });
+
+        // Get follower inboxes to deliver to
+        let followers = self.following_repo.get_followers(user_id, 10000, 0).await?;
+        let mut inboxes = Vec::new();
+
+        for follow in followers {
+            if let Ok(follower) = self.user_repo.get_by_id(&follow.follower_id).await {
+                // Only deliver to remote users
+                if follower.host.is_some() {
+                    // Prefer shared inbox if available
+                    if let Some(ref shared_inbox) = follower.shared_inbox {
+                        if !inboxes.contains(shared_inbox) {
+                            inboxes.push(shared_inbox.clone());
+                        }
+                    } else if let Some(ref inbox) = follower.inbox
+                        && !inboxes.contains(inbox)
+                    {
+                        inboxes.push(inbox.clone());
+                    }
+                }
+            }
+        }
 
         tracing::info!(
             user_id = user_id,
             target = input.target_uri,
-            "Account migration initiated"
+            inbox_count = inboxes.len(),
+            activity_id = %activity_id,
+            "Account migration initiated, Move activity prepared"
         );
+
+        // Queue the Move activity for delivery to all follower inboxes
+        if !inboxes.is_empty() {
+            self.delivery_service
+                .queue_move(user_id, move_activity, inboxes)
+                .await?;
+        }
+
+        migration.status = MigrationStatus::Completed;
+        migration.completed_at = Some(Utc::now());
 
         Ok(migration)
     }

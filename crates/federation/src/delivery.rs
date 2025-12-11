@@ -205,6 +205,68 @@ impl DeliveryService {
         })
     }
 
+    /// Build a Move activity (account migration).
+    ///
+    /// This activity notifies followers that the actor is moving to a new account.
+    /// Per ActivityPub/FEP-7628:
+    /// - actor: The old account URI
+    /// - object: The old account URI (same as actor)
+    /// - target: The new account URI
+    #[must_use]
+    pub fn build_move_activity(&self, user: &user::Model, target_uri: &str) -> Value {
+        let actor_url = format!("{}/users/{}", self.base_url, user.id);
+        let activity_id = format!("{}/move/{}", actor_url, self.id_gen.generate());
+
+        json!({
+            "@context": "https://www.w3.org/ns/activitystreams",
+            "id": activity_id,
+            "type": "Move",
+            "actor": actor_url,
+            "object": actor_url,
+            "target": target_uri,
+            "to": ["https://www.w3.org/ns/activitystreams#Public"],
+            "cc": [format!("{}/followers", actor_url)]
+        })
+    }
+
+    /// Get inboxes of all followers for a user (for account migration).
+    pub async fn get_follower_inboxes(&self, user: &user::Model) -> AppResult<Vec<String>> {
+        let mut inboxes = Vec::new();
+
+        // Get all followers of the user
+        let followers = self
+            .following_repo
+            .find_followers(&user.id, 10000, None)
+            .await?;
+
+        for following in followers {
+            // Get follower user
+            if let Ok(follower) = self.user_repo.get_by_id(&following.follower_id).await {
+                // Only deliver to remote users
+                if follower.host.is_some() {
+                    // Prefer shared inbox if available
+                    if let Some(ref shared_inbox) = follower.shared_inbox {
+                        if !inboxes.contains(shared_inbox) {
+                            inboxes.push(shared_inbox.clone());
+                        }
+                    } else if let Some(ref inbox) = follower.inbox
+                        && !inboxes.contains(inbox)
+                    {
+                        inboxes.push(inbox.clone());
+                    }
+                }
+            }
+        }
+
+        info!(
+            user = %user.id,
+            inbox_count = inboxes.len(),
+            "Collected follower inboxes for migration"
+        );
+
+        Ok(inboxes)
+    }
+
     /// Get inboxes to deliver to for a note.
     pub async fn get_delivery_inboxes(
         &self,

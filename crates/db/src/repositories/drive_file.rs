@@ -292,4 +292,64 @@ impl DriveFileRepository {
 
         Ok(result.rows_affected)
     }
+
+    /// Search files by name and/or comment (description).
+    /// Supports filtering by MIME type and folder.
+    pub async fn search(
+        &self,
+        user_id: &str,
+        query: &str,
+        content_type: Option<&str>,
+        folder_id: Option<Option<&str>>,
+        limit: u64,
+        until_id: Option<&str>,
+    ) -> AppResult<Vec<drive_file::Model>> {
+        use sea_orm::sea_query::Expr;
+
+        let mut db_query = DriveFile::find()
+            .filter(drive_file::Column::UserId.eq(user_id))
+            .order_by_desc(drive_file::Column::Id);
+
+        // Search in name and comment fields using ILIKE for case-insensitive search
+        if !query.is_empty() {
+            let pattern = format!("%{query}%");
+            db_query = db_query.filter(
+                drive_file::Column::Name
+                    .like(&pattern)
+                    .or(Expr::col(drive_file::Column::Comment).like(&pattern)),
+            );
+        }
+
+        // Filter by content type (MIME type prefix match)
+        if let Some(ct) = content_type {
+            if ct.contains('/') {
+                // Exact MIME type match (e.g., "image/png")
+                db_query = db_query.filter(drive_file::Column::ContentType.eq(ct));
+            } else {
+                // Prefix match (e.g., "image" matches "image/png", "image/jpeg", etc.)
+                let pattern = format!("{ct}/%");
+                db_query = db_query.filter(drive_file::Column::ContentType.like(&pattern));
+            }
+        }
+
+        // Filter by folder
+        if let Some(fid) = folder_id {
+            if let Some(id) = fid {
+                db_query = db_query.filter(drive_file::Column::FolderId.eq(id));
+            } else {
+                db_query = db_query.filter(drive_file::Column::FolderId.is_null());
+            }
+        }
+
+        // Pagination
+        if let Some(id) = until_id {
+            db_query = db_query.filter(drive_file::Column::Id.lt(id));
+        }
+
+        db_query
+            .limit(limit)
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
 }

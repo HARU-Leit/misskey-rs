@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (Bot非表示オプション実装)
+*Last Updated: 2025-12-11* (ActivityPub Move activity実装)
 
 ---
 
@@ -28,7 +28,7 @@
 | いいね/リアクションの適切な連合（Mastodon/Pleroma向け） | ✅ 完了 | emoji_react.rs, like.rs |
 | 引用リノートのMastodon連合（FEP-e232対応） | ✅ 完了 | note.rs |
 | チャンネルのフェデレーション（Group actor） | 未実装 | COMMUNITY_FEATURES.md |
-| ActivityPub Move activity対応（アカウント移行） | 未実装 | MISSING_FEATURES.md |
+| ActivityPub Move activity対応（アカウント移行） | ✅ 完了 | move_activity.rs, move_processor.rs |
 
 ### Mastodon互換API完全対応
 
@@ -75,7 +75,7 @@
 
 | タスク | 状況 | 参照 |
 |--------|------|------|
-| ドライブ検索（ファイル名/説明） | 未実装 | FORK_FEATURES.md |
+| ドライブ検索（ファイル名/説明） | ✅ 完了 | drive.rs |
 | インスタンス指定アンテナ | 未実装 | FORK_FEATURES.md |
 | Meilisearch連携 | 未実装 | FORK_FEATURES.md |
 
@@ -204,6 +204,7 @@
 ### ActivityPub拡張 (2025-12-11)
 - **ActivityPub Update activity対応** - ローカルノート編集時にUpdate activityを配信、リモートからのUpdate activity受信でノート更新
 - **EmojiReact Activity対応** - Pleroma/Akkoma形式のエモジリアクション受信に対応。Like Activityに`content`フィールドを追加してPleroma互換性向上
+- **ActivityPub Move activity対応** - アカウント移行（FEP-7628）をサポート。`MoveActivity`定義、`MoveProcessor`による受信処理、`AccountService.migrate_account`による送信処理を実装。`movedTo`/`alsoKnownAs`フィールドをApPersonに追加し、移行先アカウントの検証（alsoKnownAs確認）も実装
 
 ### パフォーマンス最適化 (2025-12-11)
 - **URLプレビューキャッシュ** - Redis-backed caching for URL previews. 24時間TTLでキャッシュ、失敗したURLは1時間ネガティブキャッシュ。`get_or_fetch()`メソッドで自動的にキャッシュ/フェッチを管理
@@ -220,13 +221,16 @@
 ### タイムラインUX (2025-12-11)
 - **Bot非表示オプション** - `user_profile.hide_bots`設定でタイムラインからBotアカウントの投稿を非表示にできる。ホーム/ローカル/グローバル/バブル各タイムラインでBot投稿をフィルタリング。`/api/users/update`エンドポイントで`hideBots`パラメータを設定可能
 
+### 検索機能強化 (2025-12-11)
+- **ドライブ検索** - `/api/drive/files/find`エンドポイントでファイル名・説明（comment）による検索が可能。MIMEタイプ（`type`パラメータ）やフォルダーID（`folderId`）でのフィルタリング対応。ページネーション（`limit`, `untilId`）もサポート
+
 ---
 
 ## 次のアクション推奨
 
-1. **検索**: ドライブ検索（ファイル名/説明）
-2. **フェデレーション**: チャンネルのフェデレーション（Group actor）
-3. **フェデレーション**: ActivityPub Move activity対応（アカウント移行）
+1. **フェデレーション**: チャンネルのフェデレーション（Group actor）
+2. **検索**: インスタンス指定アンテナ
+3. **検索**: Meilisearch連携
 
 ---
 

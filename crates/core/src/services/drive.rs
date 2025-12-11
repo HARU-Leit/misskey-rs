@@ -289,6 +289,21 @@ impl DriveService {
         self.file_repo.count_unattached(user_id).await
     }
 
+    /// Search files by name and/or comment (description).
+    pub async fn search_files(
+        &self,
+        user_id: &str,
+        query: &str,
+        content_type: Option<&str>,
+        folder_id: Option<Option<&str>>,
+        limit: u64,
+        until_id: Option<&str>,
+    ) -> AppResult<Vec<drive_file::Model>> {
+        self.file_repo
+            .search(user_id, query, content_type, folder_id, limit, until_id)
+            .await
+    }
+
     /// Delete unattached files for a user.
     /// Returns the number of files deleted and total bytes freed.
     pub async fn cleanup_unattached_files(

@@ -45,6 +45,14 @@ pub struct ApPerson {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub discoverable: Option<bool>,
 
+    /// URI of the account this user has moved to (for account migration)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub moved_to: Option<Url>,
+
+    /// List of alternative account URIs (for account migration verification)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub also_known_as: Option<Vec<Url>>,
+
     // Misskey extensions
     #[serde(rename = "_misskey_summary", skip_serializing_if = "Option::is_none")]
     pub misskey_summary: Option<String>,
@@ -93,8 +101,16 @@ impl ApPerson {
             following: None,
             manually_approves_followers: None,
             discoverable: None,
+            moved_to: None,
+            also_known_as: None,
             misskey_summary: None,
             is_cat: None,
         }
+    }
+
+    /// Check if this actor has moved to another account.
+    #[must_use]
+    pub const fn is_moved(&self) -> bool {
+        self.moved_to.is_some()
     }
 }
