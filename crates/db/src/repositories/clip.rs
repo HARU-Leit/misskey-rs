@@ -5,11 +5,11 @@ use std::sync::Arc;
 use chrono::Utc;
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Order, PaginatorTrait,
-    QueryFilter, QueryOrder, QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, JoinType, Order, PaginatorTrait,
+    QueryFilter, QueryOrder, QuerySelect, RelationTrait, Set,
 };
 
-use crate::entities::{clip, clip_note, Clip, ClipNote};
+use crate::entities::{clip, clip_note, note, Clip, ClipNote};
 
 /// Repository for clip operations.
 #[derive(Clone)]

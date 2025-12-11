@@ -78,6 +78,10 @@ pub struct Model {
     #[sea_orm(nullable)]
     pub lang: Option<String>,
 
+    /// Pronouns (e.g., "they/them", "she/her", "he/him")
+    #[sea_orm(nullable)]
+    pub pronouns: Option<String>,
+
     /// Also known as (ActivityPub aliases for account migration)
     #[sea_orm(column_type = "JsonBinary", nullable)]
     pub also_known_as: Option<Json>,

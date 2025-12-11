@@ -270,12 +270,79 @@ impl DriveService {
             limit: DEFAULT_STORAGE_LIMIT,
         })
     }
+
+    /// Get unattached files (files not used in notes, pages, etc.)
+    pub async fn get_unattached_files(
+        &self,
+        user_id: &str,
+        limit: u64,
+    ) -> AppResult<Vec<drive_file::Model>> {
+        self.file_repo.find_unattached(user_id, limit).await
+    }
+
+    /// Count unattached files for a user.
+    pub async fn count_unattached_files(&self, user_id: &str) -> AppResult<i64> {
+        self.file_repo.count_unattached(user_id).await
+    }
+
+    /// Delete unattached files for a user.
+    /// Returns the number of files deleted and total bytes freed.
+    pub async fn cleanup_unattached_files(
+        &self,
+        user_id: &str,
+        limit: u64,
+    ) -> AppResult<CleanupResult> {
+        let files = self.file_repo.find_unattached(user_id, limit).await?;
+
+        if files.is_empty() {
+            return Ok(CleanupResult {
+                deleted_count: 0,
+                freed_bytes: 0,
+                file_ids: vec![],
+            });
+        }
+
+        let file_ids: Vec<String> = files.iter().map(|f| f.id.clone()).collect();
+        let total_size: i64 = files.iter().map(|f| f.size).sum();
+
+        // Delete files from storage
+        if let Some(ref storage) = self.storage {
+            for file in &files {
+                if let Some(ref storage_key) = file.storage_key {
+                    if let Err(e) = storage.delete(storage_key).await {
+                        tracing::warn!(
+                            file_id = %file.id,
+                            storage_key = %storage_key,
+                            error = %e,
+                            "Failed to delete file from storage during cleanup"
+                        );
+                    }
+                }
+            }
+        }
+
+        // Delete from database
+        let deleted = self.file_repo.delete_many(&file_ids).await?;
+
+        Ok(CleanupResult {
+            deleted_count: deleted,
+            freed_bytes: total_size,
+            file_ids,
+        })
+    }
 }
 
 /// Storage usage information.
 pub struct StorageUsage {
     pub used: i64,
     pub limit: i64,
+}
+
+/// Result of cleaning up unattached files.
+pub struct CleanupResult {
+    pub deleted_count: u64,
+    pub freed_bytes: i64,
+    pub file_ids: Vec<String>,
 }
 
 /// Input for creating a folder.

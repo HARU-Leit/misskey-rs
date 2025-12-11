@@ -397,6 +397,82 @@ async fn delete_folder(
     Ok(ApiResponse::ok(()))
 }
 
+// =====================
+// Cleanup (unattached files)
+// =====================
+
+/// Cleanup preview request.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CleanupPreviewRequest {
+    #[serde(default = "default_cleanup_limit")]
+    pub limit: u64,
+}
+
+const fn default_cleanup_limit() -> u64 {
+    100
+}
+
+/// Cleanup preview response.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CleanupPreviewResponse {
+    pub count: i64,
+    pub files: Vec<DriveFileResponse>,
+    pub total_size: i64,
+}
+
+/// Preview unattached files that would be deleted.
+async fn cleanup_preview(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<CleanupPreviewRequest>,
+) -> AppResult<ApiResponse<CleanupPreviewResponse>> {
+    let limit = req.limit.min(100);
+    let count = state.drive_service.count_unattached_files(&user.id).await?;
+    let files = state.drive_service.get_unattached_files(&user.id, limit).await?;
+    let total_size: i64 = files.iter().map(|f| f.size).sum();
+
+    Ok(ApiResponse::ok(CleanupPreviewResponse {
+        count,
+        files: files.into_iter().map(Into::into).collect(),
+        total_size,
+    }))
+}
+
+/// Cleanup execute request.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CleanupExecuteRequest {
+    #[serde(default = "default_cleanup_limit")]
+    pub limit: u64,
+}
+
+/// Cleanup result response.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CleanupResultResponse {
+    pub deleted_count: u64,
+    pub freed_bytes: i64,
+    pub file_ids: Vec<String>,
+}
+
+/// Execute cleanup of unattached files.
+async fn cleanup_execute(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<CleanupExecuteRequest>,
+) -> AppResult<ApiResponse<CleanupResultResponse>> {
+    let limit = req.limit.min(100);
+    let result = state.drive_service.cleanup_unattached_files(&user.id, limit).await?;
+
+    Ok(ApiResponse::ok(CleanupResultResponse {
+        deleted_count: result.deleted_count,
+        freed_bytes: result.freed_bytes,
+        file_ids: result.file_ids,
+    }))
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         // File routes
@@ -411,6 +487,9 @@ pub fn router() -> Router<AppState> {
         .route("/folders/show", post(show_folder))
         .route("/folders/update", post(update_folder))
         .route("/folders/delete", post(delete_folder))
+        // Cleanup routes
+        .route("/files/cleanup/preview", post(cleanup_preview))
+        .route("/files/cleanup/execute", post(cleanup_execute))
         // Storage info
         .route("/", post(storage_usage))
 }
