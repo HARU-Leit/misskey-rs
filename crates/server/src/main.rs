@@ -393,6 +393,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let inbox_state = InboxState::new(
         user_repo,
         user_keypair_repo.clone(),
+        user_profile_repo.clone(),
         note_repo,
         following_repo,
         follow_request_repo,

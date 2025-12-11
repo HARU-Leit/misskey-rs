@@ -9,7 +9,7 @@ use axum::{
 use misskey_common::{AppError, AppResult};
 use misskey_db::repositories::{
     FollowRequestRepository, FollowingRepository, NoteRepository, ReactionRepository,
-    UserKeypairRepository, UserRepository,
+    UserKeypairRepository, UserProfileRepository, UserRepository,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -18,11 +18,11 @@ use tracing::{debug, error, info, warn};
 
 use crate::{
     AcceptActivity, AnnounceActivity, CreateActivity, DeleteActivity, EmojiReactActivity,
-    FollowActivity, LikeActivity, RejectActivity, UndoActivity, UpdateActivity,
+    FollowActivity, LikeActivity, MoveActivity, RejectActivity, UndoActivity, UpdateActivity,
     client::ApClient,
     processor::{
         AcceptProcessor, AnnounceProcessor, CreateProcessor, EmojiReactProcessor, FollowProcessor,
-        LikeProcessor, ParsedUndoActivity, UndoProcessor, UpdateProcessor,
+        LikeProcessor, MoveProcessor, ParsedUndoActivity, UndoProcessor, UpdateProcessor,
     },
     signature::{HttpVerifier, verify_digest},
 };
@@ -41,6 +41,7 @@ pub enum InboxActivity {
     Undo(UndoActivity),
     Update(UpdateActivity),
     Announce(AnnounceActivity),
+    Move(MoveActivity),
     Unknown(Value),
 }
 
@@ -59,6 +60,7 @@ impl InboxActivity {
             Self::Undo(_) => "Undo",
             Self::Update(_) => "Update",
             Self::Announce(_) => "Announce",
+            Self::Move(_) => "Move",
             Self::Unknown(_) => "Unknown",
         }
     }
@@ -77,6 +79,7 @@ impl InboxActivity {
             Self::Undo(a) => Some(&a.actor),
             Self::Update(a) => Some(&a.actor),
             Self::Announce(a) => Some(&a.actor),
+            Self::Move(a) => Some(&a.actor),
             Self::Unknown(_) => None,
         }
     }
@@ -87,6 +90,7 @@ impl InboxActivity {
 pub struct InboxState {
     pub user_repo: UserRepository,
     pub user_keypair_repo: UserKeypairRepository,
+    pub user_profile_repo: UserProfileRepository,
     pub note_repo: NoteRepository,
     pub following_repo: FollowingRepository,
     pub follow_request_repo: FollowRequestRepository,
@@ -101,6 +105,7 @@ impl InboxState {
     pub fn new(
         user_repo: UserRepository,
         user_keypair_repo: UserKeypairRepository,
+        user_profile_repo: UserProfileRepository,
         note_repo: NoteRepository,
         following_repo: FollowingRepository,
         follow_request_repo: FollowRequestRepository,
@@ -111,6 +116,7 @@ impl InboxState {
         Self {
             user_repo,
             user_keypair_repo,
+            user_profile_repo,
             note_repo,
             following_repo,
             follow_request_repo,
@@ -358,6 +364,39 @@ async fn process_activity(state: &InboxState, activity: &InboxActivity) -> AppRe
             let processor =
                 AnnounceProcessor::new(state.user_repo.clone(), state.note_repo.clone());
             processor.process(announce).await?;
+        }
+        InboxActivity::Move(move_activity) => {
+            info!(
+                actor = %move_activity.actor,
+                target = %move_activity.target,
+                "Processing Move activity"
+            );
+            let processor = MoveProcessor::new(
+                state.user_repo.clone(),
+                state.user_profile_repo.clone(),
+                state.following_repo.clone(),
+                state.ap_client.clone(),
+            );
+            match processor.process(move_activity).await? {
+                crate::processor::MoveProcessResult::Success {
+                    source_user_id,
+                    target_uri,
+                    followers_notified,
+                } => {
+                    info!(
+                        source = %source_user_id,
+                        target = %target_uri,
+                        followers = followers_notified,
+                        "Move activity processed successfully"
+                    );
+                }
+                crate::processor::MoveProcessResult::Ignored { reason } => {
+                    debug!(reason = %reason, "Move activity ignored");
+                }
+                crate::processor::MoveProcessResult::Failed { reason } => {
+                    warn!(reason = %reason, "Move activity validation failed");
+                }
+            }
         }
         InboxActivity::Unknown(value) => {
             warn!(activity_type = ?value.get("type"), "Received unknown activity type");

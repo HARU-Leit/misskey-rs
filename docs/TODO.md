@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (ドライブ検索機能実装)
+*Last Updated: 2025-12-11* (ActivityPub Move activity実装)
 
 ---
 
@@ -28,7 +28,7 @@
 | いいね/リアクションの適切な連合（Mastodon/Pleroma向け） | ✅ 完了 | emoji_react.rs, like.rs |
 | 引用リノートのMastodon連合（FEP-e232対応） | ✅ 完了 | note.rs |
 | チャンネルのフェデレーション（Group actor） | 未実装 | COMMUNITY_FEATURES.md |
-| ActivityPub Move activity対応（アカウント移行） | 未実装 | MISSING_FEATURES.md |
+| ActivityPub Move activity対応（アカウント移行） | ✅ 完了 | move_activity.rs, move_processor.rs |
 
 ### Mastodon互換API完全対応
 
@@ -204,6 +204,7 @@
 ### ActivityPub拡張 (2025-12-11)
 - **ActivityPub Update activity対応** - ローカルノート編集時にUpdate activityを配信、リモートからのUpdate activity受信でノート更新
 - **EmojiReact Activity対応** - Pleroma/Akkoma形式のエモジリアクション受信に対応。Like Activityに`content`フィールドを追加してPleroma互換性向上
+- **ActivityPub Move activity対応** - アカウント移行（FEP-7628）をサポート。`MoveActivity`定義、`MoveProcessor`による受信処理、`AccountService.migrate_account`による送信処理を実装。`movedTo`/`alsoKnownAs`フィールドをApPersonに追加し、移行先アカウントの検証（alsoKnownAs確認）も実装
 
 ### パフォーマンス最適化 (2025-12-11)
 - **URLプレビューキャッシュ** - Redis-backed caching for URL previews. 24時間TTLでキャッシュ、失敗したURLは1時間ネガティブキャッシュ。`get_or_fetch()`メソッドで自動的にキャッシュ/フェッチを管理
@@ -227,9 +228,9 @@
 
 ## 次のアクション推奨
 
-1. **フェデレーション**: ActivityPub Move activity対応（アカウント移行）
-2. **フェデレーション**: チャンネルのフェデレーション（Group actor）
-3. **検索**: インスタンス指定アンテナ
+1. **フェデレーション**: チャンネルのフェデレーション（Group actor）
+2. **検索**: インスタンス指定アンテナ
+3. **検索**: Meilisearch連携
 
 ---
 

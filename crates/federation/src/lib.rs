@@ -37,7 +37,8 @@ pub use objects::*;
 pub use processor::{
     AcceptProcessor, ActorFetcher, AnnounceProcessor, CreateProcessor, DeleteProcessor,
     DeleteResult, EmojiReactProcessor, FollowProcessResult, FollowProcessor, LikeProcessor,
-    ParsedUndoActivity, RejectProcessor, UndoProcessor, UndoResult, UpdateProcessor, UpdateResult,
+    MoveProcessResult, MoveProcessor, ParsedUndoActivity, RejectProcessor, UndoProcessor,
+    UndoResult, UpdateProcessor, UpdateResult,
 };
 pub use security::{
     ActivitySecurityChecker, FederationRateLimiter, RateLimitError, RateLimitStatus, ReplayError,

@@ -137,6 +137,8 @@ impl UserToApPerson for user::Model {
             following: Some(config.following_url(&self.username)),
             manually_approves_followers: Some(self.is_locked),
             discoverable: Some(true),
+            moved_to: None, // Set by account migration
+            also_known_as: None, // Set by account migration
             misskey_summary: self.description.clone(),
             is_cat: Some(self.is_cat),
         }

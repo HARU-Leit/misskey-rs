@@ -132,6 +132,19 @@ pub trait ActivityDelivery: Send + Sync {
         activity: Value,
         inboxes: Vec<String>,
     ) -> AppResult<()>;
+
+    /// Queue a Move activity for account migration.
+    ///
+    /// # Arguments
+    /// * `user_id` - The ID of the user migrating
+    /// * `activity` - The serialized Move activity
+    /// * `inboxes` - List of inbox URLs to deliver to (followers)
+    async fn queue_move(
+        &self,
+        user_id: &str,
+        activity: Value,
+        inboxes: Vec<String>,
+    ) -> AppResult<()>;
 }
 
 /// A no-op implementation of ActivityDelivery for testing or when federation is disabled.
@@ -218,6 +231,15 @@ impl ActivityDelivery for NoOpDelivery {
         &self,
         _user_id: &str,
         _note_id: &str,
+        _activity: Value,
+        _inboxes: Vec<String>,
+    ) -> AppResult<()> {
+        Ok(())
+    }
+
+    async fn queue_move(
+        &self,
+        _user_id: &str,
         _activity: Value,
         _inboxes: Vec<String>,
     ) -> AppResult<()> {
