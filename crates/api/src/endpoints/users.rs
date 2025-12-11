@@ -100,6 +100,8 @@ pub struct UpdateUserRequest {
     pub pronouns: Option<String>,
     /// Hide notes from bot accounts in timeline
     pub hide_bots: Option<bool>,
+    /// Default reaction emoji (e.g., "👍", ":like:", custom emoji shortcode)
+    pub default_reaction: Option<String>,
 }
 
 impl UpdateUserRequest {
@@ -121,6 +123,7 @@ impl UpdateUserRequest {
             is_locked: self.is_locked,
             pronouns: self.pronouns,
             hide_bots: self.hide_bots,
+            default_reaction: self.default_reaction,
         }
     }
 }

@@ -222,6 +222,7 @@ impl MoveProcessor {
                     also_known_as: Set(None),
                     moved_to_uri: Set(Some(target_uri.to_string())),
                     hide_bots: Set(false),
+                    default_reaction: Set(None),
                     created_at: Set(chrono::Utc::now().into()),
                     updated_at: Set(None),
                 };

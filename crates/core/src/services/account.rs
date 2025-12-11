@@ -421,6 +421,7 @@ impl AccountService {
                     also_known_as: Set(None),
                     moved_to_uri: Set(Some(input.target_uri.clone())),
                     hide_bots: Set(false),
+                    default_reaction: Set(None),
                     created_at: Set(Utc::now().into()),
                     updated_at: Set(None),
                 };

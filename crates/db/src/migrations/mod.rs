@@ -44,6 +44,7 @@ mod m20250101_000035_add_community_features;
 mod m20250101_000036_add_admin_settings;
 mod m20250101_000037_add_bubble_instances;
 mod m20250101_000038_add_hide_bots_to_user_profile;
+mod m20250101_000039_add_default_reaction;
 
 pub struct Migrator;
 
@@ -89,6 +90,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250101_000036_add_admin_settings::Migration),
             Box::new(m20250101_000037_add_bubble_instances::Migration),
             Box::new(m20250101_000038_add_hide_bots_to_user_profile::Migration),
+            Box::new(m20250101_000039_add_default_reaction::Migration),
         ]
     }
 }
