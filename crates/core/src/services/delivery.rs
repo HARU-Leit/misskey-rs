@@ -145,6 +145,19 @@ pub trait ActivityDelivery: Send + Sync {
         activity: Value,
         inboxes: Vec<String>,
     ) -> AppResult<()>;
+
+    /// Queue a Delete activity for an actor (account deletion).
+    ///
+    /// # Arguments
+    /// * `user_id` - The ID of the user being deleted
+    /// * `activity` - The serialized Delete activity
+    /// * `inboxes` - List of inbox URLs to deliver to (followers)
+    async fn queue_delete_actor(
+        &self,
+        user_id: &str,
+        activity: Value,
+        inboxes: Vec<String>,
+    ) -> AppResult<()>;
 }
 
 /// A no-op implementation of `ActivityDelivery` for testing or when federation is disabled.
@@ -238,6 +251,15 @@ impl ActivityDelivery for NoOpDelivery {
     }
 
     async fn queue_move(
+        &self,
+        _user_id: &str,
+        _activity: Value,
+        _inboxes: Vec<String>,
+    ) -> AppResult<()> {
+        Ok(())
+    }
+
+    async fn queue_delete_actor(
         &self,
         _user_id: &str,
         _activity: Value,

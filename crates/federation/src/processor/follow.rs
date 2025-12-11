@@ -6,6 +6,7 @@ use misskey_db::{
     repositories::{FollowRequestRepository, FollowingRepository, UserRepository},
 };
 use sea_orm::Set;
+use serde_json::{Value, json};
 use tracing::info;
 use url::Url;
 
@@ -21,17 +22,41 @@ pub struct FollowProcessor {
     follow_request_repo: FollowRequestRepository,
     actor_fetcher: ActorFetcher,
     id_gen: IdGenerator,
+    base_url: Option<Url>,
 }
 
 /// Result of processing a Follow activity.
 #[derive(Debug)]
 pub enum FollowProcessResult {
     /// Follow was accepted immediately.
-    Accepted,
+    Accepted {
+        /// The followee user ID (local user).
+        followee_id: String,
+        /// The follower user ID (remote user).
+        follower_id: String,
+        /// The Accept activity to send back (if `base_url` was provided).
+        accept_activity: Option<AcceptActivityInfo>,
+    },
     /// Follow request created (target has locked account).
-    Pending,
+    Pending {
+        /// The followee user ID (local user).
+        followee_id: String,
+        /// The follower user ID (remote user).
+        follower_id: String,
+    },
     /// Follow was rejected.
     Rejected { reason: String },
+}
+
+/// Information about an Accept activity to be queued.
+#[derive(Debug, Clone)]
+pub struct AcceptActivityInfo {
+    /// The user ID of the accepter (local user).
+    pub accepter_id: String,
+    /// The inbox URL to send the Accept activity to.
+    pub inbox_url: String,
+    /// The serialized Accept activity.
+    pub activity: Value,
 }
 
 impl FollowProcessor {
@@ -49,6 +74,26 @@ impl FollowProcessor {
             follow_request_repo,
             actor_fetcher: ActorFetcher::new(user_repo, ap_client),
             id_gen: IdGenerator::new(),
+            base_url: None,
+        }
+    }
+
+    /// Create a new follow processor with a base URL for generating Accept activities.
+    #[must_use]
+    pub fn with_base_url(
+        user_repo: UserRepository,
+        following_repo: FollowingRepository,
+        follow_request_repo: FollowRequestRepository,
+        ap_client: ApClient,
+        base_url: Url,
+    ) -> Self {
+        Self {
+            user_repo: user_repo.clone(),
+            following_repo,
+            follow_request_repo,
+            actor_fetcher: ActorFetcher::new(user_repo, ap_client),
+            id_gen: IdGenerator::new(),
+            base_url: Some(base_url),
         }
     }
 
@@ -93,7 +138,13 @@ impl FollowProcessor {
             .await?
         {
             info!("Already following, accepting anyway");
-            return Ok(FollowProcessResult::Accepted);
+            // Build Accept activity for already following case
+            let accept_activity = self.build_accept_activity(&followee, &follower, &activity.id);
+            return Ok(FollowProcessResult::Accepted {
+                followee_id: followee.id.clone(),
+                follower_id: follower.id.clone(),
+                accept_activity,
+            });
         }
 
         // Check if target has locked account
@@ -105,7 +156,10 @@ impl FollowProcessor {
                 .await?
             {
                 info!("Follow request already pending");
-                return Ok(FollowProcessResult::Pending);
+                return Ok(FollowProcessResult::Pending {
+                    followee_id: followee.id.clone(),
+                    follower_id: follower.id.clone(),
+                });
             }
 
             // Create follow request
@@ -128,8 +182,11 @@ impl FollowProcessor {
                 "Created follow request"
             );
 
-            // TODO: Create notification for followee
-            return Ok(FollowProcessResult::Pending);
+            // Return result indicating notification should be created for follow request
+            return Ok(FollowProcessResult::Pending {
+                followee_id: followee.id.clone(),
+                follower_id: follower.id.clone(),
+            });
         }
 
         // Auto-accept: create following relationship
@@ -141,9 +198,51 @@ impl FollowProcessor {
             "Follow accepted"
         );
 
-        // TODO: Queue Accept activity to send back
+        // Build Accept activity to send back
+        let accept_activity = self.build_accept_activity(&followee, &follower, &activity.id);
 
-        Ok(FollowProcessResult::Accepted)
+        Ok(FollowProcessResult::Accepted {
+            followee_id: followee.id.clone(),
+            follower_id: follower.id.clone(),
+            accept_activity,
+        })
+    }
+
+    /// Build an Accept activity for a follow.
+    fn build_accept_activity(
+        &self,
+        accepter: &user::Model,
+        follower: &user::Model,
+        follow_activity_id: &Url,
+    ) -> Option<AcceptActivityInfo> {
+        let base_url = self.base_url.as_ref()?;
+        let inbox_url = follower.inbox.as_ref()?;
+
+        let actor_url = format!("{}/users/{}", base_url, accepter.id);
+        let follower_uri = follower
+            .uri
+            .clone()
+            .unwrap_or_else(|| format!("{}/users/{}", base_url, follower.id));
+        let activity_id = format!("{}/accept/{}", actor_url, self.id_gen.generate());
+
+        let activity = json!({
+            "@context": "https://www.w3.org/ns/activitystreams",
+            "id": activity_id,
+            "type": "Accept",
+            "actor": actor_url,
+            "object": {
+                "id": follow_activity_id.as_str(),
+                "type": "Follow",
+                "actor": follower_uri,
+                "object": actor_url
+            }
+        });
+
+        Some(AcceptActivityInfo {
+            accepter_id: accepter.id.clone(),
+            inbox_url: inbox_url.clone(),
+            activity,
+        })
     }
 
     /// Extract the local user ID from an actor URL.

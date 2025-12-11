@@ -8,8 +8,8 @@ use misskey_db::repositories::PushSubscriptionRepository;
 use sea_orm::Set;
 use serde::{Deserialize, Serialize};
 use web_push::{
-    ContentEncoding, IsahcWebPushClient, SubscriptionInfo, VapidSignatureBuilder,
-    WebPushClient, WebPushMessageBuilder,
+    ContentEncoding, IsahcWebPushClient, SubscriptionInfo, VapidSignatureBuilder, WebPushClient,
+    WebPushMessageBuilder,
 };
 
 use misskey_common::{AppError, AppResult};
@@ -199,9 +199,9 @@ impl PushNotificationService {
         self.vapid_config.is_some()
     }
 
-    /// Get VAPID public key.
+    /// Returns the VAPID public key.
     #[must_use]
-    pub fn get_public_key(&self) -> Option<&str> {
+    pub fn public_key(&self) -> Option<&str> {
         self.vapid_config.as_ref().map(|c| c.public_key.as_str())
     }
 
@@ -427,7 +427,9 @@ impl PushNotificationService {
             web_push::URL_SAFE_NO_PAD,
             &subscription_info,
         )
-        .map_err(|e| AppError::Internal(format!("Failed to create VAPID signature builder: {e}")))?;
+        .map_err(|e| {
+            AppError::Internal(format!("Failed to create VAPID signature builder: {e}"))
+        })?;
 
         sig_builder.add_claim("sub", vapid.subject.clone());
 
@@ -446,17 +448,14 @@ impl PushNotificationService {
             .map_err(|e| AppError::Internal(format!("Failed to build Web Push message: {e}")))?;
 
         // Send the push notification
-        self.web_push_client
-            .send(message)
-            .await
-            .map_err(|e| {
-                tracing::warn!(
-                    endpoint = %subscription.endpoint,
-                    error = %e,
-                    "Web Push send failed"
-                );
-                AppError::ExternalService(format!("Web Push send failed: {e}"))
-            })?;
+        self.web_push_client.send(message).await.map_err(|e| {
+            tracing::warn!(
+                endpoint = %subscription.endpoint,
+                error = %e,
+                "Web Push send failed"
+            );
+            AppError::ExternalService(format!("Web Push send failed: {e}"))
+        })?;
 
         tracing::debug!(
             endpoint = %subscription.endpoint,

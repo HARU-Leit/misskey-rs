@@ -156,10 +156,10 @@ where
 
             // Extract method and path for verification
             let method = req.method().as_str();
-            let path = req
-                .uri()
-                .path_and_query()
-                .map_or_else(|| req.uri().path().to_string(), std::string::ToString::to_string);
+            let path = req.uri().path_and_query().map_or_else(
+                || req.uri().path().to_string(),
+                std::string::ToString::to_string,
+            );
 
             // Verify the signature
             match HttpVerifier::verify(&public_key_pem, &components, method, &path, &headers_map) {
@@ -219,10 +219,10 @@ fn build_headers_map(req: &Request<Body>, signed_headers: &[String]) -> HashMap<
     for header_name in signed_headers {
         let value = if header_name == "(request-target)" {
             let method = req.method().as_str().to_lowercase();
-            let path = req
-                .uri()
-                .path_and_query()
-                .map_or_else(|| req.uri().path().to_string(), std::string::ToString::to_string);
+            let path = req.uri().path_and_query().map_or_else(
+                || req.uri().path().to_string(),
+                std::string::ToString::to_string,
+            );
             format!("{method} {path}")
         } else if let Some(value) = req.headers().get(header_name.as_str()) {
             value.to_str().unwrap_or("").to_string()
@@ -240,6 +240,7 @@ fn build_headers_map(req: &Request<Body>, signed_headers: &[String]) -> HashMap<
 ///
 /// This function can be used by handlers to check user-specific settings
 /// and enforce signature verification accordingly.
+#[allow(dead_code)]
 pub const fn user_requires_authorized_fetch(secure_fetch_only: bool) -> bool {
     secure_fetch_only
 }
@@ -247,6 +248,7 @@ pub const fn user_requires_authorized_fetch(secure_fetch_only: bool) -> bool {
 /// Check if an instance requires authorized fetch.
 ///
 /// Returns true if the instance has `require_authorized_fetch` enabled.
+#[allow(dead_code)]
 pub const fn instance_requires_authorized_fetch(require_authorized_fetch: bool) -> bool {
     require_authorized_fetch
 }

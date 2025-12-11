@@ -253,6 +253,35 @@ impl NotificationService {
         .await
     }
 
+    /// Create a messaging (direct message) notification.
+    pub async fn create_messaging_notification(
+        &self,
+        notifiee_id: &str,
+        notifier_id: &str,
+    ) -> AppResult<notification::Model> {
+        // Don't notify yourself
+        if notifiee_id == notifier_id {
+            return self
+                .create_internal(
+                    notifiee_id,
+                    Some(notifier_id),
+                    NotificationType::MessagingMessage,
+                    None,
+                    None,
+                )
+                .await;
+        }
+
+        self.create_internal(
+            notifiee_id,
+            Some(notifier_id),
+            NotificationType::MessagingMessage,
+            None,
+            None,
+        )
+        .await
+    }
+
     /// Internal helper to create notifications.
     async fn create_internal(
         &self,
@@ -289,6 +318,7 @@ impl NotificationService {
             NotificationType::PollEnded => "pollEnded",
             NotificationType::ReceiveFollowRequest => "receiveFollowRequest",
             NotificationType::FollowRequestAccepted => "followRequestAccepted",
+            NotificationType::MessagingMessage => "messagingMessage",
             NotificationType::App => "app",
         };
 
@@ -322,6 +352,7 @@ impl NotificationService {
                 NotificationType::FollowRequestAccepted => {
                     PushNotificationType::FollowRequestAccepted
                 }
+                NotificationType::MessagingMessage => PushNotificationType::Message,
                 NotificationType::App => PushNotificationType::App,
             };
 

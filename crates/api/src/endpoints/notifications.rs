@@ -120,6 +120,7 @@ fn notification_type_to_string(t: &NotificationType) -> String {
         NotificationType::PollEnded => "pollEnded".to_string(),
         NotificationType::ReceiveFollowRequest => "receiveFollowRequest".to_string(),
         NotificationType::FollowRequestAccepted => "followRequestAccepted".to_string(),
+        NotificationType::MessagingMessage => "messagingMessage".to_string(),
         NotificationType::App => "app".to_string(),
     }
 }

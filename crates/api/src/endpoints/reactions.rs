@@ -29,11 +29,13 @@ async fn create(
         .await?;
 
     // Create notification for the note author (if not self-reaction)
-    if note.user_id != user.id {
-        let _ = state
+    if note.user_id != user.id
+        && let Err(e) = state
             .notification_service
             .create_reaction_notification(&note.user_id, &user.id, &req.note_id, &req.reaction)
-            .await;
+            .await
+    {
+        tracing::warn!(error = %e, "Failed to create reaction notification");
     }
 
     Ok(ApiResponse::ok(()))

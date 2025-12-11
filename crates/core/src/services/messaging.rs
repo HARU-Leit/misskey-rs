@@ -1,6 +1,7 @@
 //! Messaging service for direct messages.
 
 use crate::services::event_publisher::EventPublisherService;
+use crate::services::notification::NotificationService;
 use chrono::Utc;
 use misskey_common::{AppError, AppResult, IdGenerator};
 use misskey_db::{
@@ -36,6 +37,7 @@ pub struct MessagingService {
     following_repo: FollowingRepository,
     blocking_repo: BlockingRepository,
     event_publisher: Option<EventPublisherService>,
+    notification_service: Option<NotificationService>,
     id_gen: IdGenerator,
 }
 
@@ -56,6 +58,7 @@ impl MessagingService {
             following_repo,
             blocking_repo,
             event_publisher: None,
+            notification_service: None,
             id_gen: IdGenerator::new(),
         }
     }
@@ -63,6 +66,11 @@ impl MessagingService {
     /// Set the event publisher.
     pub fn set_event_publisher(&mut self, event_publisher: EventPublisherService) {
         self.event_publisher = Some(event_publisher);
+    }
+
+    /// Set the notification service.
+    pub fn set_notification_service(&mut self, notification_service: NotificationService) {
+        self.notification_service = Some(notification_service);
     }
 
     /// Send a message to another user.
@@ -133,7 +141,14 @@ impl MessagingService {
 
         let message = self.messaging_repo.create(model).await?;
 
-        // TODO: Create notification for recipient
+        // Create notification for recipient
+        if let Some(ref notification_service) = self.notification_service
+            && let Err(e) = notification_service
+                .create_messaging_notification(recipient_id, sender_id)
+                .await
+        {
+            tracing::warn!(error = %e, "Failed to create messaging notification");
+        }
 
         // Publish real-time event
         if let Some(ref event_publisher) = self.event_publisher

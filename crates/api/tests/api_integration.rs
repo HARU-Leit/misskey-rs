@@ -177,6 +177,7 @@ fn create_test_state() -> AppState {
     let sse_broadcaster = SseBroadcaster::new();
 
     AppState {
+        base_url: "https://test.example.com".to_string(),
         user_service,
         note_service,
         following_service,

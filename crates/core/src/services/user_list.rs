@@ -192,6 +192,12 @@ impl UserListService {
 
         Ok(false)
     }
+
+    /// Get all list IDs that a user is a member of.
+    /// Used for antenna matching to check if a note author is in any lists.
+    pub async fn get_list_memberships_for_user(&self, user_id: &str) -> AppResult<Vec<String>> {
+        self.list_repo.find_list_ids_for_member(user_id).await
+    }
 }
 
 #[cfg(test)]

@@ -119,8 +119,7 @@ async fn home_timeline(
         )
         .await?;
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
     let statuses: Vec<Status> = notes
         .into_iter()
         .map(|n| note_to_status(n, base_url))
@@ -150,8 +149,7 @@ async fn public_timeline(
             .await?
     };
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
     let statuses: Vec<Status> = notes
         .into_iter()
         .map(|n| note_to_status(n, base_url))
@@ -179,8 +177,7 @@ async fn bubble_timeline(
         .bubble_timeline(&bubble_hosts, limit, params.max_id.as_deref(), None)
         .await?;
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
     let statuses: Vec<Status> = notes
         .into_iter()
         .map(|n| note_to_status(n, base_url))

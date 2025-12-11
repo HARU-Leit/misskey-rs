@@ -249,9 +249,9 @@ impl ApNote {
         self
     }
 
-    /// Get the quote URL, checking multiple fields for compatibility.
+    /// Returns the quote URL, checking multiple fields for compatibility.
     #[must_use]
-    pub fn get_quote_url(&self) -> Option<&Url> {
+    pub fn quote_url(&self) -> Option<&Url> {
         self.quote_url
             .as_ref()
             .or(self.quote_uri.as_ref())
@@ -348,7 +348,7 @@ mod tests {
         let note: ApNote = serde_json::from_str(json).unwrap();
         assert!(note.quote_url.is_some());
         assert_eq!(
-            note.get_quote_url().unwrap().as_str(),
+            note.quote_url().unwrap().as_str(),
             "https://example.com/notes/original"
         );
     }
@@ -368,7 +368,7 @@ mod tests {
         let note: ApNote = serde_json::from_str(json).unwrap();
         assert!(note.misskey_quote.is_some());
         assert_eq!(
-            note.get_quote_url().unwrap().as_str(),
+            note.quote_url().unwrap().as_str(),
             "https://example.com/notes/original"
         );
     }

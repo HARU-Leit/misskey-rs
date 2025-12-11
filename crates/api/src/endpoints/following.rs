@@ -35,18 +35,24 @@ async fn follow(
     let status = match &result {
         FollowResult::Following => {
             // Create follow notification for the followee
-            let _ = state
+            if let Err(e) = state
                 .notification_service
                 .create_follow_notification(&req.user_id, &user.id)
-                .await;
+                .await
+            {
+                tracing::warn!(error = %e, "Failed to create follow notification");
+            }
             "following"
         }
         FollowResult::Pending => {
             // Create follow request notification for the followee
-            let _ = state
+            if let Err(e) = state
                 .notification_service
                 .create_follow_request_notification(&req.user_id, &user.id)
-                .await;
+                .await
+            {
+                tracing::warn!(error = %e, "Failed to create follow request notification");
+            }
             "pending"
         }
     };
@@ -88,10 +94,13 @@ async fn accept(
         .await?;
 
     // Notify the requester that their follow request was accepted
-    let _ = state
+    if let Err(e) = state
         .notification_service
         .create_follow_request_accepted_notification(&req.user_id, &user.id)
-        .await;
+        .await
+    {
+        tracing::warn!(error = %e, "Failed to create follow request accepted notification");
+    }
 
     Ok(ApiResponse::ok(()))
 }

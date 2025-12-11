@@ -157,6 +157,19 @@ impl UserListRepository {
             .await
             .map_err(|e| AppError::Database(e.to_string()))
     }
+
+    /// Get all list IDs that a user is a member of.
+    /// This is useful for antenna matching where we need to check if a note author
+    /// is in any of the antenna owner's lists.
+    pub async fn find_list_ids_for_member(&self, user_id: &str) -> AppResult<Vec<String>> {
+        let memberships = UserListMember::find()
+            .filter(user_list_member::Column::UserId.eq(user_id))
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        Ok(memberships.into_iter().map(|m| m.list_id).collect())
+    }
 }
 
 #[cfg(test)]

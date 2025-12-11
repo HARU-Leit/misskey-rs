@@ -131,6 +131,17 @@ impl WordFilterRepository {
 
         Ok(result.rows_affected)
     }
+
+    /// Delete all filters for a user (batch operation).
+    pub async fn delete_all_by_user(&self, user_id: &str) -> AppResult<u64> {
+        let result = WordFilter::delete_many()
+            .filter(word_filter::Column::UserId.eq(user_id))
+            .exec(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        Ok(result.rows_affected)
+    }
 }
 
 #[cfg(test)]

@@ -830,6 +830,20 @@ impl NoteRepository {
             .await
             .map_err(|e| AppError::Database(e.to_string()))
     }
+
+    /// Delete all notes by a user.
+    ///
+    /// This deletes all notes authored by the specified user.
+    /// Used during account deletion to remove user content.
+    pub async fn delete_by_user(&self, user_id: &str) -> AppResult<u64> {
+        let result = Note::delete_many()
+            .filter(note::Column::UserId.eq(user_id))
+            .exec(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        Ok(result.rows_affected)
+    }
 }
 
 #[cfg(test)]

@@ -441,7 +441,9 @@ impl MediaService {
             ImageFormat::WebP => image::ImageFormat::WebP,
             ImageFormat::Gif => image::ImageFormat::Gif,
             ImageFormat::Avif => {
-                return Err(AppError::Validation("AVIF encoding not supported".to_string()));
+                return Err(AppError::Validation(
+                    "AVIF encoding not supported".to_string(),
+                ));
             }
         };
 
@@ -469,17 +471,17 @@ impl MediaService {
         let mut target_width = original_width;
         let mut target_height = original_height;
 
-        if let Some(max_w) = options.max_width {
-            if original_width > max_w {
-                target_width = max_w;
-                needs_resize = true;
-            }
+        if let Some(max_w) = options.max_width
+            && original_width > max_w
+        {
+            target_width = max_w;
+            needs_resize = true;
         }
-        if let Some(max_h) = options.max_height {
-            if original_height > max_h {
-                target_height = max_h;
-                needs_resize = true;
-            }
+        if let Some(max_h) = options.max_height
+            && original_height > max_h
+        {
+            target_height = max_h;
+            needs_resize = true;
         }
 
         if needs_resize {

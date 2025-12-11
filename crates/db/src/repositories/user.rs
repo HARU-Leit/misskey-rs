@@ -214,6 +214,24 @@ impl UserRepository {
         Ok(())
     }
 
+    /// Anonymize a user for soft deletion (keeps tombstone).
+    pub async fn anonymize(&self, user_id: &str) -> AppResult<()> {
+        let user = self.get_by_id(user_id).await?;
+        let mut active: user::ActiveModel = user.into();
+        active.username = Set(format!("deleted_{user_id}"));
+        active.name = Set(None);
+        active.description = Set(None);
+        active.avatar_url = Set(None);
+        active.banner_url = Set(None);
+        active.is_suspended = Set(true);
+        active.updated_at = Set(Some(chrono::Utc::now().into()));
+        active
+            .update(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        Ok(())
+    }
+
     /// Count total local users.
     pub async fn count_local_users(&self) -> AppResult<u64> {
         User::find()

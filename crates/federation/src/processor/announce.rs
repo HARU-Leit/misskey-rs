@@ -2,30 +2,36 @@
 
 use misskey_common::{AppError, AppResult, IdGenerator};
 use misskey_db::{
-    entities::{note, user},
+    entities::note,
     repositories::{NoteRepository, UserRepository},
 };
 use sea_orm::Set;
 use serde_json::json;
 use tracing::info;
 
+use super::ActorFetcher;
 use crate::activities::AnnounceActivity;
+use crate::client::ApClient;
 
 /// Processor for Announce activities (renotes/boosts).
 #[derive(Clone)]
 pub struct AnnounceProcessor {
-    user_repo: UserRepository,
     note_repo: NoteRepository,
+    actor_fetcher: ActorFetcher,
     id_gen: IdGenerator,
 }
 
 impl AnnounceProcessor {
     /// Create a new announce processor.
     #[must_use]
-    pub const fn new(user_repo: UserRepository, note_repo: NoteRepository) -> Self {
+    pub const fn new(
+        user_repo: UserRepository,
+        note_repo: NoteRepository,
+        ap_client: ApClient,
+    ) -> Self {
         Self {
-            user_repo,
             note_repo,
+            actor_fetcher: ActorFetcher::new(user_repo, ap_client),
             id_gen: IdGenerator::new(),
         }
     }
@@ -48,7 +54,7 @@ impl AnnounceProcessor {
             })?;
 
         // Find or fetch the actor
-        let actor = self.find_or_fetch_actor(&activity.actor).await?;
+        let actor = self.actor_fetcher.find_or_fetch(&activity.actor).await?;
 
         // Check if already renoted by this user
         if let Some(existing) = self
@@ -100,15 +106,5 @@ impl AnnounceProcessor {
         );
 
         Ok(renote)
-    }
-
-    /// Find an existing actor or fetch from remote.
-    async fn find_or_fetch_actor(&self, actor_url: &url::Url) -> AppResult<user::Model> {
-        if let Some(user) = self.user_repo.find_by_uri(actor_url.as_str()).await? {
-            return Ok(user);
-        }
-
-        // TODO: Fetch actor from remote server
-        Err(AppError::NotFound(format!("Actor not found: {actor_url}")))
     }
 }

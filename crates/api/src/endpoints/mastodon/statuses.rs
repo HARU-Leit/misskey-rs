@@ -326,8 +326,7 @@ async fn create_status(
 
     let note = state.note_service.create(&user.id, input).await?;
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
     let status = note_to_status(note, Some(&user), base_url);
 
     Ok(Json(status))
@@ -341,8 +340,7 @@ async fn get_status(
     let note = state.note_service.get(&id).await?;
     let author = state.user_service.get(&note.user_id).await.ok();
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
     let status = note_to_status(note, author.as_ref(), base_url);
 
     Ok(Json(status))
@@ -361,8 +359,7 @@ async fn delete_status(
         return Err(AppError::Forbidden("Not your status".to_string()));
     }
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
     let status = note_to_status(note, Some(&user), base_url);
 
     state.note_service.delete(&user.id, &id).await?;
@@ -377,8 +374,7 @@ async fn get_status_context(
 ) -> AppResult<Json<StatusContext>> {
     let note = state.note_service.get(&id).await?;
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
 
     // Get ancestors (parent chain)
     let mut ancestors = Vec::new();
@@ -420,8 +416,7 @@ async fn favourite_status(
     let note = state.note_service.get(&id).await?;
     let author = state.user_service.get(&note.user_id).await.ok();
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
     let mut status = note_to_status(note, author.as_ref(), base_url);
     status.favourited = Some(true);
 
@@ -440,8 +435,7 @@ async fn unfavourite_status(
     let note = state.note_service.get(&id).await?;
     let author = state.user_service.get(&note.user_id).await.ok();
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
     let mut status = note_to_status(note, author.as_ref(), base_url);
     status.favourited = Some(false);
 
@@ -472,8 +466,7 @@ async fn reblog_status(
     let original_note = state.note_service.get(&id).await?;
     let original_author = state.user_service.get(&original_note.user_id).await.ok();
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
 
     let mut original_status = note_to_status(original_note, original_author.as_ref(), base_url);
     original_status.reblogged = Some(true);
@@ -496,7 +489,9 @@ async fn unreblog_status(
     for renote in renotes {
         if renote.user_id == user.id && renote.text.is_none() {
             // This is a pure renote (not a quote) by this user
-            let _ = state.note_service.delete(&renote.id, &user.id).await;
+            if let Err(e) = state.note_service.delete(&renote.id, &user.id).await {
+                tracing::warn!(error = %e, "Failed to delete renote during unreblog");
+            }
             break;
         }
     }
@@ -504,8 +499,7 @@ async fn unreblog_status(
     let note = state.note_service.get(&id).await?;
     let author = state.user_service.get(&note.user_id).await.ok();
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
     let mut status = note_to_status(note, author.as_ref(), base_url);
     status.reblogged = Some(false);
 
@@ -535,16 +529,19 @@ async fn bookmark_status(
     };
 
     // add_note(clip_id, note_id, user_id, comment)
-    let _ = state
+    // Ignore "already bookmarked" errors as the end state is correct
+    if let Err(e) = state
         .clip_service
         .add_note(&bookmark_clip.id, &id, &user.id, None)
-        .await;
+        .await
+    {
+        tracing::debug!(error = %e, "Add note to bookmark clip returned error (may already be bookmarked)");
+    }
 
     let note = state.note_service.get(&id).await?;
     let author = state.user_service.get(&note.user_id).await.ok();
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
     let mut status = note_to_status(note, author.as_ref(), base_url);
     status.bookmarked = Some(true);
 
@@ -561,17 +558,20 @@ async fn unbookmark_status(
     let clips = state.clip_service.list_my_clips(&user.id, 100, 0).await?;
     if let Some(clip) = clips.into_iter().find(|c| c.name == "Bookmarks") {
         // remove_note(clip_id, note_id, user_id)
-        let _ = state
+        // Ignore "not bookmarked" errors as the end state is correct
+        if let Err(e) = state
             .clip_service
             .remove_note(&clip.id, &id, &user.id)
-            .await;
+            .await
+        {
+            tracing::debug!(error = %e, "Remove note from bookmark clip returned error (may not be bookmarked)");
+        }
     }
 
     let note = state.note_service.get(&id).await?;
     let author = state.user_service.get(&note.user_id).await.ok();
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
     let mut status = note_to_status(note, author.as_ref(), base_url);
     status.bookmarked = Some(false);
 

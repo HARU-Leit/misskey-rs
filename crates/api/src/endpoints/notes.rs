@@ -119,14 +119,17 @@ async fn create(
 
     // Process note against antennas (fire and forget - don't block response)
     let antenna_service = state.antenna_service.clone();
+    let user_list_service = state.user_list_service.clone();
     let note_id = note.id.clone();
     let note_user_id = user.id.clone();
     let note_user_host = user.host.clone();
 
     tokio::spawn(async move {
         // Get user list memberships for list-based antennas
-        // TODO: Implement user_list_service.get_list_memberships_for_user()
-        let list_memberships: Vec<String> = vec![];
+        let list_memberships = user_list_service
+            .get_list_memberships_for_user(&note_user_id)
+            .await
+            .unwrap_or_default();
 
         let context = AntennaService::create_note_context(
             text.as_deref(),
@@ -138,7 +141,7 @@ async fn create(
         );
 
         match antenna_service
-            .process_note_for_all_antennas(&note_id, &context)
+            .process_note_for_all_antennas_optimized(&note_id, &context)
             .await
         {
             Ok(matched_antennas) => {
@@ -181,32 +184,50 @@ const fn max_limit() -> u64 {
 
 use misskey_db::entities::word_filter::FilterContext;
 
-/// Apply word filters to notes for a user.
+/// Apply word filters to notes for a user (batch optimized - single DB query).
 async fn apply_word_filters(
     state: &AppState,
     user_id: &str,
     notes: Vec<note::Model>,
     context: FilterContext,
 ) -> AppResult<Vec<NoteResponse>> {
-    let mut responses = Vec::new();
+    // Fetch filters once for all notes
+    let filters = state
+        .word_filter_service
+        .get_active_filters(user_id)
+        .await?;
+
+    let mut responses = Vec::with_capacity(notes.len());
 
     for note in notes {
-        let mut response: NoteResponse = note.clone().into();
-
-        // Apply filter to note text
-        if let Some(ref text) = note.text {
+        // Check filter before consuming note to avoid clone
+        let filter_info = if let Some(ref text) = note.text {
             let filter_result = state
                 .word_filter_service
-                .apply_filters(user_id, text, context.clone())
-                .await?;
+                .apply_filters_with_cache(&filters, text, context)?;
 
             if filter_result.matched {
-                response.filtered = true;
-                response.filter_action = filter_result
-                    .action
-                    .map(|a| format!("{a:?}").to_lowercase());
-                response.filter_matches = Some(filter_result.matched_phrases);
+                Some((
+                    filter_result
+                        .action
+                        .map(|a| format!("{a:?}").to_lowercase()),
+                    filter_result.matched_phrases,
+                ))
+            } else {
+                None
             }
+        } else {
+            None
+        };
+
+        // Consume note without cloning
+        let mut response: NoteResponse = note.into();
+
+        // Apply filter info if matched
+        if let Some((action, matches)) = filter_info {
+            response.filtered = true;
+            response.filter_action = action;
+            response.filter_matches = Some(matches);
         }
 
         responses.push(response);
@@ -527,11 +548,13 @@ async fn like_note(
     let note = state.note_service.get(&req.note_id).await?;
 
     // Create notification for the note author (if not self-reaction)
-    if note.user_id != user.id {
-        let _ = state
+    if note.user_id != user.id
+        && let Err(e) = state
             .notification_service
             .create_reaction_notification(&note.user_id, &user.id, &req.note_id, &reaction.reaction)
-            .await;
+            .await
+    {
+        tracing::warn!(error = %e, "Failed to create reaction notification");
     }
 
     Ok(ApiResponse::ok(LikeResponse {

@@ -208,6 +208,30 @@ impl PushSubscriptionRepository {
             .await
             .map_err(|e| AppError::Database(e.to_string()))
     }
+
+    /// Delete inactive subscriptions that have failed too many times.
+    /// Returns the number of deleted subscriptions.
+    pub async fn delete_failed(&self, max_fail_count: i32) -> AppResult<u64> {
+        let result = Entity::delete_many()
+            .filter(Column::Active.eq(false))
+            .filter(Column::FailCount.gte(max_fail_count))
+            .exec(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        Ok(result.rows_affected)
+    }
+
+    /// Delete subscriptions that haven't been used for a long time.
+    /// Returns the number of deleted subscriptions.
+    pub async fn delete_stale(&self, days: i64) -> AppResult<u64> {
+        let cutoff = Utc::now() - chrono::Duration::days(days);
+        let result = Entity::delete_many()
+            .filter(Column::LastPushedAt.lt(cutoff))
+            .exec(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        Ok(result.rows_affected)
+    }
 }
 
 use chrono::Timelike;

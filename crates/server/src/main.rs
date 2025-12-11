@@ -26,14 +26,15 @@ use misskey_core::{
     WebhookService, WordFilterService,
 };
 use misskey_db::repositories::{
-    AnnouncementRepository, AntennaRepository, BlockingRepository, ChannelRepository,
-    ClipRepository, DriveFileRepository, DriveFolderRepository, EmojiRepository,
-    FollowRequestRepository, FollowingRepository, GalleryRepository, GroupRepository,
-    InstanceRepository, MessagingRepository, ModerationRepository, MutingRepository,
-    NoteFavoriteRepository, NoteRepository, NotificationRepository, OAuthRepository,
-    PageRepository, PollRepository, PollVoteRepository, ReactionRepository,
-    ScheduledNoteRepository, SecurityKeyRepository, UserKeypairRepository, UserListRepository,
-    UserProfileRepository, UserRepository, WebhookRepository, WordFilterRepository,
+    AccountDeletionRepository, AnnouncementRepository, AntennaRepository, BlockingRepository,
+    ChannelRepository, ClipRepository, DriveFileRepository, DriveFolderRepository, EmojiRepository,
+    ExportJobRepository, FollowRequestRepository, FollowingRepository, GalleryRepository,
+    GroupRepository, ImportJobRepository, InstanceRepository, MessagingRepository,
+    ModerationRepository, MutingRepository, NoteFavoriteRepository, NoteRepository,
+    NotificationRepository, OAuthRepository, PageRepository, PollRepository, PollVoteRepository,
+    ReactionRepository, ScheduledNoteRepository, SecurityKeyRepository, UserKeypairRepository,
+    UserListRepository, UserProfileRepository, UserRepository, WebhookRepository,
+    WordFilterRepository,
 };
 use misskey_federation::{
     ClipCollectionState, CollectionState, InboxState, NodeInfoState, UserApState, WebfingerState,
@@ -57,6 +58,7 @@ use url::Url;
 ///
 /// On Unix systems, this listens for both SIGINT (Ctrl+C) and SIGTERM.
 /// On Windows, this only listens for Ctrl+C.
+#[allow(clippy::expect_used)] // Signal handlers must succeed or app cannot run
 async fn shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c()
@@ -150,6 +152,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let note_repo = NoteRepository::new(Arc::clone(&db));
     let following_repo = FollowingRepository::new(Arc::clone(&db));
     let follow_request_repo = FollowRequestRepository::new(Arc::clone(&db));
+    let export_job_repo = ExportJobRepository::new(Arc::clone(&db));
+    let import_job_repo = ImportJobRepository::new(Arc::clone(&db));
+    let deletion_repo = AccountDeletionRepository::new(Arc::clone(&db));
     let reaction_repo = ReactionRepository::new(Arc::clone(&db));
     let notification_repo = NotificationRepository::new(Arc::clone(&db));
     let blocking_repo = BlockingRepository::new(Arc::clone(&db));
@@ -188,7 +193,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Initialize services with ActivityPub delivery support
-    let note_service = if config.federation.enabled {
+    let mut note_service = if config.federation.enabled {
         NoteService::with_delivery(
             note_repo.clone(),
             user_repo.clone(),
@@ -199,6 +204,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         NoteService::new(note_repo.clone(), user_repo.clone(), following_repo.clone())
     };
+    // Set user list repo for antenna list membership matching
+    note_service.set_user_list_repo(user_list_repo.clone());
 
     let blocking_service = BlockingService::new(blocking_repo.clone(), following_repo.clone());
 
@@ -300,6 +307,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         user_keypair_repo.clone(),
         note_repo.clone(),
         following_repo.clone(),
+        follow_request_repo.clone(),
+        export_job_repo.clone(),
+        import_job_repo.clone(),
+        deletion_repo.clone(),
         delivery_service.clone(),
         &config,
     ));
@@ -322,6 +333,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create app state
     let state = AppState {
+        base_url: config.server.url.clone(),
         user_service,
         note_service,
         following_service,
@@ -406,6 +418,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         user_keypair_repo.clone(),
         user_profile_repo.clone(),
         note_repo,
+        drive_file_repo,
         following_repo,
         follow_request_repo,
         reaction_repo,

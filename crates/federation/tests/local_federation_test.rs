@@ -545,7 +545,7 @@ async fn test_reaction_federation() {
         .as_str()
         .expect("Note should have id");
 
-    // TODO: Once reaction federation is fully implemented, add:
+    // FUTURE: Once reaction federation is fully implemented, add:
     // 1. Resolve the note from beta
     // 2. Add reaction from beta
     // 3. Verify reaction appears on alpha

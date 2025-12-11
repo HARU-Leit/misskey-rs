@@ -1,12 +1,13 @@
 //! Note service.
 
+use crate::services::antenna::AntennaService;
 use crate::services::delivery::DeliveryService;
 use crate::services::event_publisher::EventPublisherService;
 use misskey_common::{AppError, AppResult, IdGenerator};
 use misskey_db::{
     entities::note::{self, Visibility},
     entities::note_edit,
-    repositories::{FollowingRepository, NoteRepository, UserRepository},
+    repositories::{FollowingRepository, NoteRepository, UserListRepository, UserRepository},
 };
 use sea_orm::Set;
 use serde::Deserialize;
@@ -19,8 +20,10 @@ pub struct NoteService {
     note_repo: NoteRepository,
     user_repo: UserRepository,
     following_repo: FollowingRepository,
+    user_list_repo: Option<UserListRepository>,
     delivery: Option<DeliveryService>,
     event_publisher: Option<EventPublisherService>,
+    antenna_service: Option<AntennaService>,
     server_url: String,
     id_gen: IdGenerator,
 }
@@ -92,8 +95,10 @@ impl NoteService {
             note_repo,
             user_repo,
             following_repo,
+            user_list_repo: None,
             delivery: None,
             event_publisher: None,
+            antenna_service: None,
             server_url: String::new(),
             id_gen: IdGenerator::new(),
         }
@@ -112,11 +117,18 @@ impl NoteService {
             note_repo,
             user_repo,
             following_repo,
+            user_list_repo: None,
             delivery: Some(delivery),
             event_publisher: None,
+            antenna_service: None,
             server_url,
             id_gen: IdGenerator::new(),
         }
+    }
+
+    /// Set the user list repository for list membership lookups.
+    pub fn set_user_list_repo(&mut self, user_list_repo: UserListRepository) {
+        self.user_list_repo = Some(user_list_repo);
     }
 
     /// Set the delivery service.
@@ -128,6 +140,11 @@ impl NoteService {
     /// Set the event publisher.
     pub fn set_event_publisher(&mut self, event_publisher: EventPublisherService) {
         self.event_publisher = Some(event_publisher);
+    }
+
+    /// Set the antenna service for note matching.
+    pub fn set_antenna_service(&mut self, antenna_service: AntennaService) {
+        self.antenna_service = Some(antenna_service);
     }
 
     /// Create a new note.
@@ -281,6 +298,63 @@ impl NoteService {
                     "Failed to publish channel note created event"
                 );
             }
+        }
+
+        // Process note against all active antennas
+        if let Some(ref antenna_service) = self.antenna_service {
+            // Fetch user's list memberships if repository is available
+            let list_ids = if let Some(ref user_list_repo) = self.user_list_repo {
+                // Get all list IDs where this user is a member (across all list owners)
+                match user_list_repo.find_list_ids_for_member(&note.user_id).await {
+                    Ok(list_ids) => list_ids,
+                    Err(e) => {
+                        tracing::warn!(
+                            error = %e,
+                            user_id = %note.user_id,
+                            "Failed to fetch user list memberships for antenna matching"
+                        );
+                        vec![]
+                    }
+                }
+            } else {
+                vec![]
+            };
+
+            let context = AntennaService::create_note_context(
+                note.text.as_deref(),
+                &note.user_id,
+                note.user_host.as_deref(),
+                note.reply_id.as_deref(),
+                &input.file_ids,
+                &list_ids,
+            );
+
+            // Process asynchronously to not block note creation
+            let antenna_svc = antenna_service.clone();
+            let note_id = note.id.clone();
+            tokio::spawn(async move {
+                match antenna_svc
+                    .process_note_for_all_antennas_optimized(&note_id, &context)
+                    .await
+                {
+                    Ok(matched_ids) => {
+                        if !matched_ids.is_empty() {
+                            tracing::debug!(
+                                note_id = %note_id,
+                                matched_antennas = matched_ids.len(),
+                                "Note matched antennas"
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            error = %e,
+                            note_id = %note_id,
+                            "Failed to process note for antennas"
+                        );
+                    }
+                }
+            });
         }
 
         Ok(note)
@@ -726,12 +800,8 @@ impl NoteService {
         until_id: Option<&str>,
         exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
-        // Get IDs of users that the current user follows
-        let followings = self
-            .following_repo
-            .find_following(user_id, 10000, None)
-            .await?;
-        let following_ids: Vec<String> = followings.iter().map(|f| f.followee_id.clone()).collect();
+        // Get IDs of users that the current user follows (optimized - fetches only IDs)
+        let following_ids = self.following_repo.find_following_ids(user_id).await?;
 
         self.note_repo
             .find_home_timeline(user_id, &following_ids, limit, until_id, exclude_user_ids)

@@ -45,8 +45,7 @@ async fn get_bookmarks(
     let clips = state.clip_service.list_my_clips(&user.id, 100, 0).await?;
     let bookmark_clip = clips.into_iter().find(|c| c.name == "Bookmarks");
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
 
     let mut statuses = Vec::new();
 

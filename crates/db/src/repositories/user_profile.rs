@@ -185,4 +185,22 @@ impl UserProfileRepository {
 
         Ok(())
     }
+
+    /// Set the moved-to URI for account migration.
+    pub async fn set_moved_to_uri(&self, user_id: &str, uri: Option<&str>) -> AppResult<()> {
+        let profile = self.get_by_user_id(user_id).await?;
+        let mut active: user_profile::ActiveModel = profile.into();
+        active.moved_to_uri = Set(uri.map(std::string::ToString::to_string));
+        active
+            .update(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        Ok(())
+    }
+
+    /// Get the moved-to URI for a user.
+    pub async fn get_moved_to_uri(&self, user_id: &str) -> AppResult<Option<String>> {
+        let profile = self.find_by_user_id(user_id).await?;
+        Ok(profile.and_then(|p| p.moved_to_uri))
+    }
 }

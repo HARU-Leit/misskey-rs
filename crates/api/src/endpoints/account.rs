@@ -61,14 +61,7 @@ async fn migration_status(
         misskey_common::AppError::BadRequest("Account service not configured".to_string())
     })?;
 
-    let aliases = account_service.get_aliases(&user.id).await?;
-
-    let response = MigrationStatusResponse {
-        has_pending_migration: false, // TODO: Check for pending migrations
-        migration: None,
-        aliases,
-        moved_to: None, // TODO: Get from user profile
-    };
+    let response = account_service.get_migration_status(&user.id).await?;
 
     Ok(ApiResponse::ok(response))
 }
@@ -117,13 +110,17 @@ async fn schedule_deletion(
 
 /// Get deletion status.
 async fn deletion_status(
-    AuthUser(_user): AuthUser,
-    State(_state): State<AppState>,
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
 ) -> AppResult<ApiResponse<DeletionStatusResponse>> {
-    // TODO: Fetch from database
+    let account_service = state.account_service.as_ref().ok_or_else(|| {
+        misskey_common::AppError::BadRequest("Account service not configured".to_string())
+    })?;
+
+    let deletion = account_service.get_deletion_status(&user.id).await?;
     let response = DeletionStatusResponse {
-        is_scheduled: false,
-        deletion: None,
+        is_scheduled: deletion.is_some(),
+        deletion,
     };
 
     Ok(ApiResponse::ok(response))

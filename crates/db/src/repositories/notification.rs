@@ -127,4 +127,37 @@ impl NotificationRepository {
 
         Ok(result.rows_affected)
     }
+
+    /// Delete old read notifications.
+    /// Returns the number of deleted notifications.
+    pub async fn delete_old_read(&self, days: i64) -> AppResult<u64> {
+        use chrono::Utc;
+        use sea_orm::DeleteResult;
+
+        let cutoff = Utc::now() - chrono::Duration::days(days);
+        let result: DeleteResult = Notification::delete_many()
+            .filter(notification::Column::IsRead.eq(true))
+            .filter(notification::Column::CreatedAt.lt(cutoff))
+            .exec(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        Ok(result.rows_affected)
+    }
+
+    /// Delete all old notifications (both read and unread) older than specified days.
+    /// Returns the number of deleted notifications.
+    pub async fn delete_older_than(&self, days: i64) -> AppResult<u64> {
+        use chrono::Utc;
+        use sea_orm::DeleteResult;
+
+        let cutoff = Utc::now() - chrono::Duration::days(days);
+        let result: DeleteResult = Notification::delete_many()
+            .filter(notification::Column::CreatedAt.lt(cutoff))
+            .exec(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        Ok(result.rows_affected)
+    }
 }

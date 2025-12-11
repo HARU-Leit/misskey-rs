@@ -111,26 +111,28 @@ impl MoveProcessor {
         self.record_move(&source_user.id, activity.target.as_str())
             .await?;
 
-        // Count followers who will be affected
+        // Count local followers who will be affected (filter to only local users)
         let followers = self
             .following_repo
             .find_followers(&source_user.id, 10000, None)
             .await?;
 
-        let local_followers_count = followers
-            .iter()
-            .filter(|_f| {
-                // Count only local followers (those we should notify)
-                // A local follower would have followee_host = Some(source's host)
-                // and the follower would be a local user
-                true // For now, count all followers
-            })
-            .count();
+        // Filter to count only local followers who should be notified
+        let mut local_followers_count = 0;
+        for follow in &followers {
+            if let Ok(Some(follower)) = self.user_repo.find_by_id(&follow.follower_id).await {
+                // Local users have no host
+                if follower.host.is_none() {
+                    local_followers_count += 1;
+                }
+            }
+        }
 
         info!(
             source = %source_user.id,
             target = %activity.target,
-            followers = local_followers_count,
+            total_followers = followers.len(),
+            local_followers = local_followers_count,
             "Move recorded successfully"
         );
 

@@ -16,38 +16,66 @@ use crate::entities::recurring_post::{
 /// Input for creating a recurring post.
 #[derive(Debug, Clone)]
 pub struct CreateRecurringPostInput {
+    /// User ID who owns the recurring post.
     pub user_id: String,
+    /// Text content of the recurring post.
     pub text: Option<String>,
+    /// Content warning text.
     pub cw: Option<String>,
+    /// Visibility setting for the recurring post.
     pub visibility: RecurringVisibility,
+    /// Whether the post should only be visible locally.
     pub local_only: bool,
+    /// List of attached file IDs.
     pub file_ids: Vec<String>,
+    /// Posting interval (daily, weekly, monthly).
     pub interval: RecurringInterval,
+    /// Day of week for weekly posts (0-6, Sunday = 0).
     pub day_of_week: Option<i16>,
+    /// Day of month for monthly posts (1-31).
     pub day_of_month: Option<i16>,
+    /// Hour in UTC when the post should be published.
     pub hour_utc: i16,
+    /// Minute when the post should be published.
     pub minute_utc: i16,
+    /// User's timezone identifier.
     pub timezone: String,
+    /// Maximum number of posts before auto-disabling.
     pub max_posts: Option<i32>,
+    /// Expiration date for this recurring post.
     pub expires_at: Option<DateTime<Utc>>,
 }
 
 /// Input for updating a recurring post.
 #[derive(Debug, Clone, Default)]
 pub struct UpdateRecurringPostInput {
+    /// New text content (None = no change, Some(None) = clear).
     pub text: Option<Option<String>>,
+    /// New content warning (None = no change, Some(None) = clear).
     pub cw: Option<Option<String>>,
+    /// New visibility setting.
     pub visibility: Option<RecurringVisibility>,
+    /// New local-only setting.
     pub local_only: Option<bool>,
+    /// New list of attached file IDs.
     pub file_ids: Option<Vec<String>>,
+    /// New posting interval.
     pub interval: Option<RecurringInterval>,
+    /// New day of week (None = no change, Some(None) = clear).
     pub day_of_week: Option<Option<i16>>,
+    /// New day of month (None = no change, Some(None) = clear).
     pub day_of_month: Option<Option<i16>>,
+    /// New hour in UTC.
     pub hour_utc: Option<i16>,
+    /// New minute.
     pub minute_utc: Option<i16>,
+    /// New timezone identifier.
     pub timezone: Option<String>,
+    /// New active status.
     pub is_active: Option<bool>,
+    /// New maximum posts limit (None = no change, Some(None) = clear).
     pub max_posts: Option<Option<i32>>,
+    /// New expiration date (None = no change, Some(None) = clear).
     pub expires_at: Option<Option<DateTime<Utc>>>,
 }
 
@@ -61,7 +89,7 @@ pub struct RecurringPostRepository {
 impl RecurringPostRepository {
     /// Create a new recurring post repository.
     #[must_use]
-    pub fn new(db: Arc<DatabaseConnection>) -> Self {
+    pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self {
             db,
             id_gen: IdGenerator::new(),
@@ -227,15 +255,17 @@ impl RecurringPostRepository {
 
         // Check if max posts reached
         if let Some(max_posts) = existing.max_posts
-            && existing.post_count + 1 >= max_posts {
-                model.is_active = Set(false);
-            }
+            && existing.post_count + 1 >= max_posts
+        {
+            model.is_active = Set(false);
+        }
 
         // Check if expired
         if let Some(expires_at) = existing.expires_at
-            && now >= expires_at {
-                model.is_active = Set(false);
-            }
+            && now >= expires_at
+        {
+            model.is_active = Set(false);
+        }
 
         model.update(self.db.as_ref()).await.map(Some)
     }

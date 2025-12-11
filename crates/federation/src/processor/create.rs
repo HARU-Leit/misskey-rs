@@ -2,20 +2,25 @@
 
 use misskey_common::{AppResult, IdGenerator};
 use misskey_db::{
-    entities::{note, user},
-    repositories::{NoteRepository, UserRepository},
+    entities::{drive_file, note, user},
+    repositories::{DriveFileRepository, NoteRepository, UserRepository},
 };
 use sea_orm::Set;
 use serde_json::json;
-use tracing::info;
+use tracing::{info, warn};
 
 use super::ActorFetcher;
-use crate::{CreateActivity, client::ApClient, objects::ApNote};
+use crate::{
+    CreateActivity,
+    client::ApClient,
+    objects::{ApAttachment, ApNote},
+};
 
 /// Processor for Create activities (notes).
 #[derive(Clone)]
 pub struct CreateProcessor {
     note_repo: NoteRepository,
+    drive_file_repo: DriveFileRepository,
     actor_fetcher: ActorFetcher,
     id_gen: IdGenerator,
 }
@@ -25,11 +30,13 @@ impl CreateProcessor {
     #[must_use]
     pub const fn new(
         note_repo: NoteRepository,
+        drive_file_repo: DriveFileRepository,
         user_repo: UserRepository,
         ap_client: ApClient,
     ) -> Self {
         Self {
             note_repo,
+            drive_file_repo,
             actor_fetcher: ActorFetcher::new(user_repo, ap_client),
             id_gen: IdGenerator::new(),
         }
@@ -101,6 +108,11 @@ impl CreateProcessor {
         let mentions = self.extract_mentions_from_tags(ap_note);
         let tags = self.extract_hashtags_from_tags(ap_note);
 
+        // Process attachments
+        let file_ids = self
+            .process_attachments(&author.id, ap_note.attachment.as_deref())
+            .await;
+
         let note_id = self.id_gen.generate();
 
         let model = note::ActiveModel {
@@ -115,7 +127,7 @@ impl CreateProcessor {
             thread_id: Set(reply_id),
             mentions: Set(json!(mentions)),
             visible_user_ids: Set(json!([])),
-            file_ids: Set(json!([])), // TODO: Handle attachments
+            file_ids: Set(json!(file_ids)),
             tags: Set(json!(tags)),
             reactions: Set(json!({})),
             is_local: Set(false),
@@ -182,6 +194,84 @@ impl CreateProcessor {
                     .collect()
             })
             .unwrap_or_default()
+    }
+
+    /// Process attachments from an `ActivityPub` note.
+    /// Creates drive file records for remote files.
+    async fn process_attachments(
+        &self,
+        user_id: &str,
+        attachments: Option<&[ApAttachment]>,
+    ) -> Vec<String> {
+        let Some(attachments) = attachments else {
+            return vec![];
+        };
+
+        let mut file_ids = Vec::new();
+
+        for attachment in attachments {
+            // Only process Document type attachments (media files)
+            if attachment.kind != "Document" {
+                continue;
+            }
+
+            let file_id = self.id_gen.generate();
+
+            // Determine MIME type
+            let content_type = attachment
+                .media_type
+                .clone()
+                .unwrap_or_else(|| "application/octet-stream".to_string());
+
+            // Extract filename from name or URL path
+            let name = attachment.name.clone().unwrap_or_else(|| {
+                attachment
+                    .url
+                    .path_segments()
+                    .and_then(|mut segments| segments.next_back())
+                    .unwrap_or("unknown")
+                    .to_string()
+            });
+
+            // Create drive file record for the remote file
+            let model = drive_file::ActiveModel {
+                id: Set(file_id.clone()),
+                user_id: Set(user_id.to_string()),
+                user_host: Set(None), // Will be set from user's host if needed
+                name: Set(name),
+                content_type: Set(content_type),
+                size: Set(0), // Unknown for remote files
+                url: Set(attachment.url.to_string()),
+                thumbnail_url: Set(None),
+                webpublic_url: Set(None),
+                blurhash: Set(attachment.blurhash.clone()),
+                width: Set(attachment.width.map(|w| w as i32)),
+                height: Set(attachment.height.map(|h| h as i32)),
+                comment: Set(None),
+                is_sensitive: Set(false),
+                is_link: Set(true), // This is a link to remote file
+                md5: Set(None),
+                storage_key: Set(None),
+                folder_id: Set(None),
+                uri: Set(Some(attachment.url.to_string())),
+                created_at: Set(chrono::Utc::now().into()),
+            };
+
+            match self.drive_file_repo.create(model).await {
+                Ok(_) => {
+                    file_ids.push(file_id);
+                }
+                Err(e) => {
+                    warn!(
+                        url = %attachment.url,
+                        error = %e,
+                        "Failed to create drive file record for attachment"
+                    );
+                }
+            }
+        }
+
+        file_ids
     }
 }
 

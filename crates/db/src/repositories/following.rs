@@ -174,6 +174,54 @@ impl FollowingRepository {
             .await
             .map_err(|e| AppError::Database(e.to_string()))
     }
+
+    /// Get all followee IDs for a user (optimized for timeline queries).
+    ///
+    /// This method only fetches the `followee_id` column, avoiding loading
+    /// unnecessary data for timeline filtering operations.
+    pub async fn find_following_ids(&self, user_id: &str) -> AppResult<Vec<String>> {
+        use sea_orm::FromQueryResult;
+
+        #[derive(FromQueryResult)]
+        struct FolloweeIdOnly {
+            followee_id: String,
+        }
+
+        let results: Vec<FolloweeIdOnly> = Following::find()
+            .filter(following::Column::FollowerId.eq(user_id))
+            .select_only()
+            .column(following::Column::FolloweeId)
+            .into_model()
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        Ok(results.into_iter().map(|r| r.followee_id).collect())
+    }
+
+    /// Get all follower IDs for a user (optimized for queries).
+    ///
+    /// This method only fetches the `follower_id` column, avoiding loading
+    /// unnecessary data.
+    pub async fn find_follower_ids(&self, user_id: &str) -> AppResult<Vec<String>> {
+        use sea_orm::FromQueryResult;
+
+        #[derive(FromQueryResult)]
+        struct FollowerIdOnly {
+            follower_id: String,
+        }
+
+        let results: Vec<FollowerIdOnly> = Following::find()
+            .filter(following::Column::FolloweeId.eq(user_id))
+            .select_only()
+            .column(following::Column::FollowerId)
+            .into_model()
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        Ok(results.into_iter().map(|r| r.follower_id).collect())
+    }
 }
 
 #[cfg(test)]

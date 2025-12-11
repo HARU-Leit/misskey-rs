@@ -152,6 +152,56 @@ impl DeliveryService {
         })
     }
 
+    /// Build an Accept activity (accept follow request).
+    #[must_use]
+    pub fn build_accept_activity(
+        &self,
+        accepter: &user::Model,
+        follower_uri: &str,
+        follow_activity_id: &str,
+    ) -> Value {
+        let actor_url = format!("{}/users/{}", self.base_url, accepter.id);
+        let activity_id = format!("{}/accept/{}", actor_url, self.id_gen.generate());
+
+        json!({
+            "@context": "https://www.w3.org/ns/activitystreams",
+            "id": activity_id,
+            "type": "Accept",
+            "actor": actor_url,
+            "object": {
+                "id": follow_activity_id,
+                "type": "Follow",
+                "actor": follower_uri,
+                "object": actor_url
+            }
+        })
+    }
+
+    /// Build a Reject activity (reject follow request).
+    #[must_use]
+    pub fn build_reject_activity(
+        &self,
+        rejecter: &user::Model,
+        follower_uri: &str,
+        follow_activity_id: &str,
+    ) -> Value {
+        let actor_url = format!("{}/users/{}", self.base_url, rejecter.id);
+        let activity_id = format!("{}/reject/{}", actor_url, self.id_gen.generate());
+
+        json!({
+            "@context": "https://www.w3.org/ns/activitystreams",
+            "id": activity_id,
+            "type": "Reject",
+            "actor": actor_url,
+            "object": {
+                "id": follow_activity_id,
+                "type": "Follow",
+                "actor": follower_uri,
+                "object": actor_url
+            }
+        })
+    }
+
     /// Build a Like activity (reaction).
     #[must_use]
     pub fn build_like_activity(
@@ -319,9 +369,30 @@ impl DeliveryService {
             note::Visibility::Home => (vec![followers], vec![public]),
             note::Visibility::Followers => (vec![followers], vec![]),
             note::Visibility::Specified => {
-                // TODO: Extract visible_user_ids and convert to actor URLs
-                (vec![], vec![])
+                // Extract visible_user_ids and convert to actor URLs
+                let recipients = self.extract_specified_recipients(note);
+                (recipients, vec![])
             }
         }
+    }
+
+    /// Extract recipient actor URLs from `visible_user_ids` for Specified visibility.
+    ///
+    /// This generates actor URLs for the specified recipients.
+    /// Local users are converted to `{base_url}/users/{id}`.
+    /// Remote users are represented by their user ID (ideally would be resolved to URI).
+    fn extract_specified_recipients(&self, note: &note::Model) -> Vec<String> {
+        // Parse visible_user_ids as JSON array of user IDs
+        let user_ids: Vec<String> =
+            serde_json::from_value(note.visible_user_ids.clone()).unwrap_or_default();
+
+        user_ids
+            .into_iter()
+            .map(|user_id| {
+                // Generate actor URL - for local users this is correct,
+                // for remote users the inbox handler will need to resolve these
+                format!("{}/users/{}", self.base_url, user_id)
+            })
+            .collect()
     }
 }

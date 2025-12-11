@@ -665,8 +665,8 @@ mod incoming_parsing {
         assert!(parsed.quote_url.is_some());
         assert!(parsed.misskey_quote.is_some());
 
-        // get_quote_url should return one of them
-        assert!(parsed.get_quote_url().is_some());
+        // quote_url should return one of them
+        assert!(parsed.quote_url().is_some());
     }
 
     /// Handle missing optional fields gracefully.
@@ -734,9 +734,9 @@ mod fep_c16b {
         assert_eq!(json["quoteUrl"], json["_misskey_quote"]);
     }
 
-    /// Test that `get_quote_url` checks all quote fields.
+    /// Test that `quote_url` checks all quote fields.
     #[test]
-    fn test_get_quote_url_fallbacks() {
+    fn test_quote_url_fallbacks() {
         // Only quoteUrl
         let json1 = r#"{
             "type": "Note",
@@ -747,7 +747,7 @@ mod fep_c16b {
             "quoteUrl": "https://example.com/notes/original"
         }"#;
         let note1: ApNote = serde_json::from_str(json1).unwrap();
-        assert!(note1.get_quote_url().is_some());
+        assert!(note1.quote_url().is_some());
 
         // Only quoteUri
         let json2 = r#"{
@@ -759,7 +759,7 @@ mod fep_c16b {
             "quoteUri": "https://example.com/notes/original"
         }"#;
         let note2: ApNote = serde_json::from_str(json2).unwrap();
-        assert!(note2.get_quote_url().is_some());
+        assert!(note2.quote_url().is_some());
 
         // Only _misskey_quote
         let json3 = r#"{
@@ -771,6 +771,6 @@ mod fep_c16b {
             "_misskey_quote": "https://example.com/notes/original"
         }"#;
         let note3: ApNote = serde_json::from_str(json3).unwrap();
-        assert!(note3.get_quote_url().is_some());
+        assert!(note3.quote_url().is_some());
     }
 }

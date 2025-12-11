@@ -19,6 +19,8 @@ use crate::streaming::StreamingState;
 /// Application state.
 #[derive(Clone)]
 pub struct AppState {
+    /// Base URL of this instance (e.g., `https://example.com`).
+    pub base_url: String,
     pub user_service: UserService,
     pub note_service: NoteService,
     pub following_service: FollowingService,

@@ -21,7 +21,7 @@ pub use announce::AnnounceProcessor;
 pub use create::CreateProcessor;
 pub use delete::{DeleteProcessor, DeleteResult};
 pub use emoji_react::EmojiReactProcessor;
-pub use follow::{FollowProcessResult, FollowProcessor};
+pub use follow::{AcceptActivityInfo, FollowProcessResult, FollowProcessor};
 pub use like::LikeProcessor;
 pub use move_processor::{MoveProcessResult, MoveProcessor};
 pub use reject::RejectProcessor;

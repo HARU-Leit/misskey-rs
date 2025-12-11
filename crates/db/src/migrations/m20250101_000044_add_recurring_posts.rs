@@ -20,21 +20,9 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(
-                        ColumnDef::new(RecurringPost::UserId)
-                            .string()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(RecurringPost::Text)
-                            .text()
-                            .null(),
-                    )
-                    .col(
-                        ColumnDef::new(RecurringPost::Cw)
-                            .string()
-                            .null(),
-                    )
+                    .col(ColumnDef::new(RecurringPost::UserId).string().not_null())
+                    .col(ColumnDef::new(RecurringPost::Text).text().null())
+                    .col(ColumnDef::new(RecurringPost::Cw).string().null())
                     .col(
                         ColumnDef::new(RecurringPost::Visibility)
                             .string()
@@ -53,11 +41,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default("[]"),
                     )
-                    .col(
-                        ColumnDef::new(RecurringPost::Interval)
-                            .string()
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(RecurringPost::Interval).string().not_null())
                     .col(
                         ColumnDef::new(RecurringPost::DayOfWeek)
                             .small_integer()
@@ -108,11 +92,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default(0),
                     )
-                    .col(
-                        ColumnDef::new(RecurringPost::MaxPosts)
-                            .integer()
-                            .null(),
-                    )
+                    .col(ColumnDef::new(RecurringPost::MaxPosts).integer().null())
                     .col(
                         ColumnDef::new(RecurringPost::ExpiresAt)
                             .timestamp_with_time_zone()

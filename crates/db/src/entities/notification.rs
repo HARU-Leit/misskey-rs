@@ -25,6 +25,8 @@ pub enum NotificationType {
     ReceiveFollowRequest,
     #[sea_orm(string_value = "followRequestAccepted")]
     FollowRequestAccepted,
+    #[sea_orm(string_value = "messagingMessage")]
+    MessagingMessage,
     #[sea_orm(string_value = "app")]
     App,
 }

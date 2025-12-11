@@ -1,5 +1,6 @@
 //! Repository implementations.
 
+pub mod account_deletion;
 pub mod announcement;
 pub mod antenna;
 pub mod blocking;
@@ -8,12 +9,14 @@ pub mod clip;
 pub mod drive_file;
 pub mod drive_folder;
 pub mod emoji;
+pub mod export_job;
 pub mod filter_group;
 pub mod follow_request;
 pub mod following;
 pub mod gallery;
 pub mod group;
 pub mod hashtag;
+pub mod import_job;
 pub mod instance;
 pub mod messaging;
 pub mod meta_settings;
@@ -37,6 +40,7 @@ pub mod user_profile;
 pub mod webhook;
 pub mod word_filter;
 
+pub use account_deletion::AccountDeletionRepository;
 pub use announcement::AnnouncementRepository;
 pub use antenna::AntennaRepository;
 pub use blocking::BlockingRepository;
@@ -45,14 +49,14 @@ pub use clip::{ClipRepository, SmartClipConditions};
 pub use drive_file::DriveFileRepository;
 pub use drive_folder::DriveFolderRepository;
 pub use emoji::EmojiRepository;
-pub use filter_group::{
-    CreateFilterGroupInput, FilterGroupRepository, UpdateFilterGroupInput,
-};
+pub use export_job::ExportJobRepository;
+pub use filter_group::{CreateFilterGroupInput, FilterGroupRepository, UpdateFilterGroupInput};
 pub use follow_request::FollowRequestRepository;
 pub use following::FollowingRepository;
 pub use gallery::GalleryRepository;
 pub use group::GroupRepository;
 pub use hashtag::HashtagRepository;
+pub use import_job::ImportJobRepository;
 pub use instance::{InstanceRepository, InstanceStats};
 pub use messaging::MessagingRepository;
 pub use meta_settings::MetaSettingsRepository;

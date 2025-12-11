@@ -114,10 +114,9 @@ pub struct RelationshipsQuery {
 /// GET /`api/v1/accounts/verify_credentials` - Get current user.
 async fn verify_credentials(
     AuthUser(user): AuthUser,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> AppResult<Json<CredentialAccount>> {
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
 
     let account = user_to_account(&user, base_url);
 
@@ -140,8 +139,7 @@ async fn get_account(
 ) -> AppResult<Json<Account>> {
     let user = state.user_service.get(&id).await?;
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
 
     let account = user_to_account(&user, base_url);
 
@@ -161,8 +159,7 @@ async fn get_account_followers(
         .get_followers(&id, limit, query.max_id.as_deref())
         .await?;
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
 
     let mut accounts = Vec::new();
     for follower in followers {
@@ -187,8 +184,7 @@ async fn get_account_following(
         .get_following(&id, limit, query.max_id.as_deref())
         .await?;
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
 
     let mut accounts = Vec::new();
     for follow in following {
@@ -217,8 +213,7 @@ async fn get_account_statuses(
     // Get user for account info
     let user = state.user_service.get(&id).await.ok();
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
 
     let statuses: Vec<Status> = notes
         .into_iter()
@@ -248,7 +243,10 @@ async fn unfollow_account(
     Path(id): Path<String>,
 ) -> AppResult<Json<Relationship>> {
     // Use unfollow method instead of delete
-    let _ = state.following_service.unfollow(&user.id, &id).await;
+    // Ignore "not following" errors as the end state is correct
+    if let Err(e) = state.following_service.unfollow(&user.id, &id).await {
+        tracing::debug!(error = %e, "Unfollow returned error (may already be unfollowed)");
+    }
 
     let relationship = build_relationship(&state, &user.id, &id).await?;
     Ok(Json(relationship))
@@ -274,7 +272,10 @@ async fn unblock_account(
     Path(id): Path<String>,
 ) -> AppResult<Json<Relationship>> {
     // Use unblock method instead of delete
-    let _ = state.blocking_service.unblock(&user.id, &id).await;
+    // Ignore "not blocked" errors as the end state is correct
+    if let Err(e) = state.blocking_service.unblock(&user.id, &id).await {
+        tracing::debug!(error = %e, "Unblock returned error (may already be unblocked)");
+    }
 
     let relationship = build_relationship(&state, &user.id, &id).await?;
     Ok(Json(relationship))
@@ -300,7 +301,10 @@ async fn unmute_account(
     Path(id): Path<String>,
 ) -> AppResult<Json<Relationship>> {
     // Use unmute method instead of delete
-    let _ = state.muting_service.unmute(&user.id, &id).await;
+    // Ignore "not muted" errors as the end state is correct
+    if let Err(e) = state.muting_service.unmute(&user.id, &id).await {
+        tracing::debug!(error = %e, "Unmute returned error (may already be unmuted)");
+    }
 
     let relationship = build_relationship(&state, &user.id, &id).await?;
     Ok(Json(relationship))

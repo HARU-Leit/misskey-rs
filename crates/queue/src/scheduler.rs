@@ -24,6 +24,8 @@ pub enum ScheduledJob {
     ProcessScheduledNotes,
     /// Clean up old completed scheduled notes.
     CleanupScheduledNotes { retention_days: u32 },
+    /// Process recurring posts (due for posting).
+    ProcessRecurringPosts,
 }
 
 /// Scheduler configuration.
@@ -43,6 +45,8 @@ pub struct SchedulerConfig {
     pub scheduled_note_interval: Duration,
     /// Retention period for old completed scheduled notes in days.
     pub scheduled_note_retention_days: u32,
+    /// Interval for processing recurring posts (default: 1 minute).
+    pub recurring_post_interval: Duration,
 }
 
 impl Default for SchedulerConfig {
@@ -55,6 +59,7 @@ impl Default for SchedulerConfig {
             note_retention_days: 365,
             scheduled_note_interval: Duration::from_secs(30),
             scheduled_note_retention_days: 30,
+            recurring_post_interval: Duration::from_secs(60),
         }
     }
 }
@@ -68,6 +73,7 @@ pub struct SchedulerState {
     pub last_note_cleanup: Option<DateTime<Utc>>,
     pub last_scheduled_note_process: Option<DateTime<Utc>>,
     pub last_scheduled_note_cleanup: Option<DateTime<Utc>>,
+    pub last_recurring_post_process: Option<DateTime<Utc>>,
 }
 
 /// Job executor trait for scheduled jobs.
@@ -98,6 +104,11 @@ pub trait JobExecutor: Send + Sync {
         &self,
         retention_days: u32,
     ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>>;
+
+    /// Process recurring posts that are due for posting.
+    async fn process_recurring_posts(
+        &self,
+    ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>>;
 }
 
 /// Run the scheduler with the given configuration and executor.
@@ -107,7 +118,8 @@ pub async fn run_scheduler<E: JobExecutor + 'static>(config: SchedulerConfig, ex
     let executor_chart = executor.clone();
     let executor_note = executor.clone();
     let executor_scheduled = executor.clone();
-    let executor_scheduled_cleanup = executor;
+    let executor_scheduled_cleanup = executor.clone();
+    let executor_recurring = executor;
 
     let mute_interval = config.mute_cleanup_interval;
     let health_interval = config.health_check_interval;
@@ -116,6 +128,7 @@ pub async fn run_scheduler<E: JobExecutor + 'static>(config: SchedulerConfig, ex
     let note_retention_days = config.note_retention_days;
     let scheduled_note_interval = config.scheduled_note_interval;
     let scheduled_note_retention_days = config.scheduled_note_retention_days;
+    let recurring_post_interval = config.recurring_post_interval;
 
     // Spawn mute cleanup task
     tokio::spawn(async move {
@@ -219,6 +232,24 @@ pub async fn run_scheduler<E: JobExecutor + 'static>(config: SchedulerConfig, ex
                 }
                 Err(e) => {
                     tracing::error!(error = %e, "Failed to cleanup old scheduled notes");
+                }
+            }
+        }
+    });
+
+    // Spawn recurring post processing task
+    tokio::spawn(async move {
+        let mut interval = interval(recurring_post_interval);
+        loop {
+            interval.tick().await;
+            match executor_recurring.process_recurring_posts().await {
+                Ok(count) => {
+                    if count > 0 {
+                        tracing::info!(count, "Processed recurring posts");
+                    }
+                }
+                Err(e) => {
+                    tracing::error!(error = %e, "Failed to process recurring posts");
                 }
             }
         }

@@ -86,6 +86,52 @@ pub struct NoteMatchContext {
     pub list_memberships: Vec<String>,
 }
 
+/// Parsed antenna configuration for efficient matching.
+///
+/// This struct pre-parses JSON fields from the antenna model to avoid
+/// repeated parsing during note matching operations.
+#[derive(Debug, Clone)]
+pub struct ParsedAntenna {
+    /// Original antenna model
+    pub antenna: antenna::Model,
+    /// Parsed users list
+    pub users: Vec<String>,
+    /// Parsed instances list
+    pub instances: Vec<String>,
+    /// Parsed keywords
+    pub keywords: Vec<Vec<String>>,
+    /// Parsed exclude keywords
+    pub exclude_keywords: Vec<Vec<String>>,
+}
+
+impl ParsedAntenna {
+    /// Create a parsed antenna from a model.
+    #[must_use]
+    pub fn from_model(antenna: antenna::Model) -> Self {
+        let users: Vec<String> = serde_json::from_value(antenna.users.clone()).unwrap_or_default();
+        let instances: Vec<String> =
+            serde_json::from_value(antenna.instances.clone()).unwrap_or_default();
+        let keywords: Vec<Vec<String>> =
+            serde_json::from_value(antenna.keywords.clone()).unwrap_or_default();
+        let exclude_keywords: Vec<Vec<String>> =
+            serde_json::from_value(antenna.exclude_keywords.clone()).unwrap_or_default();
+
+        Self {
+            antenna,
+            users,
+            instances,
+            keywords,
+            exclude_keywords,
+        }
+    }
+
+    /// Parse multiple antenna models.
+    #[must_use]
+    pub fn from_models(antennas: Vec<antenna::Model>) -> Vec<Self> {
+        antennas.into_iter().map(Self::from_model).collect()
+    }
+}
+
 /// Service for managing antennas.
 #[derive(Clone)]
 pub struct AntennaService {
@@ -458,6 +504,95 @@ impl AntennaService {
         Ok(true)
     }
 
+    /// Check if a note matches a pre-parsed antenna (optimized, avoids JSON parsing).
+    #[must_use]
+    pub fn matches_parsed_antenna(
+        &self,
+        parsed: &ParsedAntenna,
+        context: &NoteMatchContext,
+    ) -> bool {
+        let antenna = &parsed.antenna;
+
+        // Check if active
+        if !antenna.is_active {
+            return false;
+        }
+
+        // Check local_only
+        if antenna.local_only && context.user_host.is_some() {
+            return false;
+        }
+
+        // Check with_replies
+        if !antenna.with_replies && context.is_reply {
+            return false;
+        }
+
+        // Check with_file
+        if antenna.with_file && !context.has_files {
+            return false;
+        }
+
+        // Check source using pre-parsed data
+        match antenna.src {
+            AntennaSource::Users => {
+                if !parsed.users.contains(&context.user_id) {
+                    return false;
+                }
+            }
+            AntennaSource::List => {
+                if let Some(ref list_id) = antenna.user_list_id {
+                    if !context.list_memberships.contains(list_id) {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+            AntennaSource::Instances => {
+                match &context.user_host {
+                    Some(host) => {
+                        if !parsed
+                            .instances
+                            .iter()
+                            .any(|i| i.eq_ignore_ascii_case(host))
+                        {
+                            return false;
+                        }
+                    }
+                    None => {
+                        // Local users don't match instance filter
+                        return false;
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        // Use pre-parsed keywords
+        let text = if antenna.case_sensitive {
+            context.text.clone()
+        } else {
+            context.text.to_lowercase()
+        };
+
+        // Check exclude keywords first (only if there are any)
+        if !parsed.exclude_keywords.is_empty()
+            && self.matches_keywords(&text, &parsed.exclude_keywords, antenna.case_sensitive)
+        {
+            return false;
+        }
+
+        // Check include keywords
+        if !parsed.keywords.is_empty()
+            && !self.matches_keywords(&text, &parsed.keywords, antenna.case_sensitive)
+        {
+            return false;
+        }
+
+        true
+    }
+
     /// Check if text matches keyword groups (OR of ANDs).
     fn matches_keywords(&self, text: &str, keywords: &[Vec<String>], case_sensitive: bool) -> bool {
         if keywords.is_empty() {
@@ -506,6 +641,12 @@ impl AntennaService {
         self.antenna_repo.find_all_active().await
     }
 
+    /// Get all active antennas pre-parsed for efficient batch processing.
+    pub async fn get_all_active_antennas_parsed(&self) -> AppResult<Vec<ParsedAntenna>> {
+        let antennas = self.antenna_repo.find_all_active().await?;
+        Ok(ParsedAntenna::from_models(antennas))
+    }
+
     /// Process a note against all active antennas.
     ///
     /// This method checks if the note matches any active antennas and adds it to
@@ -526,6 +667,40 @@ impl AntennaService {
                 Ok(true)
             ) {
                 matched_antenna_ids.push(antenna.id);
+            }
+        }
+
+        Ok(matched_antenna_ids)
+    }
+
+    /// Process a note against all active antennas (optimized version).
+    ///
+    /// This version pre-parses all antenna JSON once for batch efficiency.
+    pub async fn process_note_for_all_antennas_optimized(
+        &self,
+        note_id: &str,
+        context: &NoteMatchContext,
+    ) -> AppResult<Vec<String>> {
+        let parsed_antennas = self.get_all_active_antennas_parsed().await?;
+        let mut matched_antenna_ids = Vec::new();
+
+        for parsed in &parsed_antennas {
+            if self.matches_parsed_antenna(parsed, context) {
+                // Check if already added
+                if self
+                    .antenna_repo
+                    .is_note_in_antenna(&parsed.antenna.id, note_id)
+                    .await?
+                {
+                    continue;
+                }
+
+                // Add note to antenna
+                let id = self.id_gen.generate();
+                self.antenna_repo
+                    .add_note(id, parsed.antenna.id.clone(), note_id.to_string())
+                    .await?;
+                matched_antenna_ids.push(parsed.antenna.id.clone());
             }
         }
 

@@ -64,7 +64,8 @@ pub struct UpdateFilterInput {
 }
 
 /// Result of applying filters to content.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FilterResult {
     /// Whether any filter matched.
     pub matched: bool,
@@ -74,6 +75,18 @@ pub struct FilterResult {
     pub action: Option<FilterAction>,
     /// Matched phrases for display.
     pub matched_phrases: Vec<String>,
+}
+
+/// Result for note with filter information.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NoteFilterInfo {
+    /// Whether the note should be filtered.
+    pub is_filtered: bool,
+    /// The action to take (hide, warn, `content_warning`).
+    pub filter_action: Option<String>,
+    /// Keywords that matched (for display).
+    pub matched_keywords: Vec<String>,
 }
 
 /// Service for managing word filters.
@@ -270,16 +283,9 @@ impl WordFilterService {
         self.filter_repo.delete(filter_id).await
     }
 
-    /// Delete all filters for a user.
+    /// Delete all filters for a user (batch operation).
     pub async fn delete_all_for_user(&self, user_id: &str) -> AppResult<u64> {
-        let filters = self.filter_repo.find_by_user(user_id, 1000, 0).await?;
-        let count = filters.len() as u64;
-
-        for filter in filters {
-            self.filter_repo.delete(&filter.id).await?;
-        }
-
-        Ok(count)
+        self.filter_repo.delete_all_by_user(user_id).await
     }
 
     /// Apply filters to content and return the result.
@@ -309,7 +315,7 @@ impl WordFilterService {
 
                 // Update action to most severe
                 most_severe_action = Some(match (&most_severe_action, &filter.action) {
-                    (None, action) => action.clone(),
+                    (None, action) => *action,
                     (Some(FilterAction::Hide), _) => FilterAction::Hide,
                     (_, FilterAction::Hide) => FilterAction::Hide,
                     (Some(FilterAction::ContentWarning), _) => FilterAction::ContentWarning,
@@ -372,6 +378,157 @@ impl WordFilterService {
     /// Delete expired filters (maintenance task).
     pub async fn cleanup_expired(&self) -> AppResult<u64> {
         self.filter_repo.delete_expired().await
+    }
+
+    /// Get active filters for a user (for batch processing).
+    ///
+    /// Use this to fetch filters once, then apply them to multiple contents
+    /// using `apply_filters_with_cache`.
+    pub async fn get_active_filters(&self, user_id: &str) -> AppResult<Vec<word_filter::Model>> {
+        self.filter_repo.find_active_by_user(user_id).await
+    }
+
+    /// Apply pre-fetched filters to content (for batch processing).
+    ///
+    /// This avoids N+1 queries when filtering multiple notes.
+    pub fn apply_filters_with_cache(
+        &self,
+        filters: &[word_filter::Model],
+        content: &str,
+        context: FilterContext,
+    ) -> AppResult<FilterResult> {
+        let mut matched_filter_ids = Vec::new();
+        let mut matched_phrases = Vec::new();
+        let mut most_severe_action: Option<FilterAction> = None;
+
+        for filter in filters {
+            // Check if filter applies to this context
+            if filter.context != FilterContext::All && filter.context != context {
+                continue;
+            }
+
+            let matches = self.check_filter_match(filter, content)?;
+
+            if matches {
+                matched_filter_ids.push(filter.id.clone());
+                matched_phrases.push(filter.phrase.clone());
+
+                // Update action to most severe
+                most_severe_action = Some(match (&most_severe_action, &filter.action) {
+                    (None, action) => *action,
+                    (Some(FilterAction::Hide), _) => FilterAction::Hide,
+                    (_, FilterAction::Hide) => FilterAction::Hide,
+                    (Some(FilterAction::ContentWarning), _) => FilterAction::ContentWarning,
+                    (_, FilterAction::ContentWarning) => FilterAction::ContentWarning,
+                    (Some(FilterAction::Warn), _) => FilterAction::Warn,
+                });
+            }
+        }
+
+        Ok(FilterResult {
+            matched: !matched_filter_ids.is_empty(),
+            matched_filter_ids,
+            action: most_severe_action,
+            matched_phrases,
+        })
+    }
+
+    /// Check multiple note contents against filters (batch operation).
+    ///
+    /// Returns a vector of `NoteFilterInfo` in the same order as input.
+    pub async fn check_notes_batch(
+        &self,
+        viewer_user_id: &str,
+        notes: &[(Option<&str>, Option<&str>)], // (text, cw) pairs
+    ) -> AppResult<Vec<NoteFilterInfo>> {
+        // Fetch filters once
+        let filters = self.get_active_filters(viewer_user_id).await?;
+
+        // Apply to all notes
+        let mut results = Vec::with_capacity(notes.len());
+        for (note_text, note_cw) in notes {
+            let content = match (note_text, note_cw) {
+                (Some(text), Some(cw)) => format!("{cw} {text}"),
+                (Some(text), None) => (*text).to_string(),
+                (None, Some(cw)) => (*cw).to_string(),
+                (None, None) => {
+                    results.push(NoteFilterInfo {
+                        is_filtered: false,
+                        filter_action: None,
+                        matched_keywords: vec![],
+                    });
+                    continue;
+                }
+            };
+
+            let result = self.apply_filters_with_cache(&filters, &content, FilterContext::All)?;
+
+            results.push(NoteFilterInfo {
+                is_filtered: result.matched,
+                filter_action: result.action.map(|a| format!("{a:?}").to_lowercase()),
+                matched_keywords: result.matched_phrases,
+            });
+        }
+
+        Ok(results)
+    }
+
+    /// Check if note content should be filtered for a specific user.
+    ///
+    /// Returns `NoteFilterInfo` that can be included in note responses.
+    pub async fn check_note_content(
+        &self,
+        viewer_user_id: &str,
+        note_text: Option<&str>,
+        note_cw: Option<&str>,
+    ) -> AppResult<NoteFilterInfo> {
+        // Combine text and CW for filtering
+        let content = match (note_text, note_cw) {
+            (Some(text), Some(cw)) => format!("{cw} {text}"),
+            (Some(text), None) => text.to_string(),
+            (None, Some(cw)) => cw.to_string(),
+            (None, None) => {
+                return Ok(NoteFilterInfo {
+                    is_filtered: false,
+                    filter_action: None,
+                    matched_keywords: vec![],
+                });
+            }
+        };
+
+        let result = self
+            .apply_filters(viewer_user_id, &content, FilterContext::All)
+            .await?;
+
+        Ok(NoteFilterInfo {
+            is_filtered: result.matched,
+            filter_action: result.action.map(|a| match a {
+                FilterAction::Hide => "hide".to_string(),
+                FilterAction::Warn => "warn".to_string(),
+                FilterAction::ContentWarning => "cw".to_string(),
+            }),
+            matched_keywords: result.matched_phrases,
+        })
+    }
+
+    /// Check content in a specific context (home, notifications, etc.).
+    pub async fn check_content_in_context(
+        &self,
+        viewer_user_id: &str,
+        content: &str,
+        context: FilterContext,
+    ) -> AppResult<NoteFilterInfo> {
+        let result = self.apply_filters(viewer_user_id, content, context).await?;
+
+        Ok(NoteFilterInfo {
+            is_filtered: result.matched,
+            filter_action: result.action.map(|a| match a {
+                FilterAction::Hide => "hide".to_string(),
+                FilterAction::Warn => "warn".to_string(),
+                FilterAction::ContentWarning => "cw".to_string(),
+            }),
+            matched_keywords: result.matched_phrases,
+        })
     }
 }
 

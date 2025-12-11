@@ -149,6 +149,7 @@ impl SearchService {
     /// Create a new search service with Meilisearch integration.
     #[cfg(feature = "meilisearch")]
     #[must_use]
+    #[allow(clippy::expect_used)] // URL existence is checked by has_meilisearch() above
     pub fn with_meilisearch(note_repo: NoteRepository, config: SearchConfig) -> Self {
         let meilisearch = if config.has_meilisearch() {
             let url = config.meilisearch_url.as_ref().expect("URL checked above");

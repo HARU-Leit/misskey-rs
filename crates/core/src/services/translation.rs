@@ -902,7 +902,13 @@ impl TranslationService {
             });
         }
 
-        let (max_count, lang) = counts.iter().max_by_key(|(c, _)| c).unwrap();
+        // counts is a fixed-size array, so this should always succeed
+        let Some((max_count, lang)) = counts.iter().max_by_key(|(c, _)| c) else {
+            return Ok(LanguageDetectionResponse {
+                language: "en".to_string(),
+                confidence: 0.1,
+            });
+        };
 
         Ok(LanguageDetectionResponse {
             language: (*lang).to_string(),

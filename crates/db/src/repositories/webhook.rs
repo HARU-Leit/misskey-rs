@@ -162,4 +162,19 @@ impl WebhookRepository {
         let count = self.count_by_user_id(user_id).await?;
         Ok(count as usize >= MAX_WEBHOOKS_PER_USER)
     }
+
+    /// Disable a webhook.
+    pub async fn disable(&self, id: &str) -> AppResult<()> {
+        let webhook = self.get_by_id(id).await?;
+        let mut active: webhook::ActiveModel = webhook.into();
+
+        active.is_active = Set(false);
+        active.updated_at = Set(Some(chrono::Utc::now().into()));
+
+        active
+            .update(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        Ok(())
+    }
 }

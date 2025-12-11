@@ -5,6 +5,7 @@
 #![allow(missing_docs)]
 
 pub mod abuse_report;
+pub mod account_deletion;
 pub mod announcement;
 pub mod announcement_read;
 pub mod antenna;
@@ -17,6 +18,7 @@ pub mod clip_note;
 pub mod drive_file;
 pub mod drive_folder;
 pub mod emoji;
+pub mod export_job;
 pub mod filter_group;
 pub mod follow_request;
 pub mod following;
@@ -26,6 +28,7 @@ pub mod group;
 pub mod group_invite;
 pub mod group_member;
 pub mod hashtag;
+pub mod import_job;
 pub mod instance;
 pub mod messaging_message;
 pub mod meta_settings;
@@ -56,6 +59,7 @@ pub mod webhook;
 pub mod word_filter;
 
 pub use abuse_report::Entity as AbuseReport;
+pub use account_deletion::Entity as AccountDeletion;
 pub use announcement::Entity as Announcement;
 pub use announcement_read::Entity as AnnouncementRead;
 pub use antenna::Entity as Antenna;
@@ -68,6 +72,7 @@ pub use clip_note::Entity as ClipNote;
 pub use drive_file::Entity as DriveFile;
 pub use drive_folder::Entity as DriveFolder;
 pub use emoji::Entity as Emoji;
+pub use export_job::Entity as ExportJob;
 pub use filter_group::Entity as FilterGroup;
 pub use follow_request::Entity as FollowRequest;
 pub use following::Entity as Following;
@@ -77,6 +82,7 @@ pub use group::Entity as Group;
 pub use group_invite::Entity as GroupInvite;
 pub use group_member::Entity as GroupMember;
 pub use hashtag::Entity as Hashtag;
+pub use import_job::Entity as ImportJob;
 pub use instance::Entity as Instance;
 pub use messaging_message::Entity as MessagingMessage;
 pub use meta_settings::Entity as MetaSettings;

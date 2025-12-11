@@ -19,16 +19,8 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default(false),
                     )
-                    .add_column(
-                        ColumnDef::new(Clip::SmartConditions)
-                            .json()
-                            .null(),
-                    )
-                    .add_column(
-                        ColumnDef::new(Clip::SmartMaxNotes)
-                            .integer()
-                            .null(),
-                    )
+                    .add_column(ColumnDef::new(Clip::SmartConditions).json().null())
+                    .add_column(ColumnDef::new(Clip::SmartMaxNotes).integer().null())
                     .add_column(
                         ColumnDef::new(Clip::SmartLastProcessedAt)
                             .timestamp_with_time_zone()

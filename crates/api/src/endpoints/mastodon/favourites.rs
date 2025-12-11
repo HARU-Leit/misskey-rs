@@ -44,8 +44,7 @@ async fn get_favourites(
         .get_favorites(&user.id, limit, query.max_id.as_deref())
         .await?;
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
 
     let mut statuses = Vec::new();
     for favorite in favorites {

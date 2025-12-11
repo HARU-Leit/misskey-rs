@@ -258,7 +258,9 @@ async fn webfinger_channel(
         .into_iter()
         .find(|c| c.name.eq_ignore_ascii_case(name) && c.host.is_none());
 
-    let channel = if let Some(c) = channel { c } else {
+    let channel = if let Some(c) = channel {
+        c
+    } else {
         info!(name = %name, "Channel not found for WebFinger");
         return (StatusCode::NOT_FOUND, "Channel not found").into_response();
     };

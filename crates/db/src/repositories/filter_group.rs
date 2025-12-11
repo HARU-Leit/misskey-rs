@@ -48,7 +48,7 @@ pub struct FilterGroupRepository {
 impl FilterGroupRepository {
     /// Create a new filter group repository.
     #[must_use]
-    pub fn new(db: Arc<DatabaseConnection>) -> Self {
+    pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self {
             db,
             id_gen: IdGenerator::new(),
@@ -137,19 +137,25 @@ impl FilterGroupRepository {
 
     /// Activate a filter group.
     pub async fn activate(&self, id: &str) -> Result<Option<Model>, DbErr> {
-        self.update(id, UpdateFilterGroupInput {
-            is_active: Some(true),
-            ..Default::default()
-        })
+        self.update(
+            id,
+            UpdateFilterGroupInput {
+                is_active: Some(true),
+                ..Default::default()
+            },
+        )
         .await
     }
 
     /// Deactivate a filter group.
     pub async fn deactivate(&self, id: &str) -> Result<Option<Model>, DbErr> {
-        self.update(id, UpdateFilterGroupInput {
-            is_active: Some(false),
-            ..Default::default()
-        })
+        self.update(
+            id,
+            UpdateFilterGroupInput {
+                is_active: Some(false),
+                ..Default::default()
+            },
+        )
         .await
     }
 

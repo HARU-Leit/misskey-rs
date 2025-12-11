@@ -8,8 +8,8 @@ use axum::{
 };
 use misskey_common::{AppError, AppResult};
 use misskey_db::repositories::{
-    FollowRequestRepository, FollowingRepository, NoteRepository, ReactionRepository,
-    UserKeypairRepository, UserProfileRepository, UserRepository,
+    DriveFileRepository, FollowRequestRepository, FollowingRepository, NoteRepository,
+    ReactionRepository, UserKeypairRepository, UserProfileRepository, UserRepository,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -92,6 +92,7 @@ pub struct InboxState {
     pub user_keypair_repo: UserKeypairRepository,
     pub user_profile_repo: UserProfileRepository,
     pub note_repo: NoteRepository,
+    pub drive_file_repo: DriveFileRepository,
     pub following_repo: FollowingRepository,
     pub follow_request_repo: FollowRequestRepository,
     pub reaction_repo: ReactionRepository,
@@ -107,6 +108,7 @@ impl InboxState {
         user_keypair_repo: UserKeypairRepository,
         user_profile_repo: UserProfileRepository,
         note_repo: NoteRepository,
+        drive_file_repo: DriveFileRepository,
         following_repo: FollowingRepository,
         follow_request_repo: FollowRequestRepository,
         reaction_repo: ReactionRepository,
@@ -118,6 +120,7 @@ impl InboxState {
             user_keypair_repo,
             user_profile_repo,
             note_repo,
+            drive_file_repo,
             following_repo,
             follow_request_repo,
             reaction_repo,
@@ -270,6 +273,7 @@ async fn process_activity(state: &InboxState, activity: &InboxActivity) -> AppRe
             info!(note_id = %create.object.id, "Processing Create activity");
             let processor = CreateProcessor::new(
                 state.note_repo.clone(),
+                state.drive_file_repo.clone(),
                 state.user_repo.clone(),
                 state.ap_client.clone(),
             );
@@ -361,8 +365,11 @@ async fn process_activity(state: &InboxState, activity: &InboxActivity) -> AppRe
         }
         InboxActivity::Announce(announce) => {
             info!(object = %announce.object, "Processing Announce activity");
-            let processor =
-                AnnounceProcessor::new(state.user_repo.clone(), state.note_repo.clone());
+            let processor = AnnounceProcessor::new(
+                state.user_repo.clone(),
+                state.note_repo.clone(),
+                state.ap_client.clone(),
+            );
             processor.process(announce).await?;
         }
         InboxActivity::Move(move_activity) => {

@@ -43,8 +43,7 @@ async fn get_mutes(
         .get_muting(&user.id, limit, query.max_id.as_deref())
         .await?;
 
-    // TODO: Get base_url from config
-    let base_url = "https://example.com";
+    let base_url = &state.base_url;
 
     let mut accounts = Vec::new();
     for muting in mutings {

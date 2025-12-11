@@ -112,7 +112,15 @@ pub struct WebhookDeliveryJob {
     pub url: String,
     pub secret: String,
     pub payload: String,
+    pub retry_count: u32,
+    pub max_retries: u32,
 }
+
+/// Maximum number of retries for webhook delivery.
+const MAX_WEBHOOK_RETRIES: u32 = 5;
+
+/// Maximum consecutive failures before disabling webhook.
+const MAX_FAILURE_COUNT: i32 = 10;
 
 /// Service for managing webhooks.
 #[derive(Clone)]
@@ -348,60 +356,112 @@ impl WebhookService {
                 data: data.clone(),
             };
 
-            // Spawn async delivery (don't block)
+            // Spawn async delivery with retry (don't block)
             let service = self.clone();
-            let webhook_id = webhook.id.clone();
-            let url = webhook.url.clone();
-            let secret = webhook.secret.clone();
-            let payload_json = serde_json::to_string(&payload).unwrap_or_default();
+            let job = WebhookDeliveryJob {
+                webhook_id: webhook.id.clone(),
+                url: webhook.url.clone(),
+                secret: webhook.secret.clone(),
+                payload: serde_json::to_string(&payload).unwrap_or_default(),
+                retry_count: 0,
+                max_retries: MAX_WEBHOOK_RETRIES,
+            };
 
             tokio::spawn(async move {
-                let _ = service
-                    .deliver(&webhook_id, &url, &secret, &payload_json)
-                    .await;
+                let _ = service.deliver_with_retry(job).await;
             });
         }
 
         Ok(())
     }
 
-    /// Deliver a webhook payload.
-    async fn deliver(
-        &self,
-        webhook_id: &str,
-        url: &str,
-        secret: &str,
-        payload: &str,
-    ) -> AppResult<()> {
-        // Generate signature
-        let signature = self.sign_payload(payload, secret);
+    /// Deliver a webhook payload with retry logic.
+    async fn deliver_with_retry(&self, mut job: WebhookDeliveryJob) -> AppResult<()> {
+        loop {
+            match self.deliver_once(&job).await {
+                Ok(()) => {
+                    // Success - record and exit
+                    self.webhook_repo.record_success(&job.webhook_id).await?;
+                    tracing::debug!(
+                        webhook_id = %job.webhook_id,
+                        url = %job.url,
+                        "Webhook delivered successfully"
+                    );
+                    return Ok(());
+                }
+                Err(e) => {
+                    job.retry_count += 1;
 
-        // Send request
-        let result = self
-            .http_client
-            .post(url)
-            .header("Content-Type", "application/json")
-            .header("X-Misskey-Signature", signature)
-            .body(payload.to_string())
-            .send()
-            .await;
+                    if job.retry_count > job.max_retries {
+                        // Max retries reached - record failure
+                        let error = format!("Max retries exceeded: {e}");
+                        self.webhook_repo
+                            .record_failure(&job.webhook_id, &error)
+                            .await?;
 
-        match result {
-            Ok(response) => {
-                if response.status().is_success() {
-                    self.webhook_repo.record_success(webhook_id).await?;
-                } else {
-                    let error = format!("HTTP {}", response.status());
-                    self.webhook_repo.record_failure(webhook_id, &error).await?;
+                        // Check if webhook should be disabled
+                        if let Ok(Some(webhook)) =
+                            self.webhook_repo.find_by_id(&job.webhook_id).await
+                            && webhook.failure_count >= MAX_FAILURE_COUNT
+                        {
+                            tracing::warn!(
+                                webhook_id = %job.webhook_id,
+                                failure_count = webhook.failure_count,
+                                "Disabling webhook due to too many failures"
+                            );
+                            let _ = self.webhook_repo.disable(&job.webhook_id).await;
+                        }
+
+                        tracing::warn!(
+                            webhook_id = %job.webhook_id,
+                            url = %job.url,
+                            error = %e,
+                            "Webhook delivery failed after max retries"
+                        );
+                        return Err(e);
+                    }
+
+                    // Calculate backoff delay: 2^retry_count seconds (1, 2, 4, 8, 16...)
+                    let delay_secs = 2u64.pow(job.retry_count);
+                    tracing::debug!(
+                        webhook_id = %job.webhook_id,
+                        retry_count = job.retry_count,
+                        delay_secs = delay_secs,
+                        error = %e,
+                        "Webhook delivery failed, retrying"
+                    );
+
+                    tokio::time::sleep(std::time::Duration::from_secs(delay_secs)).await;
                 }
             }
-            Err(e) => {
-                let error = e.to_string();
-                self.webhook_repo.record_failure(webhook_id, &error).await?;
-            }
         }
+    }
 
-        Ok(())
+    /// Attempt a single webhook delivery.
+    async fn deliver_once(&self, job: &WebhookDeliveryJob) -> AppResult<()> {
+        // Generate signature
+        let signature = self.sign_payload(&job.payload, &job.secret);
+
+        // Send request
+        let response = self
+            .http_client
+            .post(&job.url)
+            .header("Content-Type", "application/json")
+            .header("X-Misskey-Signature", &signature)
+            .header("User-Agent", "Misskey-Webhook/1.0")
+            .body(job.payload.clone())
+            .send()
+            .await
+            .map_err(|e| AppError::ExternalService(format!("Request failed: {e}")))?;
+
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(AppError::ExternalService(format!(
+                "HTTP {}",
+                response.status()
+            )))
+        }
     }
 
     /// Test a webhook by sending a test payload.

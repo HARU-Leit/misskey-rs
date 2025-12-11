@@ -498,7 +498,7 @@ impl EmailService {
             .subject(&message.subject);
 
         // Add reply-to if specified
-        if let Some(ref reply_to) = message.reply_to.as_ref().or(config.reply_to.as_ref()) {
+        if let Some(reply_to) = message.reply_to.as_ref().or(config.reply_to.as_ref()) {
             let reply_to_mailbox: Mailbox = reply_to
                 .parse()
                 .map_err(|e| AppError::Validation(format!("Invalid reply-to address: {e}")))?;
@@ -559,7 +559,7 @@ impl EmailService {
                     success: true,
                     message_id: Some(response.message().next().map_or_else(
                         || format!("smtp-{}", uuid::Uuid::new_v4()),
-                        |s| s.to_string(),
+                        std::string::ToString::to_string,
                     )),
                     error: None,
                 })
@@ -596,7 +596,7 @@ impl EmailService {
                 success: true,
                 message_id: Some(response.message().next().map_or_else(
                     || format!("smtp-{}", uuid::Uuid::new_v4()),
-                    |s| s.to_string(),
+                    std::string::ToString::to_string,
                 )),
                 error: None,
             }),
@@ -632,7 +632,7 @@ impl EmailService {
             .to(to_mailbox)
             .subject(&message.subject);
 
-        if let Some(ref reply_to) = message.reply_to.as_ref().or(config.reply_to.as_ref()) {
+        if let Some(reply_to) = message.reply_to.as_ref().or(config.reply_to.as_ref()) {
             let reply_to_mailbox: Mailbox = reply_to
                 .parse()
                 .map_err(|e| AppError::Validation(format!("Invalid reply-to address: {e}")))?;
@@ -663,10 +663,8 @@ impl EmailService {
 
         // Get raw email content
         let raw_email = email.formatted();
-        let raw_email_base64 = base64::Engine::encode(
-            &base64::engine::general_purpose::STANDARD,
-            &raw_email,
-        );
+        let raw_email_base64 =
+            base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &raw_email);
 
         // Build SES v1 API request
         let endpoint = format!("https://email.{}.amazonaws.com", ses.region);
@@ -729,7 +727,7 @@ impl EmailService {
     fn create_ses_signature(
         &self,
         ses: &SesConfig,
-        endpoint: &str,
+        _endpoint: &str,
         amz_date: &str,
         date_stamp: &str,
         payload: &str,
@@ -742,17 +740,14 @@ impl EmailService {
         let payload_hash = hex::encode(Sha256::digest(payload.as_bytes()));
 
         let canonical_request = format!(
-            "POST\n/\n\ncontent-type:application/x-www-form-urlencoded\nhost:{}\nx-amz-date:{}\n\ncontent-type;host;x-amz-date\n{}",
-            host, amz_date, payload_hash
+            "POST\n/\n\ncontent-type:application/x-www-form-urlencoded\nhost:{host}\nx-amz-date:{amz_date}\n\ncontent-type;host;x-amz-date\n{payload_hash}"
         );
 
         // Step 2: Create string to sign
         let credential_scope = format!("{}/{}/ses/aws4_request", date_stamp, ses.region);
         let canonical_request_hash = hex::encode(Sha256::digest(canonical_request.as_bytes()));
-        let string_to_sign = format!(
-            "AWS4-HMAC-SHA256\n{}\n{}\n{}",
-            amz_date, credential_scope, canonical_request_hash
-        );
+        let string_to_sign =
+            format!("AWS4-HMAC-SHA256\n{amz_date}\n{credential_scope}\n{canonical_request_hash}");
 
         // Step 3: Calculate signature
         type HmacSha256 = Hmac<Sha256>;

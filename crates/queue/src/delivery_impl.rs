@@ -232,6 +232,21 @@ impl ActivityDelivery for RedisDeliveryService {
 
         self.queue_to_inboxes(user_id, activity, inboxes).await
     }
+
+    async fn queue_delete_actor(
+        &self,
+        user_id: &str,
+        activity: Value,
+        inboxes: Vec<String>,
+    ) -> AppResult<()> {
+        tracing::info!(
+            user_id = %user_id,
+            inbox_count = %inboxes.len(),
+            "Queueing Delete activity delivery for account deletion"
+        );
+
+        self.queue_to_inboxes(user_id, activity, inboxes).await
+    }
 }
 
 #[cfg(test)]

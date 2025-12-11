@@ -133,7 +133,7 @@ async fn get_config(State(state): State<AppState>) -> AppResult<ApiResponse<Push
     let response = if let Some(push_service) = &state.push_notification_service {
         PushConfigResponse {
             available: push_service.is_enabled(),
-            public_key: push_service.get_public_key().map(String::from),
+            public_key: push_service.public_key().map(String::from),
         }
     } else {
         PushConfigResponse {
