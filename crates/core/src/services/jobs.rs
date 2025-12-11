@@ -510,7 +510,8 @@ async fn process_export(context: &JobWorkerContext, job_id: &str, user_id: &str)
     // Process each data type and update progress
     // For now, we simulate the export process
     // In a full implementation, this would call the AccountService export methods
-    let data_types: Vec<String> = serde_json::from_value(job.data_types.clone()).unwrap_or_default();
+    let data_types: Vec<String> =
+        serde_json::from_value(job.data_types.clone()).unwrap_or_default();
     let total = data_types.len();
 
     for (i, data_type) in data_types.iter().enumerate() {

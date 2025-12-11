@@ -772,11 +772,7 @@ impl AccountService {
         // 3. Queue deletion job for scheduled time (immediately queued, will run at scheduled time)
         if let Some(ref job_sender) = self.job_sender
             && let Err(e) = job_sender
-                .account_deletion(
-                    deletion_id.clone(),
-                    user_id.to_string(),
-                    !input.soft_delete,
-                )
+                .account_deletion(deletion_id.clone(), user_id.to_string(), !input.soft_delete)
                 .await
         {
             tracing::warn!(error = %e, "Failed to queue deletion job");

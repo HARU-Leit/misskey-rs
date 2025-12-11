@@ -11,9 +11,8 @@ use misskey_db::repositories::{
 use misskey_federation::{
     AcceptActivity, AcceptProcessor, AnnounceActivity, AnnounceProcessor, CreateActivity,
     CreateProcessor, DeleteActivity, DeleteProcessor, FollowActivity, FollowProcessResult,
-    FollowProcessor, HttpVerifier, LikeActivity, LikeProcessor, ParsedUndoActivity,
-    RejectActivity, RejectProcessor, UndoProcessor, UpdateActivity, UpdateProcessor,
-    client::ApClient,
+    FollowProcessor, HttpVerifier, LikeActivity, LikeProcessor, ParsedUndoActivity, RejectActivity,
+    RejectProcessor, UndoProcessor, UpdateActivity, UpdateProcessor, client::ApClient,
 };
 use sea_orm::DatabaseConnection;
 use tracing::{debug, error, info, warn};
@@ -141,11 +140,7 @@ async fn verify_signature(
     let components = HttpVerifier::parse_signature_header(&job.signature)?;
 
     // Extract actor URL from key_id
-    let actor_url = components
-        .key_id
-        .split('#')
-        .next()
-        .map(String::from);
+    let actor_url = components.key_id.split('#').next().map(String::from);
 
     let Some(ref actor_url_str) = actor_url else {
         return Err("Invalid key_id format in signature".into());
