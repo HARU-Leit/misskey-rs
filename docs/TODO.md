@@ -1,0 +1,198 @@
+# misskey-rs TODO リスト
+
+優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
+
+*Last Updated: 2025-12-11*
+
+---
+
+## 凡例
+
+| 記号 | 意味 |
+|------|------|
+| 🔴 | 最優先（本家との差別化・重要要望） |
+| 🟡 | 中優先（UX改善・機能拡張） |
+| 🟢 | 低優先（あると嬉しい機能） |
+| ✅ | 完了 |
+| 🔧 | 進行中/部分実装 |
+
+---
+
+## Tier 1: 最優先タスク 🔴
+
+### フェデレーション完全対応
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| ActivityPub Update activity対応（ノート編集連合） | 🔧 API実装済/AP未対応 | MISSING_FEATURES.md |
+| いいね/リアクションの適切な連合（Mastodon/Pleroma向け） | 未実装 | FORK_FEATURES.md |
+| 引用リノートのMastodon連合（FEP-e232対応） | 未実装 | COMMUNITY_FEATURES.md |
+| チャンネルのフェデレーション（Group actor） | 未実装 | COMMUNITY_FEATURES.md |
+| ActivityPub Move activity対応（アカウント移行） | 未実装 | MISSING_FEATURES.md |
+
+### Mastodon互換API完全対応
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| メディア添付API | 🔧 60%実装 | IMPLEMENTATION_STATUS.md |
+| OAuth 2.0完全対応 | ✅ 完了 | - |
+| 残りエンドポイント（favorites, blocks, mutes等） | 未実装 | FORK_FEATURES.md |
+
+### 管理機能強化
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| ローカル/リモート別文字数制限 | 未実装 | FORK_FEATURES.md |
+| 登録承認必須モード | 未実装 | FORK_FEATURES.md |
+| メディアNSFW強制マーク | 未実装 | FORK_FEATURES.md |
+
+---
+
+## Tier 2: 中優先タスク 🟡
+
+### パフォーマンス・インフラ
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| URLプレビューキャッシュ | 未実装 | FORK_FEATURES.md |
+| Redis分散カウンター（レート制限） | 未実装 | MISSING_FEATURES.md |
+| 読み取りレプリカ対応 | 未実装 | COMMUNITY_FEATURES.md |
+
+### タイムライン・フィード
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| バブルタイムライン | 未実装 | FORK_FEATURES.md |
+| チャンネルタイムラインのストリーミング | 未実装 | MISSING_FEATURES.md |
+| Bot非表示オプション | 未実装 | FORK_FEATURES.md |
+
+### 検索・発見
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| ドライブ検索（ファイル名/説明） | 未実装 | FORK_FEATURES.md |
+| インスタンス指定アンテナ | 未実装 | FORK_FEATURES.md |
+| Meilisearch連携 | 未実装 | FORK_FEATURES.md |
+
+### UI/UX API対応
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| ワンボタンいいね（Like/Reaction分離） | 未実装 | FORK_FEATURES.md |
+| デフォルトリアクション設定 | 未実装 | FORK_FEATURES.md |
+| ユーザー単位Authorized Fetch | 未実装 | FORK_FEATURES.md |
+
+### データ管理
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| ノートエクスポート（JSON/CSV） | 未実装 | MISSING_FEATURES.md |
+| ブロック/ミュートエクスポート | 未実装 | MISSING_FEATURES.md |
+| Mastodon形式インポート | 未実装 | MISSING_FEATURES.md |
+
+---
+
+## Tier 3: 低優先タスク 🟢
+
+### 拡張機能
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| スマートクリップ（条件ベース自動追加） | 未実装 | MISSING_FEATURES.md |
+| クリップ間ノート移動/コピー | 未実装 | MISSING_FEATURES.md |
+| 繰り返し投稿（日次/週次/月次） | 未実装 | MISSING_FEATURES.md |
+| フィルターグループ（プリセット） | 未実装 | MISSING_FEATURES.md |
+| アンテナ通知設定 | 未実装 | MISSING_FEATURES.md |
+
+### グループ拡張
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| グループ内限定ノート | 未実装 | MISSING_FEATURES.md |
+| グループDM（グループチャット） | 未実装 | MISSING_FEATURES.md |
+| グループのActivityPub対応 | 未実装 | MISSING_FEATURES.md |
+
+### セキュリティ強化
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| 信頼済みデバイス管理 | 未実装 | MISSING_FEATURES.md |
+| ログイン通知（新規デバイス） | 未実装 | MISSING_FEATURES.md |
+| セッション一覧と強制ログアウト | 未実装 | MISSING_FEATURES.md |
+
+### メディア処理
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| image-rs完全統合 | 🔧 インターフェース設計済 | MISSING_FEATURES.md |
+| 遅延処理（バックグラウンド変換） | 未実装 | MISSING_FEATURES.md |
+| 外部ストレージ対応強化（R2, B2, MinIO） | 未実装 | MISSING_FEATURES.md |
+
+### その他
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| プロフィール背景画像 | 未実装 | FORK_FEATURES.md |
+| Listenbrainz統合 | 未実装 | FORK_FEATURES.md |
+| robots.txt管理者設定 | 未実装 | FORK_FEATURES.md |
+
+---
+
+## Phase 7: 独自機能（将来計画）
+
+これらは差別化機能として将来検討：
+
+| タスク | 状況 | 参照 |
+|--------|------|------|
+| GraphQL API | 未着手 | MISSING_FEATURES.md |
+| プラグインシステム（WASM） | 未着手 | MISSING_FEATURES.md |
+| Rhaiスクリプティング | 未着手 | RHAI_SCRIPTING.md |
+| AI/LLM統合 | 未着手 | MISSING_FEATURES.md |
+| 分析・統計ダッシュボード | 未着手 | MISSING_FEATURES.md |
+| 高度なモデレーション（AI支援） | 未着手 | MISSING_FEATURES.md |
+
+---
+
+## 残課題（バグ修正・技術的負債）
+
+| タスク | ファイル | 参照 |
+|--------|----------|------|
+| メッセージングのブロックチェック | messaging.rs:81 | IMPLEMENTATION_STATUS.md |
+| ドライブのファイル実体削除 | drive.rs:218 | IMPLEMENTATION_STATUS.md |
+| NodeInfo実統計取得 | nodeinfo.rs | IMPLEMENTATION_STATUS.md |
+| Mastodon API base_url設定 | timelines.rs | IMPLEMENTATION_STATUS.md |
+
+---
+
+## 完了済み機能サマリー
+
+### Phase 1-6 (100%完了)
+- クリップ、ピン留め、予約投稿、ワードフィルター、ノート編集
+- アンテナ、チャンネル、インスタンスブロック
+- 2FA、レート制限、OAuth 2.0、WebAuthn
+- ページ、ギャラリー、翻訳、プッシュ通知、メール通知、メディア処理
+- アカウント移行/削除/エクスポート/インポート
+- グループ機能、Webhook
+
+### 上位互換化 (100%完了)
+- カウンター直接更新、再帰CTE、リモートアクターキャッシュ
+- リプレイ攻撃防止、インスタンス別レート制限
+- PostgreSQL全文検索、高度な検索フィルタ
+- 通知タイプフィルタ、トレンドノート、クリップ内検索
+- タイムラインワードフィルター、チャンネルタイムライン
+- 2FA/WebAuthnログイン検証、プッシュ通知ジョブサービス
+
+---
+
+## 次のアクション推奨
+
+1. **フェデレーション**: ActivityPub Update activity対応 → ノート編集が他サーバーに反映
+2. **Mastodon互換**: メディア添付API完成 → 既存クライアントの完全対応
+3. **管理機能**: 文字数制限設定 → インスタンス運用の柔軟性
+
+---
+
+*関連ドキュメント:*
+- [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) - 詳細な実装状況
+- [FORK_FEATURES.md](FORK_FEATURES.md) - フォーク機能比較
+- [RUST_TECH_STACK.md](RUST_TECH_STACK.md) - 技術スタック
