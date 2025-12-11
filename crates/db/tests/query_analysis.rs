@@ -14,7 +14,6 @@
 #![cfg(feature = "query-analysis")]
 
 use sea_orm::{ConnectionTrait, Database, DbBackend, Statement};
-use std::time::Duration;
 
 const DATABASE_URL: &str = "postgres://misskey_test:misskey_test@localhost:5433/misskey_test";
 
