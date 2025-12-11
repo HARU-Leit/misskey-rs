@@ -117,6 +117,7 @@ impl BlockingService {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     #[test]
     fn test_blocking_service_requires_different_users() {

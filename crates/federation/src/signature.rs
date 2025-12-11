@@ -63,6 +63,7 @@ impl HttpSigner {
     }
 
     /// Sign an HTTP request and return the signature headers.
+    #[allow(clippy::unwrap_used)] // HeaderValue::from_str on valid ASCII strings cannot fail
     pub fn sign_request(
         &self,
         method: &str,
@@ -265,6 +266,7 @@ pub fn verify_digest(body: &[u8], digest_header: &str) -> bool {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

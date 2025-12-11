@@ -15,35 +15,44 @@ pub struct Mention {
     pub acct: String,
 }
 
-// Regex patterns
+// Regex patterns - these are valid static patterns that cannot fail
+#[allow(clippy::unwrap_used)]
 static MENTION_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r"@([a-zA-Z0-9_]+)(?:@([a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]))?").unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static HASHTAG_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r"#([a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)").unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static URL_RE: std::sync::LazyLock<Regex> =
     std::sync::LazyLock::new(|| Regex::new(r"https?://[^\s<>\[\]()]+").unwrap());
 
+#[allow(clippy::unwrap_used)]
 static EMOJI_RE: std::sync::LazyLock<Regex> =
     std::sync::LazyLock::new(|| Regex::new(r":([a-zA-Z0-9_+-]+):").unwrap());
 
+#[allow(clippy::unwrap_used)]
 static BOLD_RE: std::sync::LazyLock<Regex> =
     std::sync::LazyLock::new(|| Regex::new(r"\*\*(.+?)\*\*").unwrap());
 
+#[allow(clippy::unwrap_used)]
 static ITALIC_RE: std::sync::LazyLock<Regex> =
     std::sync::LazyLock::new(|| Regex::new(r"\*([^*]+)\*").unwrap());
 
+#[allow(clippy::unwrap_used)]
 static STRIKE_RE: std::sync::LazyLock<Regex> =
     std::sync::LazyLock::new(|| Regex::new(r"~~(.+?)~~").unwrap());
 
+#[allow(clippy::unwrap_used)]
 static INLINE_CODE_RE: std::sync::LazyLock<Regex> =
     std::sync::LazyLock::new(|| Regex::new(r"`([^`]+)`").unwrap());
 
 /// Parse MFM text into an AST.
 #[must_use]
+#[allow(clippy::unwrap_used)] // Regex capture groups are guaranteed to exist
 pub fn parse(text: &str) -> Vec<MfmNode> {
     let mut nodes = Vec::new();
     let mut pos = 0;
@@ -210,17 +219,17 @@ pub fn parse(text: &str) -> Vec<MfmNode> {
 
 /// Extract all mentions from text.
 #[must_use]
+#[allow(clippy::unwrap_used)] // Regex capture groups are guaranteed to exist
 pub fn extract_mentions(text: &str) -> Vec<Mention> {
     MENTION_RE
         .captures_iter(text)
         .map(|cap| {
             let username = cap.get(1).unwrap().as_str().to_string();
             let host = cap.get(2).map(|h| h.as_str().to_string());
-            let acct = if let Some(ref h) = host {
-                format!("@{username}@{h}")
-            } else {
-                format!("@{username}")
-            };
+            let acct = host.as_ref().map_or_else(
+                || format!("@{username}"),
+                |h| format!("@{username}@{h}"),
+            );
             Mention {
                 username,
                 host,
@@ -232,6 +241,7 @@ pub fn extract_mentions(text: &str) -> Vec<Mention> {
 
 /// Extract all hashtags from text.
 #[must_use]
+#[allow(clippy::unwrap_used)] // Regex capture groups are guaranteed to exist
 pub fn extract_hashtags(text: &str) -> Vec<String> {
     HASHTAG_RE
         .captures_iter(text)

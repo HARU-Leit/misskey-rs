@@ -9,6 +9,8 @@
 //! cargo test --features query-analysis -- query_analysis --nocapture
 //! ```
 
+#![allow(clippy::unwrap_used)]
+
 #![cfg(feature = "query-analysis")]
 
 use sea_orm::{ConnectionTrait, Database, DbBackend, Statement};

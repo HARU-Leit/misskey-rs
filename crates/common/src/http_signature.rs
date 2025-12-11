@@ -179,6 +179,7 @@ pub fn calculate_digest(body: &[u8]) -> String {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
     use crate::generate_rsa_keypair;

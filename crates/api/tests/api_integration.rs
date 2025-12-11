@@ -2,6 +2,8 @@
 //!
 //! These tests verify the API endpoints work correctly together.
 
+#![allow(clippy::unwrap_used)]
+
 use axum::{
     Router,
     body::Body,

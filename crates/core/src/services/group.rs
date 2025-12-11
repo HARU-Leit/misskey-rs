@@ -846,6 +846,7 @@ fn can_manage(actor_role: &GroupRole, target_role: &GroupRole) -> bool {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

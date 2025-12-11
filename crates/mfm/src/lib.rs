@@ -35,6 +35,7 @@ pub use parser::{Mention, extract_hashtags, extract_mentions, parse};
 pub use render::{from_html, to_html, to_plain_text};
 
 #[cfg(test)]
+#[allow(clippy::panic)]
 mod tests {
     use super::*;
 

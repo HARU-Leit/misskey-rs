@@ -48,6 +48,7 @@ impl ApClient {
     }
 
     /// Deliver an activity to a remote inbox.
+    #[allow(clippy::unwrap_used)] // serde_json::to_vec on Value cannot fail
     pub async fn deliver(
         &self,
         inbox_url: &str,

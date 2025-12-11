@@ -213,6 +213,7 @@ fn misskey_to_mastodon_visibility(visibility: &note::Visibility) -> String {
 }
 
 /// Convert user to Mastodon account.
+#[allow(clippy::unwrap_used)] // unwrap is safe inside is_some() check
 pub fn user_to_account(user: &user::Model, base_url: &str) -> Account {
     Account {
         id: user.id.clone(),

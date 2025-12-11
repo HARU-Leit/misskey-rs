@@ -49,54 +49,67 @@ impl Default for UrlPreviewConfig {
     }
 }
 
-// Regex patterns for extracting metadata
+// Regex patterns for extracting metadata - these are valid static patterns that cannot fail
+#[allow(clippy::unwrap_used)]
 static TITLE_RE: std::sync::LazyLock<Regex> =
     std::sync::LazyLock::new(|| Regex::new(r"<title[^>]*>([^<]*)</title>").unwrap());
 
+#[allow(clippy::unwrap_used)]
 static OG_TITLE_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r#"<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']"#).unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static OG_TITLE_RE2: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:title["']"#).unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static OG_DESC_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r#"<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']*)["']"#).unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static OG_DESC_RE2: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:description["']"#).unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static META_DESC_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r#"<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']"#).unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static META_DESC_RE2: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+name=["']description["']"#).unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static OG_IMAGE_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r#"<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']*)["']"#).unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static OG_IMAGE_RE2: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:image["']"#).unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static OG_SITE_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r#"<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']*)["']"#).unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static OG_SITE_RE2: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:site_name["']"#).unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static ICON_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r#"<link[^>]+rel=["'](?:shortcut )?icon["'][^>]+href=["']([^"']*)["']"#).unwrap()
 });
 
+#[allow(clippy::unwrap_used)]
 static ICON_RE2: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r#"<link[^>]+href=["']([^"']*)["'][^>]+rel=["'](?:shortcut )?icon["']"#).unwrap()
 });
@@ -289,6 +302,7 @@ fn decode_html_entities(s: &str) -> String {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

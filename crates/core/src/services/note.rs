@@ -724,6 +724,7 @@ fn extract_hashtags(text: &str) -> Vec<String> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
     use chrono::Utc;

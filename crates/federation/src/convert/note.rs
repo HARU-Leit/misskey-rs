@@ -144,6 +144,7 @@ fn note_url(config: &UrlConfig, note_id: &str) -> Url {
 }
 
 /// Convert visibility to AP addressing.
+#[allow(clippy::unwrap_used)] // Static URL is known to be valid
 fn visibility_to_addressing(
     visibility: &note::Visibility,
     config: &UrlConfig,
