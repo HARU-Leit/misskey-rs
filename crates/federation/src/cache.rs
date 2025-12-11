@@ -4,6 +4,8 @@
 //! and improve performance. Implements a 24-hour TTL cache with automatic
 //! invalidation on Update activities.
 
+#![allow(missing_docs)]
+
 use fred::clients::Client as RedisClient;
 use fred::interfaces::KeysInterface;
 use fred::types::Expiration;

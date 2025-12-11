@@ -2,6 +2,8 @@
 //!
 //! Provides per-instance rate limiting to prevent abuse from remote servers.
 
+#![allow(missing_docs)]
+
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};

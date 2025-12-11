@@ -3,6 +3,8 @@
 //! Implements draft-cavage-http-signatures for signing and verifying
 //! `ActivityPub` requests.
 
+#![allow(missing_docs)]
+
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use chrono::Utc;
 use pkcs8::{DecodePrivateKey, DecodePublicKey};

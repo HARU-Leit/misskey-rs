@@ -3,6 +3,8 @@
 //! Enables real-time event synchronization across multiple server instances
 //! using Redis Pub/Sub channels.
 
+#![allow(missing_docs)]
+
 use std::sync::Arc;
 
 use async_trait::async_trait;

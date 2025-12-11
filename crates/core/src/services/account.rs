@@ -276,7 +276,7 @@ pub struct ExportedFollow {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MigrateAccountInput {
-    /// Target account URI (e.g., https://other.instance/@user)
+    /// Target account URI (e.g., `https://other.instance/@user`)
     pub target_uri: String,
     /// Also set alias on target (if same instance)
     pub set_alias: bool,

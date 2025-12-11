@@ -1,5 +1,7 @@
 //! Retry configuration and dead letter queue handling.
 
+#![allow(missing_docs)]
+
 use std::time::Duration;
 
 /// Retry configuration with exponential backoff.

@@ -1,5 +1,7 @@
 //! API middleware.
 
+#![allow(missing_docs)]
+
 use axum::{
     body::Body,
     extract::State,

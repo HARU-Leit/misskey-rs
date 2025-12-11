@@ -2,6 +2,8 @@
 //!
 //! Provides SSE streams for notifications and timeline updates.
 
+#![allow(missing_docs)]
+
 use std::convert::Infallible;
 use std::time::Duration;
 

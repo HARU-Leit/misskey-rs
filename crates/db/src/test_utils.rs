@@ -8,10 +8,15 @@ use tracing::info;
 /// Test database configuration.
 #[derive(Debug, Clone)]
 pub struct TestDbConfig {
+    /// Database host.
     pub host: String,
+    /// Database port.
     pub port: u16,
+    /// Database username.
     pub username: String,
+    /// Database password.
     pub password: String,
+    /// Database name.
     pub database: String,
 }
 
@@ -52,7 +57,9 @@ impl TestDbConfig {
 
 /// A test database context that manages the lifecycle of a test database.
 pub struct TestDatabase {
+    /// Database connection.
     pub conn: DatabaseConnection,
+    /// Database configuration.
     pub config: TestDbConfig,
     cleanup_on_drop: bool,
 }
@@ -210,7 +217,9 @@ impl TestDatabase {
 /// Test Redis configuration.
 #[derive(Debug, Clone)]
 pub struct TestRedisConfig {
+    /// Redis host.
     pub host: String,
+    /// Redis port.
     pub port: u16,
 }
 

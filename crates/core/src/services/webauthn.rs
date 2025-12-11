@@ -23,7 +23,7 @@ pub struct WebAuthnConfig {
     pub rp_id: String,
     /// The relying party name (displayed to users).
     pub rp_name: String,
-    /// The origin URL (e.g., https://example.com).
+    /// The origin URL (e.g., `https://example.com`).
     pub origin: Url,
 }
 

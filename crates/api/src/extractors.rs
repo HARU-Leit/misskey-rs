@@ -1,5 +1,7 @@
 //! Request extractors.
 
+#![allow(missing_docs)]
+
 use axum::{
     extract::FromRequestParts,
     http::{request::Parts, StatusCode},

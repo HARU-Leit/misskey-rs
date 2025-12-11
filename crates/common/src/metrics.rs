@@ -28,9 +28,11 @@ pub struct Metrics {
     pub http_requests_total: AtomicU64,
     /// Active HTTP requests
     pub http_requests_active: AtomicU64,
-    /// HTTP requests by status code category (2xx, 4xx, 5xx)
+    /// HTTP 2xx responses.
     pub http_requests_2xx: AtomicU64,
+    /// HTTP 4xx responses.
     pub http_requests_4xx: AtomicU64,
+    /// HTTP 5xx responses.
     pub http_requests_5xx: AtomicU64,
     /// Total request latency in microseconds
     pub http_request_latency_us_total: AtomicU64,
@@ -471,46 +473,67 @@ impl Default for Metrics {
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MetricsSnapshot {
-    // HTTP
+    /// Total HTTP requests received.
     pub http_requests_total: u64,
+    /// Currently active HTTP requests.
     pub http_requests_active: u64,
+    /// HTTP 2xx responses.
     pub http_requests_2xx: u64,
+    /// HTTP 4xx responses.
     pub http_requests_4xx: u64,
+    /// HTTP 5xx responses.
     pub http_requests_5xx: u64,
+    /// Average HTTP request latency in microseconds.
     pub http_request_latency_avg_us: u64,
 
-    // Database
+    /// Total database queries executed.
     pub db_queries_total: u64,
+    /// Total database errors.
     pub db_errors_total: u64,
+    /// Average database query time in microseconds.
     pub db_query_avg_time_us: u64,
 
-    // Federation
+    /// Activities received from remote instances.
     pub federation_activities_received: u64,
+    /// Activities delivered to remote instances.
     pub federation_activities_delivered: u64,
+    /// Federation delivery failures.
     pub federation_delivery_failures: u64,
+    /// Cache hit rate for remote actors (0.0 to 1.0).
     pub federation_cache_hit_rate: f64,
+    /// Number of replay attacks blocked.
     pub federation_replay_attacks_blocked: u64,
+    /// Number of rate-limited federation requests.
     pub federation_rate_limited: u64,
 
-    // Content
+    /// Total notes created.
     pub notes_created: u64,
+    /// Total notes deleted.
     pub notes_deleted: u64,
+    /// Total reactions created.
     pub reactions_created: u64,
+    /// Total users registered.
     pub users_registered: u64,
+    /// Total follow relationships created.
     pub follows_created: u64,
 
-    // Real-time
+    /// Currently active WebSocket connections.
     pub websocket_connections_active: u64,
+    /// Total WebSocket messages sent.
     pub websocket_messages_sent: u64,
+    /// Currently active SSE connections.
     pub sse_connections_active: u64,
 
-    // Jobs
+    /// Total jobs enqueued.
     pub jobs_enqueued: u64,
+    /// Total jobs completed.
     pub jobs_completed: u64,
+    /// Total jobs failed.
     pub jobs_failed: u64,
 
-    // Search
+    /// Total search queries executed.
     pub search_queries_total: u64,
+    /// Average search query time in microseconds.
     pub search_avg_time_us: u64,
 }
 

@@ -1,5 +1,7 @@
 //! API response types.
 
+#![allow(missing_docs)]
+
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},

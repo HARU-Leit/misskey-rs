@@ -1,5 +1,7 @@
 //! `ActivityPub` request handlers.
 
+#![allow(missing_docs)]
+
 mod collections;
 mod inbox;
 mod nodeinfo;

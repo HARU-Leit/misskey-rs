@@ -1,5 +1,7 @@
 //! WebSocket streaming API.
 
+#![allow(missing_docs)]
+
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},

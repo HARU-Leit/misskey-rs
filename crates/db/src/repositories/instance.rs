@@ -409,8 +409,12 @@ impl InstanceRepository {
 /// Statistics about instances.
 #[derive(Debug, Clone)]
 pub struct InstanceStats {
+    /// Total number of instances.
     pub total: u64,
+    /// Number of blocked instances.
     pub blocked: u64,
+    /// Number of silenced instances.
     pub silenced: u64,
+    /// Number of suspended instances.
     pub suspended: u64,
 }

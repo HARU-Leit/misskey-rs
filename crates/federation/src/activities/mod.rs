@@ -1,5 +1,7 @@
 //! `ActivityPub` activity types.
 
+#![allow(missing_docs)]
+
 mod accept;
 mod announce;
 mod create;
