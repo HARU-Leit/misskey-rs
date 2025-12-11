@@ -1,5 +1,7 @@
 //! `NodeInfo` handler for instance discovery.
 
+#![allow(clippy::expect_used)] // URL joins with known-valid paths cannot fail
+
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use misskey_db::repositories::{NoteRepository, UserRepository};
 use serde::Serialize;

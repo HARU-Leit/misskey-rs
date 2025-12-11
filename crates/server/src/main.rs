@@ -1,5 +1,7 @@
 //! Misskey-rs server entry point.
 
+#![allow(clippy::expect_used)] // Server startup should panic on errors
+
 use std::net::SocketAddr;
 use std::sync::Arc;
 

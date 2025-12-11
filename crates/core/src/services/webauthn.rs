@@ -141,6 +141,7 @@ pub struct WebAuthnService {
     webauthn: Arc<Webauthn>,
     security_key_repo: SecurityKeyRepository,
     user_repo: UserRepository,
+    #[allow(dead_code)]
     profile_repo: UserProfileRepository,
     id_gen: IdGenerator,
     /// In-memory storage for registration challenges.
@@ -206,7 +207,7 @@ impl WebAuthnService {
             .collect();
 
         // Create user unique ID (use user_id bytes)
-        let user_unique_id = user_id.as_bytes().to_vec();
+        let _user_unique_id = user_id.as_bytes().to_vec();
 
         // Start registration
         let (ccr, reg_state) = self

@@ -35,6 +35,7 @@ pub struct ApClient {
 impl ApClient {
     /// Create a new AP client.
     #[must_use]
+    #[allow(clippy::expect_used)] // Client build only fails with incompatible TLS settings
     pub fn new(instance_url: &str) -> Self {
         let client = Client::builder()
             .timeout(Duration::from_secs(30))

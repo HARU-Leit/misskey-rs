@@ -2,7 +2,7 @@
 //!
 //! These tests verify the queue components work correctly together.
 
-#![allow(clippy::unwrap_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::time::Duration;
 

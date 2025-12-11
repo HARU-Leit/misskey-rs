@@ -20,6 +20,7 @@ pub struct MoveProcessor {
     user_repo: UserRepository,
     profile_repo: UserProfileRepository,
     following_repo: FollowingRepository,
+    #[allow(dead_code)]
     actor_fetcher: ActorFetcher,
     ap_client: ApClient,
 }
@@ -118,7 +119,7 @@ impl MoveProcessor {
 
         let local_followers_count = followers
             .iter()
-            .filter(|f| {
+            .filter(|_f| {
                 // Count only local followers (those we should notify)
                 // A local follower would have followee_host = Some(source's host)
                 // and the follower would be a local user

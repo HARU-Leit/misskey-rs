@@ -25,6 +25,7 @@ impl DeliverContext {
     /// # Panics
     /// Panics if the HTTP client fails to build.
     #[must_use]
+    #[allow(clippy::expect_used)] // Client build only fails with incompatible TLS settings
     pub fn new(keypair_repo: UserKeypairRepository, user_agent: String) -> Self {
         Self {
             keypair_repo,

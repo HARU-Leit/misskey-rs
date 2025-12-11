@@ -1,5 +1,7 @@
 //! Note <-> `ApNote` conversion.
 
+#![allow(clippy::expect_used)] // URLs from DB should always be valid
+
 use chrono::Utc;
 use misskey_db::entities::{drive_file, note};
 use url::Url;

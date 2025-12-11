@@ -365,6 +365,7 @@ pub struct CreateImportInput {
 pub struct AccountService {
     user_repo: UserRepository,
     profile_repo: UserProfileRepository,
+    #[allow(dead_code)]
     keypair_repo: UserKeypairRepository,
     note_repo: NoteRepository,
     following_repo: FollowingRepository,
@@ -535,7 +536,8 @@ impl AccountService {
 
     /// Set account aliases (alsoKnownAs).
     pub async fn set_aliases(&self, user_id: &str, aliases: Vec<String>) -> AppResult<()> {
-        let user = self.user_repo.get_by_id(user_id).await?;
+        // Verify user exists
+        let _user = self.user_repo.get_by_id(user_id).await?;
 
         // Validate aliases are valid URIs
         for alias in &aliases {

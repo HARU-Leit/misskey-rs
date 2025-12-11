@@ -117,7 +117,7 @@ async fn schedule_deletion(
 
 /// Get deletion status.
 async fn deletion_status(
-    AuthUser(user): AuthUser,
+    AuthUser(_user): AuthUser,
     State(_state): State<AppState>,
 ) -> AppResult<ApiResponse<DeletionStatusResponse>> {
     // TODO: Fetch from database

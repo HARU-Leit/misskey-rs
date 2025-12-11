@@ -10,7 +10,7 @@
 //! ```
 
 #![cfg(feature = "federation-test")]
-#![allow(clippy::unwrap_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used, unused_variables)]
 
 use reqwest::Client;
 use serde_json::{Value, json};

@@ -134,6 +134,7 @@ impl EmojiReactProcessor {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use crate::activities::{EmojiIcon, EmojiTag};
     use url::Url;

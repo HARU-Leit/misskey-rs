@@ -140,6 +140,7 @@ impl JobService {
 
     /// Start the job processor with the given context.
     /// This consumes the receiver and spawns worker tasks.
+    #[allow(clippy::expect_used)] // Panic is intentional - start should only be called once
     pub fn start(mut self, context: JobWorkerContext) {
         let receiver = self.receiver.take().expect("Job service already started");
         let context = Arc::new(context);

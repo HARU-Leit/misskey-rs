@@ -6,7 +6,7 @@
 //! Set `REDIS_URL` environment variable to point to your Redis instance.
 //! Default: <redis://localhost:6379>
 
-#![allow(clippy::unwrap_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::time::Duration;
 
