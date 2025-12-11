@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (バブルタイムライン実装)
+*Last Updated: 2025-12-11* (Bot非表示オプション実装)
 
 ---
 
@@ -26,7 +26,7 @@
 |--------|------|------|
 | ActivityPub Update activity対応（ノート編集連合） | ✅ 完了 | update.rs |
 | いいね/リアクションの適切な連合（Mastodon/Pleroma向け） | ✅ 完了 | emoji_react.rs, like.rs |
-| 引用リノートのMastodon連合（FEP-e232対応） | 未実装 | COMMUNITY_FEATURES.md |
+| 引用リノートのMastodon連合（FEP-e232対応） | ✅ 完了 | note.rs |
 | チャンネルのフェデレーション（Group actor） | 未実装 | COMMUNITY_FEATURES.md |
 | ActivityPub Move activity対応（アカウント移行） | 未実装 | MISSING_FEATURES.md |
 
@@ -60,7 +60,7 @@
 | タスク | 状況 | 参照 |
 |--------|------|------|
 | URLプレビューキャッシュ | ✅ 完了 | url_preview_cache.rs |
-| Redis分散カウンター（レート制限） | 未実装 | MISSING_FEATURES.md |
+| Redis分散カウンター（レート制限） | ✅ 完了 | rate_limit.rs |
 | 読み取りレプリカ対応 | 未実装 | COMMUNITY_FEATURES.md |
 
 ### タイムライン・フィード
@@ -69,7 +69,7 @@
 |--------|------|------|
 | バブルタイムライン | ✅ 完了 | timelines.rs, meta_settings |
 | チャンネルタイムラインのストリーミング | 未実装 | MISSING_FEATURES.md |
-| Bot非表示オプション | 未実装 | FORK_FEATURES.md |
+| Bot非表示オプション | ✅ 完了 | user_profile, notes.rs |
 
 ### 検索・発見
 
@@ -211,13 +211,22 @@
 ### タイムライン拡張 (2025-12-11)
 - **バブルタイムライン** - ローカルユーザー＋ホワイトリストに登録されたリモートインスタンスからの公開ノートを表示。`meta_settings.bubble_instances`で信頼インスタンスを設定可能。Mastodon API `/api/v1/timelines/bubble` エンドポイントを追加
 
+### フェデレーション拡張 (2025-12-11)
+- **FEP-e232/FEP-c16b 引用リノート連合** - 引用リノート（テキスト付きリノート）は`quoteUrl`と`_misskey_quote`フィールドを含むCreate Activityとして配信。純粋なリノート（テキストなし）はAnnounce Activityとして配信。Mastodon/Pleroma/Akkomaとの引用投稿の相互運用性を実現
+
+### インフラ拡張 (2025-12-11)
+- **Redis分散レート制限** - APIレート制限をRedis INCRコマンドを使った分散カウンターで実装。複数インスタンスのロードバランシング環境でも一貫したレート制限が可能。`RateLimiterState::with_redis()`で有効化、フェイルオープン動作でRedis障害時もサービス継続
+
+### タイムラインUX (2025-12-11)
+- **Bot非表示オプション** - `user_profile.hide_bots`設定でタイムラインからBotアカウントの投稿を非表示にできる。ホーム/ローカル/グローバル/バブル各タイムラインでBot投稿をフィルタリング。`/api/users/update`エンドポイントで`hideBots`パラメータを設定可能
+
 ---
 
 ## 次のアクション推奨
 
-1. **フェデレーション**: 引用リノートのMastodon連合（FEP-e232対応）
-2. **パフォーマンス**: Redis分散カウンター（レート制限）
-3. **タイムライン**: Bot非表示オプション
+1. **検索**: ドライブ検索（ファイル名/説明）
+2. **フェデレーション**: チャンネルのフェデレーション（Group actor）
+3. **フェデレーション**: ActivityPub Move activity対応（アカウント移行）
 
 ---
 

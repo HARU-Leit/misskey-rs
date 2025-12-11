@@ -40,6 +40,7 @@ use misskey_federation::{
 };
 use misskey_queue::workers::{DeliverContext, deliver_worker};
 use misskey_queue::{DeliverJob, RedisDeliveryService};
+use fred::prelude::*;
 use sea_orm::{ConnectOptions, Database};
 use tokio::signal;
 use tower_http::{
@@ -121,6 +122,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Failed to connect to Redis");
     let redis_storage = apalis_redis::RedisStorage::<DeliverJob>::new(redis_conn);
     info!("Connected to Redis job queue");
+
+    // Initialize fred client for distributed rate limiting
+    let fred_config = fred::types::config::Config::from_url(&config.redis.url)
+        .expect("Failed to parse Redis URL for rate limiter");
+    let fred_client = fred::clients::Client::new(fred_config, None, None, None);
+    fred_client.connect();
+    fred_client.wait_for_connect().await.expect("Failed to connect fred client to Redis");
+    let fred_client = Arc::new(fred_client);
+    info!("Connected to Redis for distributed rate limiting");
 
     // Create ActivityPub delivery service
     let delivery_service: DeliveryService =
@@ -295,8 +305,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize SSE broadcaster
     let sse_broadcaster = SseBroadcaster::new();
 
-    // Initialize rate limiter
-    let rate_limiter = RateLimiterState::new();
+    // Initialize distributed rate limiter (uses Redis for multi-instance deployments)
+    let rate_limiter = RateLimiterState::with_redis(fred_client);
+    info!("Initialized distributed API rate limiter");
 
     // Create app state
     let state = AppState {

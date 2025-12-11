@@ -98,6 +98,8 @@ pub struct UpdateUserRequest {
     pub is_locked: Option<bool>,
     /// User pronouns (e.g., "they/them", "she/her", "he/him")
     pub pronouns: Option<String>,
+    /// Hide notes from bot accounts in timeline
+    pub hide_bots: Option<bool>,
 }
 
 impl UpdateUserRequest {
@@ -118,6 +120,7 @@ impl UpdateUserRequest {
             is_cat: self.is_cat,
             is_locked: self.is_locked,
             pronouns: self.pronouns,
+            hide_bots: self.hide_bots,
         }
     }
 }

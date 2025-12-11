@@ -219,8 +219,25 @@ impl NoteService {
         if let Some(ref delivery) = self.delivery {
             // Only deliver local notes
             if note.is_local {
-                if let Err(e) = self.queue_create_delivery(&note, &user, delivery).await {
-                    tracing::warn!(error = %e, note_id = %note.id, "Failed to queue ActivityPub delivery");
+                // Determine if this is a pure renote (no text) or quote renote (with text)
+                let is_pure_renote = note.renote_id.is_some() && note.text.is_none();
+
+                if is_pure_renote {
+                    // Pure renote: send Announce activity
+                    if let Err(e) = self
+                        .queue_announce_delivery(&note, &user, renote.as_ref(), delivery)
+                        .await
+                    {
+                        tracing::warn!(error = %e, note_id = %note.id, "Failed to queue ActivityPub Announce delivery");
+                    }
+                } else {
+                    // Regular note or quote renote: send Create activity
+                    if let Err(e) = self
+                        .queue_create_delivery(&note, &user, renote.as_ref(), delivery)
+                        .await
+                    {
+                        tracing::warn!(error = %e, note_id = %note.id, "Failed to queue ActivityPub Create delivery");
+                    }
                 }
             }
         }
@@ -250,10 +267,14 @@ impl NoteService {
     }
 
     /// Queue ActivityPub Create delivery for a note.
+    ///
+    /// For quote renotes (renote with text), this includes FEP-c16b compliant
+    /// `quoteUrl` and Misskey's `_misskey_quote` for maximum compatibility.
     async fn queue_create_delivery(
         &self,
         note: &note::Model,
         user: &misskey_db::entities::user::Model,
+        renote: Option<&note::Model>,
         delivery: &DeliveryService,
     ) -> AppResult<()> {
         // Only deliver public/home notes
@@ -276,7 +297,8 @@ impl NoteService {
                 (vec![followers_url.clone()], vec![])
             };
 
-        let ap_note = json!({
+        // Build base AP Note object
+        let mut ap_note = json!({
             "type": "Note",
             "id": note_url,
             "attributedTo": actor_url,
@@ -289,8 +311,37 @@ impl NoteService {
             "sensitive": note.cw.is_some(),
         });
 
+        // FEP-c16b: Add quoteUrl for quote renotes
+        // This enables Mastodon and other platforms to properly display quoted posts
+        if let Some(renote_note) = renote {
+            // Determine the URL of the renoted note
+            let renote_url = renote_note
+                .uri
+                .clone()
+                .or_else(|| renote_note.url.clone())
+                .unwrap_or_else(|| format!("{}/notes/{}", self.server_url, renote_note.id));
+
+            // Set both quoteUrl (FEP-c16b standard) and _misskey_quote (Misskey compatibility)
+            if let Some(obj) = ap_note.as_object_mut() {
+                obj.insert("quoteUrl".to_string(), json!(renote_url));
+                obj.insert("_misskey_quote".to_string(), json!(renote_url));
+            }
+
+            tracing::debug!(
+                note_id = %note.id,
+                quote_url = %renote_url,
+                "Added FEP-c16b quote URL to Create activity"
+            );
+        }
+
         let activity = json!({
-            "@context": "https://www.w3.org/ns/activitystreams",
+            "@context": [
+                "https://www.w3.org/ns/activitystreams",
+                {
+                    "quoteUrl": "as:quoteUrl",
+                    "_misskey_quote": "misskey:_misskey_quote"
+                }
+            ],
             "type": "Create",
             "id": activity_id,
             "actor": actor_url,
@@ -308,6 +359,94 @@ impl NoteService {
                 .queue_create_note(&user.id, &note.id, activity, inboxes)
                 .await?;
             tracing::debug!(note_id = %note.id, "Queued ActivityPub Create delivery");
+        }
+
+        Ok(())
+    }
+
+    /// Queue ActivityPub Announce delivery for a pure renote (boost).
+    ///
+    /// This sends an Announce activity for boosting/renoting without additional text.
+    /// Mastodon and other platforms treat this as a "boost" or "reblog".
+    async fn queue_announce_delivery(
+        &self,
+        note: &note::Model,
+        user: &misskey_db::entities::user::Model,
+        renote: Option<&note::Model>,
+        delivery: &DeliveryService,
+    ) -> AppResult<()> {
+        // Only deliver public/home notes
+        if !matches!(note.visibility, Visibility::Public | Visibility::Home) {
+            return Ok(());
+        }
+
+        // Must have a renote target
+        let renote_note = renote.ok_or_else(|| {
+            AppError::Internal("Announce delivery called without renote target".to_string())
+        })?;
+
+        // Build Announce activity
+        let actor_url = format!("{}/users/{}", self.server_url, user.id);
+        let activity_id = format!("{}/activities/announce/{}", self.server_url, note.id);
+
+        let followers_url = format!("{}/followers", actor_url);
+        let public_url = "https://www.w3.org/ns/activitystreams#Public".to_string();
+
+        let (to_field, cc_field): (Vec<String>, Vec<String>) =
+            if note.visibility == Visibility::Public {
+                (vec![public_url.clone()], vec![followers_url.clone()])
+            } else {
+                (vec![followers_url.clone()], vec![])
+            };
+
+        // Determine the URL of the renoted note
+        let renote_url = renote_note
+            .uri
+            .clone()
+            .or_else(|| renote_note.url.clone())
+            .unwrap_or_else(|| format!("{}/notes/{}", self.server_url, renote_note.id));
+
+        let activity = json!({
+            "@context": "https://www.w3.org/ns/activitystreams",
+            "type": "Announce",
+            "id": activity_id,
+            "actor": actor_url,
+            "object": renote_url,
+            "published": note.created_at.to_rfc3339(),
+            "to": to_field,
+            "cc": cc_field,
+        });
+
+        // Get follower inboxes
+        let mut inboxes = self.get_follower_inboxes(&user.id).await?;
+
+        // Also deliver to the original note author's inbox (if remote)
+        if let Some(ref user_inbox) = renote_note.user_host {
+            // Try to get the author's inbox
+            if let Ok(author) = self.user_repo.get_by_id(&renote_note.user_id).await {
+                if let Some(inbox) = author.shared_inbox.or(author.inbox) {
+                    if !inboxes.contains(&inbox) {
+                        inboxes.push(inbox);
+                    }
+                }
+            }
+            tracing::debug!(
+                note_id = %note.id,
+                renote_of = %renote_note.id,
+                remote_host = %user_inbox,
+                "Including remote note author in Announce delivery"
+            );
+        }
+
+        if !inboxes.is_empty() {
+            delivery
+                .queue_announce(&user.id, inboxes, activity)
+                .await?;
+            tracing::debug!(
+                note_id = %note.id,
+                renote_of = %renote_note.id,
+                "Queued ActivityPub Announce delivery"
+            );
         }
 
         Ok(())
@@ -503,21 +642,37 @@ impl NoteService {
     }
 
     /// Get local public timeline.
+    ///
+    /// # Arguments
+    /// * `limit` - Maximum number of notes to return
+    /// * `until_id` - Return notes older than this ID (for pagination)
+    /// * `exclude_user_ids` - Optional list of user IDs to exclude (for bot filtering)
     pub async fn local_timeline(
         &self,
         limit: u64,
         until_id: Option<&str>,
+        exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
-        self.note_repo.find_local_public(limit, until_id).await
+        self.note_repo
+            .find_local_public(limit, until_id, exclude_user_ids)
+            .await
     }
 
     /// Get global public timeline.
+    ///
+    /// # Arguments
+    /// * `limit` - Maximum number of notes to return
+    /// * `until_id` - Return notes older than this ID (for pagination)
+    /// * `exclude_user_ids` - Optional list of user IDs to exclude (for bot filtering)
     pub async fn global_timeline(
         &self,
         limit: u64,
         until_id: Option<&str>,
+        exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
-        self.note_repo.find_global_public(limit, until_id).await
+        self.note_repo
+            .find_global_public(limit, until_id, exclude_user_ids)
+            .await
     }
 
     /// Get bubble timeline (local + whitelisted instances).
@@ -526,27 +681,35 @@ impl NoteService {
     /// whitelisted remote instances (bubble instances).
     ///
     /// # Arguments
-    ///
     /// * `bubble_hosts` - List of whitelisted instance hostnames
     /// * `limit` - Maximum number of notes to return
     /// * `until_id` - Return notes older than this ID (for pagination)
+    /// * `exclude_user_ids` - Optional list of user IDs to exclude (for bot filtering)
     pub async fn bubble_timeline(
         &self,
         bubble_hosts: &[String],
         limit: u64,
         until_id: Option<&str>,
+        exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
         self.note_repo
-            .find_bubble_timeline(bubble_hosts, limit, until_id)
+            .find_bubble_timeline(bubble_hosts, limit, until_id, exclude_user_ids)
             .await
     }
 
     /// Get home timeline (notes from followed users + own notes).
+    ///
+    /// # Arguments
+    /// * `user_id` - The user's ID
+    /// * `limit` - Maximum number of notes to return
+    /// * `until_id` - Return notes older than this ID (for pagination)
+    /// * `exclude_user_ids` - Optional list of user IDs to exclude (for bot filtering)
     pub async fn home_timeline(
         &self,
         user_id: &str,
         limit: u64,
         until_id: Option<&str>,
+        exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
         // Get IDs of users that the current user follows
         let followings = self
@@ -556,7 +719,7 @@ impl NoteService {
         let following_ids: Vec<String> = followings.iter().map(|f| f.followee_id.clone()).collect();
 
         self.note_repo
-            .find_home_timeline(user_id, &following_ids, limit, until_id)
+            .find_home_timeline(user_id, &following_ids, limit, until_id, exclude_user_ids)
             .await
     }
 

@@ -1,6 +1,7 @@
 //! API rate limiting middleware.
 //!
 //! Provides per-user and per-IP rate limiting for API endpoints.
+//! Supports both in-memory (single-instance) and Redis-backed (distributed) rate limiting.
 
 #![allow(missing_docs)]
 
@@ -16,7 +17,11 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
+use chrono::Utc;
+use fred::clients::Client as RedisClient;
+use fred::interfaces::KeysInterface;
 use tokio::sync::RwLock;
+use tracing::{debug, warn};
 
 /// Rate limit configuration for different endpoint types.
 #[derive(Debug, Clone)]
@@ -153,6 +158,170 @@ impl ApiRateLimiter {
     }
 }
 
+// =============================================================================
+// Redis-backed distributed rate limiter
+// =============================================================================
+
+/// Redis-backed API rate limiter for distributed deployments.
+///
+/// Uses Redis atomic INCR/EXPIRE commands for consistent rate limiting
+/// across multiple server instances.
+#[derive(Clone)]
+pub struct RedisApiRateLimiter {
+    redis: Arc<RedisClient>,
+    key_prefix: String,
+}
+
+impl RedisApiRateLimiter {
+    /// Create a new Redis-backed rate limiter.
+    #[must_use]
+    pub fn new(redis: Arc<RedisClient>) -> Self {
+        Self {
+            redis,
+            key_prefix: "api_rate".to_string(),
+        }
+    }
+
+    /// Create with a custom key prefix.
+    #[must_use]
+    pub fn with_prefix(redis: Arc<RedisClient>, prefix: String) -> Self {
+        Self {
+            redis,
+            key_prefix: prefix,
+        }
+    }
+
+    /// Get the current time window identifier.
+    fn current_window(window_secs: u64) -> i64 {
+        Utc::now().timestamp() / window_secs as i64
+    }
+
+    /// Check if a request is allowed and record it.
+    pub async fn check(&self, key: &str, config: &RateLimitConfig) -> RateLimitResult {
+        let window = Self::current_window(config.window_secs);
+        let redis_key = format!("{}:{}:{}", self.key_prefix, key, window);
+
+        // Increment counter atomically
+        let count: Result<u64, _> = self.redis.incr(redis_key.clone()).await;
+
+        let count = match count {
+            Ok(c) => c,
+            Err(e) => {
+                warn!(error = %e, key = %key, "Redis rate limit error, allowing request");
+                // On Redis error, allow the request (fail-open behavior)
+                return RateLimitResult::Allowed {
+                    remaining: config.max_requests,
+                    limit: config.max_requests,
+                    reset: config.window_secs,
+                };
+            }
+        };
+
+        // Set expiry on first increment
+        if count == 1 {
+            if let Err(e) = self
+                .redis
+                .expire::<(), _>(redis_key.clone(), config.window_secs as i64, None)
+                .await
+            {
+                warn!(error = %e, key = %redis_key, "Failed to set rate limit key expiry");
+            }
+        }
+
+        // Check if rate limited
+        if count > u64::from(config.max_requests) {
+            // Get TTL for retry-after header
+            let ttl: i64 = self.redis.ttl(redis_key).await.unwrap_or(config.window_secs as i64);
+            let retry_after = if ttl > 0 { ttl as u64 } else { config.window_secs };
+
+            debug!(
+                key = %key,
+                count = count,
+                limit = config.max_requests,
+                "API rate limit exceeded"
+            );
+
+            return RateLimitResult::Limited {
+                retry_after,
+                remaining: 0,
+                limit: config.max_requests,
+            };
+        }
+
+        let remaining = config.max_requests.saturating_sub(count as u32);
+
+        // Get TTL for reset header
+        let ttl: i64 = self.redis.ttl(redis_key).await.unwrap_or(config.window_secs as i64);
+        let reset = if ttl > 0 { ttl as u64 } else { config.window_secs };
+
+        debug!(
+            key = %key,
+            count = count,
+            remaining = remaining,
+            "API rate limit check passed"
+        );
+
+        RateLimitResult::Allowed {
+            remaining,
+            limit: config.max_requests,
+            reset,
+        }
+    }
+
+    /// Get the current rate limit status for a key (without incrementing).
+    pub async fn status(&self, key: &str, config: &RateLimitConfig) -> Option<RateLimitStatus> {
+        let window = Self::current_window(config.window_secs);
+        let redis_key = format!("{}:{}:{}", self.key_prefix, key, window);
+
+        let count: Option<u64> = self.redis.get(redis_key.clone()).await.ok()?;
+        let ttl: i64 = self.redis.ttl(redis_key).await.unwrap_or(-1);
+
+        let count = count.unwrap_or(0);
+        let reset = if ttl > 0 { ttl as u64 } else { config.window_secs };
+
+        Some(RateLimitStatus {
+            key: key.to_string(),
+            current_count: count,
+            limit: u64::from(config.max_requests),
+            remaining: u64::from(config.max_requests).saturating_sub(count),
+            reset_in_secs: reset,
+        })
+    }
+}
+
+/// Rate limit status for a key.
+#[derive(Debug, Clone)]
+pub struct RateLimitStatus {
+    pub key: String,
+    pub current_count: u64,
+    pub limit: u64,
+    pub remaining: u64,
+    pub reset_in_secs: u64,
+}
+
+// =============================================================================
+// Unified rate limiter abstraction
+// =============================================================================
+
+/// Rate limiter backend types.
+#[derive(Clone)]
+pub enum RateLimiterBackend {
+    /// In-memory rate limiter (single instance only).
+    InMemory(ApiRateLimiter),
+    /// Redis-backed distributed rate limiter.
+    Redis(RedisApiRateLimiter),
+}
+
+impl RateLimiterBackend {
+    /// Check if a request is allowed.
+    pub async fn check(&self, key: &str, config: &RateLimitConfig) -> RateLimitResult {
+        match self {
+            Self::InMemory(limiter) => limiter.check(key, config).await,
+            Self::Redis(limiter) => limiter.check(key, config).await,
+        }
+    }
+}
+
 /// Rate limit check result.
 #[derive(Debug, Clone)]
 pub enum RateLimitResult {
@@ -179,10 +348,10 @@ pub enum RateLimitResult {
 /// Rate limiter state for middleware.
 #[derive(Clone)]
 pub struct RateLimiterState {
-    /// Per-user rate limiter.
-    pub user_limiter: ApiRateLimiter,
-    /// Per-IP rate limiter (for unauthenticated requests).
-    pub ip_limiter: ApiRateLimiter,
+    /// Per-user rate limiter backend.
+    pub user_limiter: RateLimiterBackend,
+    /// Per-IP rate limiter backend (for unauthenticated requests).
+    pub ip_limiter: RateLimiterBackend,
 }
 
 impl Default for RateLimiterState {
@@ -192,12 +361,34 @@ impl Default for RateLimiterState {
 }
 
 impl RateLimiterState {
-    /// Create a new rate limiter state.
+    /// Create a new in-memory rate limiter state (single-instance only).
     pub fn new() -> Self {
         Self {
-            user_limiter: ApiRateLimiter::new(),
-            ip_limiter: ApiRateLimiter::new(),
+            user_limiter: RateLimiterBackend::InMemory(ApiRateLimiter::new()),
+            ip_limiter: RateLimiterBackend::InMemory(ApiRateLimiter::new()),
         }
+    }
+
+    /// Create a new Redis-backed distributed rate limiter state.
+    ///
+    /// Use this for multi-instance deployments to ensure consistent
+    /// rate limiting across all servers.
+    pub fn with_redis(redis: Arc<RedisClient>) -> Self {
+        Self {
+            user_limiter: RateLimiterBackend::Redis(RedisApiRateLimiter::with_prefix(
+                Arc::clone(&redis),
+                "api_rate:user".to_string(),
+            )),
+            ip_limiter: RateLimiterBackend::Redis(RedisApiRateLimiter::with_prefix(
+                redis,
+                "api_rate:ip".to_string(),
+            )),
+        }
+    }
+
+    /// Check if using Redis backend.
+    pub fn is_distributed(&self) -> bool {
+        matches!(self.user_limiter, RateLimiterBackend::Redis(_))
     }
 }
 
