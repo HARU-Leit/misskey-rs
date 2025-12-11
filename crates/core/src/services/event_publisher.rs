@@ -125,6 +125,16 @@ pub trait EventPublisher: Send + Sync {
         recipient_id: &str,
         text: Option<&str>,
     ) -> AppResult<()>;
+
+    /// Publish a note created event to a specific channel timeline.
+    async fn publish_channel_note_created(
+        &self,
+        channel_id: &str,
+        note_id: &str,
+        user_id: &str,
+        text: Option<&str>,
+        visibility: &str,
+    ) -> AppResult<()>;
 }
 
 /// A no-op implementation of EventPublisher for testing or when real-time events are disabled.
@@ -196,6 +206,17 @@ impl EventPublisher for NoOpEventPublisher {
         _sender_id: &str,
         _recipient_id: &str,
         _text: Option<&str>,
+    ) -> AppResult<()> {
+        Ok(())
+    }
+
+    async fn publish_channel_note_created(
+        &self,
+        _channel_id: &str,
+        _note_id: &str,
+        _user_id: &str,
+        _text: Option<&str>,
+        _visibility: &str,
     ) -> AppResult<()> {
         Ok(())
     }

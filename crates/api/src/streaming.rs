@@ -39,6 +39,8 @@ pub enum StreamChannel {
     Main,
     /// User-specific stream.
     User { user_id: String },
+    /// Channel timeline stream.
+    Channel { channel_id: String },
 }
 
 /// Stream event types.
@@ -125,6 +127,15 @@ pub enum ServerMessage {
     },
 }
 
+/// Channel event for streaming to specific channels.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChannelEvent {
+    /// The channel ID this event belongs to.
+    pub channel_id: String,
+    /// The stream event.
+    pub event: StreamEvent,
+}
+
 /// Shared state for streaming.
 #[derive(Clone)]
 pub struct StreamingState {
@@ -132,6 +143,8 @@ pub struct StreamingState {
     pub global_tx: Arc<broadcast::Sender<StreamEvent>>,
     /// Broadcast sender for local events.
     pub local_tx: Arc<broadcast::Sender<StreamEvent>>,
+    /// Broadcast sender for channel-specific events.
+    pub channel_tx: Arc<broadcast::Sender<ChannelEvent>>,
 }
 
 impl StreamingState {
@@ -140,10 +153,12 @@ impl StreamingState {
     pub fn new() -> Self {
         let (global_tx, _) = broadcast::channel(1000);
         let (local_tx, _) = broadcast::channel(1000);
+        let (channel_tx, _) = broadcast::channel(1000);
 
         Self {
             global_tx: Arc::new(global_tx),
             local_tx: Arc::new(local_tx),
+            channel_tx: Arc::new(channel_tx),
         }
     }
 
@@ -160,6 +175,16 @@ impl StreamingState {
         if event.visibility == "public" {
             let _ = self.global_tx.send(stream_event);
         }
+    }
+
+    /// Publish a note event to a specific channel timeline.
+    pub fn publish_channel_note(&self, channel_id: &str, event: NoteEvent) {
+        let stream_event = StreamEvent::Note(event);
+        let channel_event = ChannelEvent {
+            channel_id: channel_id.to_string(),
+            event: stream_event,
+        };
+        let _ = self.channel_tx.send(channel_event);
     }
 
     /// Publish a notification event.
@@ -211,6 +236,7 @@ async fn handle_socket(socket: WebSocket, query: StreamQuery, state: AppState) {
     // Subscribe to broadcast channels
     let mut global_rx = state.streaming.global_tx.subscribe();
     let mut local_rx = state.streaming.local_tx.subscribe();
+    let mut channel_rx = state.streaming.channel_tx.subscribe();
 
     // Track connected channels
     let mut connected_channels: std::collections::HashMap<String, StreamChannel> =
@@ -280,6 +306,22 @@ async fn handle_socket(socket: WebSocket, query: StreamQuery, state: AppState) {
                         }
                     }
             }
+
+            // Handle channel-specific events
+            Ok(channel_event) = channel_rx.recv() => {
+                // Find if user is subscribed to this specific channel
+                for (conn_id, stream_channel) in connected_channels.iter() {
+                    if let StreamChannel::Channel { channel_id } = stream_channel {
+                        if *channel_id == channel_event.channel_id {
+                            let msg = event_to_server_message(conn_id, &channel_event.event);
+                            let json = serde_json::to_string(&msg).unwrap_or_default();
+                            if sender.send(Message::Text(json.into())).await.is_err() {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -293,20 +335,39 @@ async fn handle_client_message(
     _user_id: Option<&str>,
 ) -> Option<ServerMessage> {
     match msg {
-        ClientMessage::Connect { channel, id, .. } => {
+        ClientMessage::Connect { channel, id, params } => {
             let stream_channel = match channel.as_str() {
                 "homeTimeline" => StreamChannel::HomeTimeline,
                 "localTimeline" => StreamChannel::LocalTimeline,
                 "globalTimeline" => StreamChannel::GlobalTimeline,
                 "main" => StreamChannel::Main,
+                "channel" => {
+                    // Extract channelId from params
+                    let channel_id = params
+                        .get("channelId")
+                        .and_then(|v| v.as_str())
+                        .map(String::from);
+
+                    if let Some(channel_id) = channel_id {
+                        StreamChannel::Channel { channel_id }
+                    } else {
+                        warn!("Channel connection without channelId param");
+                        return None;
+                    }
+                }
                 _ => {
                     warn!("Unknown channel: {}", channel);
                     return None;
                 }
             };
 
+            let channel_desc = match &stream_channel {
+                StreamChannel::Channel { channel_id } => format!("channel:{}", channel_id),
+                _ => channel.clone(),
+            };
+
             connected_channels.insert(id.clone(), stream_channel);
-            info!(channel = %channel, id = %id, "Channel connected");
+            info!(channel = %channel_desc, id = %id, "Channel connected");
 
             Some(ServerMessage::Connected { id })
         }

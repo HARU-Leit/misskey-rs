@@ -261,6 +261,27 @@ impl NoteService {
             {
                 tracing::warn!(error = %e, note_id = %note.id, "Failed to publish note created event");
             }
+
+            // Publish to channel timeline if note was posted to a channel
+            if let Some(ref channel_id) = note.channel_id {
+                if let Err(e) = event_publisher
+                    .publish_channel_note_created(
+                        channel_id,
+                        &note.id,
+                        &note.user_id,
+                        note.text.as_deref(),
+                        visibility_str,
+                    )
+                    .await
+                {
+                    tracing::warn!(
+                        error = %e,
+                        note_id = %note.id,
+                        channel_id = %channel_id,
+                        "Failed to publish channel note created event"
+                    );
+                }
+            }
         }
 
         Ok(note)

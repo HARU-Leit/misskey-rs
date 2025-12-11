@@ -145,10 +145,10 @@
 | **following.rs** | 100% | ✅ ActivityPub+イベント発火済み |
 | **reaction.rs** | 100% | ✅ ActivityPub+イベント発火済み |
 | **notification.rs** | 100% | ✅ イベント発火済み |
-| **drive.rs** | 80% | ファイル実体削除、循環参照チェック (TODO) |
+| **drive.rs** | 95% | ✅ ファイル実体削除実装済み、循環参照チェック (TODO) |
 | **user_list.rs** | 90% | - |
 | **poll.rs** | 85% | - |
-| **messaging.rs** | 90% | ✅ イベント発火済み、ブロックチェック (TODO) |
+| **messaging.rs** | 100% | ✅ イベント発火済み、ブロックチェック実装済み |
 | **blocking.rs** | 95% | - |
 | **muting.rs** | 95% | - |
 | **hashtag.rs** | 90% | - |
@@ -168,9 +168,13 @@
 ### 重要な未実装箇所
 
 ```
-crates/core/src/services/messaging.rs:81  // TODO: Check if blocked
-crates/core/src/services/drive.rs:218     // TODO: Actually delete file from storage
+crates/core/src/services/messaging.rs:98  // TODO: Check if recipient allows messages from non-followers
+crates/core/src/services/drive.rs:475     // TODO: Check for circular references (folder move)
 ```
+
+### 完了済み
+- ✅ メッセージングのブロックチェック (messaging.rs:87-96) - `is_blocked_between`で実装済み
+- ✅ ドライブのファイル実体削除 (drive.rs:252-264) - `StorageService.delete()`で実装済み
 
 ### 新規実装済み: ActivityPub配信サービス
 
@@ -333,10 +337,10 @@ crates/core/src/services/drive.rs:218     // TODO: Actually delete file from sto
 
 | 領域 | 内容 |
 |-----|------|
-| メッセージング | ブロックチェック、プライバシー/権限チェック未実装 |
-| ドライブ | ファイル実体削除、フォルダ循環参照チェック未実装 |
+| メッセージング | ✅ ブロックチェック実装済み、非フォロワーからのメッセージ制限未実装 |
+| ドライブ | ✅ ファイル実体削除実装済み、フォルダ循環参照チェック未実装 |
 | Mastodon API | base_url設定ハードコード、メディア添付処理不完全 |
-| NodeInfo | 実統計取得未実装（プレースホルダー値使用中） |
+| NodeInfo | ✅ 実統計取得実装済み |
 
 ---
 
@@ -346,17 +350,17 @@ crates/core/src/services/drive.rs:218     // TODO: Actually delete file from sto
 
 | 項目 | 内容 |
 |-----|------|
-| メッセージング | ブロックチェック追加 |
-| ドライブ | ファイル実体削除 |
-| NodeInfo | 実統計取得 |
+| ストリーミング | チャンネルタイムラインのストリーミング対応 |
+| UI/UX | ワンボタンいいね（Like/Reaction分離） |
+| フェデレーション | チャンネルのGroup actor対応 |
 
 ### 中期
 
 | 項目 | 内容 |
 |-----|------|
-| Mastodon API | 完全対応 |
-| メディア | サムネイル生成 |
-| 検索 | 全文検索エンジン連携 |
+| 検索 | Meilisearch連携 |
+| インフラ | 読み取りレプリカ対応 |
+| セキュリティ | ユーザー単位Authorized Fetch |
 
 ---
 
@@ -530,9 +534,22 @@ crates/core/src/services/drive.rs:218     // TODO: Actually delete file from sto
 **機能概要**:
 - チャンネル内のノートタイムライン取得
 - ノートのチャンネル投稿サポート（channel_idフィールド）
+- **WebSocketストリーミング対応** - チャンネルタイムラインのリアルタイム更新
 
 **エンドポイント**:
 - `POST /api/channels/timeline` - チャンネルタイムライン取得
+
+**ストリーミング接続方法**:
+```json
+{
+  "type": "connect",
+  "body": {
+    "channel": "channel",
+    "id": "unique-connection-id",
+    "params": { "channelId": "target-channel-id" }
+  }
+}
+```
 
 ### クリップ検索機能 (2025-12-11 新規)
 
