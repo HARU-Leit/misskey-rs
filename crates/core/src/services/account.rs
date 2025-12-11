@@ -81,12 +81,13 @@ pub struct DeletionRecord {
 }
 
 /// Export format for account data.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum ExportFormat {
     /// ActivityPub Actor JSON
     ActivityPub,
     /// Misskey-specific JSON format
+    #[default]
     Misskey,
     /// CSV format (for specific data types)
     Csv,
@@ -269,6 +270,52 @@ pub struct ExportedFollow {
     pub acct: String,
     /// ActivityPub URI (if available)
     pub uri: Option<String>,
+}
+
+/// Exported note data.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportedNote {
+    /// Note ID
+    pub id: String,
+    /// Note text content
+    pub text: Option<String>,
+    /// Content warning
+    pub cw: Option<String>,
+    /// Visibility level
+    pub visibility: String,
+    /// Reply target note ID
+    pub reply_id: Option<String>,
+    /// Renote target note ID
+    pub renote_id: Option<String>,
+    /// Attached file IDs
+    pub file_ids: Vec<String>,
+    /// Hashtags
+    pub tags: Vec<String>,
+    /// ActivityPub URI
+    pub uri: Option<String>,
+    /// Human-readable URL
+    pub url: Option<String>,
+    /// Created timestamp (ISO 8601)
+    pub created_at: String,
+    /// Updated timestamp (ISO 8601)
+    pub updated_at: Option<String>,
+}
+
+/// Request for note export with options.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportNotesInput {
+    /// Maximum number of notes to export (default: 10000)
+    #[serde(default = "default_export_limit")]
+    pub limit: u32,
+    /// Export format (json or csv)
+    #[serde(default)]
+    pub format: ExportFormat,
+}
+
+fn default_export_limit() -> u32 {
+    10000
 }
 
 /// Input for initiating account migration.
@@ -801,6 +848,110 @@ impl AccountService {
         }
 
         Ok(result)
+    }
+
+    /// Export user's notes.
+    ///
+    /// Returns notes in chronological order (newest first) with pagination support.
+    /// Each note includes text, CW, visibility, timestamps, and metadata.
+    pub async fn export_notes(
+        &self,
+        user_id: &str,
+        limit: u32,
+    ) -> AppResult<Vec<ExportedNote>> {
+        let notes = self
+            .note_repo
+            .find_by_user(user_id, limit as u64, None)
+            .await?;
+
+        let result: Vec<ExportedNote> = notes
+            .into_iter()
+            .map(|note| {
+                // Parse file_ids from JSON
+                let file_ids: Vec<String> = serde_json::from_value(note.file_ids.clone())
+                    .unwrap_or_default();
+
+                // Parse tags from JSON
+                let tags: Vec<String> = serde_json::from_value(note.tags.clone())
+                    .unwrap_or_default();
+
+                // Convert visibility enum to string
+                let visibility = match note.visibility {
+                    misskey_db::entities::note::Visibility::Public => "public",
+                    misskey_db::entities::note::Visibility::Home => "home",
+                    misskey_db::entities::note::Visibility::Followers => "followers",
+                    misskey_db::entities::note::Visibility::Specified => "specified",
+                }
+                .to_string();
+
+                ExportedNote {
+                    id: note.id,
+                    text: note.text,
+                    cw: note.cw,
+                    visibility,
+                    reply_id: note.reply_id,
+                    renote_id: note.renote_id,
+                    file_ids,
+                    tags,
+                    uri: note.uri,
+                    url: note.url,
+                    created_at: note.created_at.to_rfc3339(),
+                    updated_at: note.updated_at.map(|dt| dt.to_rfc3339()),
+                }
+            })
+            .collect();
+
+        tracing::info!(
+            user_id = user_id,
+            count = result.len(),
+            "Notes exported"
+        );
+
+        Ok(result)
+    }
+
+    /// Export user's notes as CSV string.
+    ///
+    /// CSV format: id,created_at,visibility,cw,text,reply_id,renote_id,tags,file_ids,uri,url
+    pub fn export_notes_as_csv(notes: &[ExportedNote]) -> String {
+        let mut csv = String::from("id,created_at,visibility,cw,text,reply_id,renote_id,tags,file_ids,uri,url\n");
+
+        for note in notes {
+            // Escape CSV fields (double quotes and newlines)
+            let escape_csv = |s: &str| {
+                if s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r') {
+                    format!("\"{}\"", s.replace('"', "\"\""))
+                } else {
+                    s.to_string()
+                }
+            };
+
+            let text = note.text.as_deref().unwrap_or("");
+            let cw = note.cw.as_deref().unwrap_or("");
+            let reply_id = note.reply_id.as_deref().unwrap_or("");
+            let renote_id = note.renote_id.as_deref().unwrap_or("");
+            let uri = note.uri.as_deref().unwrap_or("");
+            let url = note.url.as_deref().unwrap_or("");
+            let tags = note.tags.join(";");
+            let file_ids = note.file_ids.join(";");
+
+            csv.push_str(&format!(
+                "{},{},{},{},{},{},{},{},{},{},{}\n",
+                escape_csv(&note.id),
+                escape_csv(&note.created_at),
+                escape_csv(&note.visibility),
+                escape_csv(cw),
+                escape_csv(text),
+                escape_csv(reply_id),
+                escape_csv(renote_id),
+                escape_csv(&tags),
+                escape_csv(&file_ids),
+                escape_csv(uri),
+                escape_csv(url),
+            ));
+        }
+
+        csv
     }
 
     /// Get export job status.

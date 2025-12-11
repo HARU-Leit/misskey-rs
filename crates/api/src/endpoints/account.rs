@@ -3,9 +3,10 @@
 use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_core::{
-    CreateExportInput, CreateImportInput, DeleteAccountInput, DeletionRecord,
-    DeletionStatusResponse, ExportDataType, ExportJob, ExportedFollow, ExportedProfile, ImportJob,
-    MigrateAccountInput, MigrationRecord, MigrationStatusResponse,
+    AccountService, CreateExportInput, CreateImportInput, DeleteAccountInput, DeletionRecord,
+    DeletionStatusResponse, ExportDataType, ExportFormat, ExportJob, ExportNotesInput,
+    ExportedFollow, ExportedNote, ExportedProfile, ImportJob, MigrateAccountInput, MigrationRecord,
+    MigrationStatusResponse,
 };
 use serde::{Deserialize, Serialize};
 
@@ -197,6 +198,56 @@ async fn export_followers(
 
     let followers = account_service.export_followers(&user.id).await?;
     Ok(ApiResponse::ok(followers))
+}
+
+/// Request to export notes.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportNotesRequest {
+    /// Maximum number of notes to export (default: 10000)
+    #[serde(default = "default_export_limit")]
+    pub limit: u32,
+    /// Export format (json or csv)
+    #[serde(default)]
+    pub format: Option<String>,
+}
+
+fn default_export_limit() -> u32 {
+    10000
+}
+
+/// Response for note export (either JSON array or CSV string).
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+pub enum ExportNotesResponse {
+    /// JSON format response
+    Json(Vec<ExportedNote>),
+    /// CSV format response
+    Csv { csv: String, count: usize },
+}
+
+/// Export user's notes immediately (JSON or CSV).
+async fn export_notes(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<ExportNotesRequest>,
+) -> AppResult<ApiResponse<ExportNotesResponse>> {
+    let account_service = state.account_service.as_ref().ok_or_else(|| {
+        misskey_common::AppError::BadRequest("Account service not configured".to_string())
+    })?;
+
+    let notes = account_service.export_notes(&user.id, req.limit).await?;
+
+    let response = match req.format.as_deref() {
+        Some("csv") => {
+            let count = notes.len();
+            let csv = AccountService::export_notes_as_csv(&notes);
+            ExportNotesResponse::Csv { csv, count }
+        }
+        _ => ExportNotesResponse::Json(notes),
+    };
+
+    Ok(ApiResponse::ok(response))
 }
 
 /// Request to get export job status.
@@ -420,6 +471,7 @@ pub fn router() -> Router<AppState> {
         .route("/export/profile", post(export_profile))
         .route("/export/following", post(export_following))
         .route("/export/followers", post(export_followers))
+        .route("/export/notes", post(export_notes))
         .route("/export/status", post(export_status))
         // Import
         .route("/import", post(create_import))
