@@ -65,8 +65,8 @@ pub fn parse(text: &str) -> Vec<MfmNode> {
         let m = cap.get(0).unwrap();
         let username = cap.get(1).unwrap().as_str().to_string();
         let host = cap.get(2).map(|h| h.as_str().to_string());
-        let acct = if host.is_some() {
-            format!("@{}@{}", username, host.as_ref().unwrap())
+        let acct = if let Some(ref h) = host {
+            format!("@{username}@{h}")
         } else {
             format!("@{username}")
         };
