@@ -56,6 +56,15 @@ pub struct Model {
     #[sea_orm(default_value = false)]
     pub email_required_for_signup: bool,
 
+    /// Whether registration requires admin approval
+    #[sea_orm(default_value = false)]
+    pub require_registration_approval: bool,
+
+    // Media settings
+    /// Whether to force all uploaded media to be marked as NSFW
+    #[sea_orm(default_value = false)]
+    pub force_nsfw_media: bool,
+
     // UI defaults
     /// Default setting for blurring NSFW content
     #[sea_orm(default_value = true)]
@@ -66,9 +75,13 @@ pub struct Model {
     pub default_hide_ads: bool,
 
     // Content limits
-    /// Maximum note text length
+    /// Maximum note text length for local users
     #[sea_orm(default_value = 3000)]
     pub max_note_text_length: i32,
+
+    /// Maximum note text length for remote users (federation)
+    #[sea_orm(default_value = 10000)]
+    pub max_remote_note_text_length: i32,
 
     /// Maximum page content length (for Page feature)
     #[sea_orm(default_value = 65536)]

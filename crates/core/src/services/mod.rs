@@ -38,6 +38,8 @@ pub mod media;
 pub mod account;
 pub mod group;
 pub mod jobs;
+pub mod meta_settings;
+pub mod registration_approval;
 
 pub use announcement::AnnouncementService;
 pub use account::{
@@ -109,3 +111,5 @@ pub use group::{
     UpdateGroupInput, UpdateMemberRoleInput,
 };
 pub use jobs::{CleanupTask, Job, JobSender, JobService, JobWorkerContext};
+pub use meta_settings::{MetaSettingsService, UpdateMetaSettingsInput};
+pub use registration_approval::RegistrationApprovalService;

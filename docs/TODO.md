@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11*
+*Last Updated: 2025-12-11* (管理機能強化実装完了)
 
 ---
 
@@ -42,9 +42,9 @@
 
 | タスク | 状況 | 参照 |
 |--------|------|------|
-| ローカル/リモート別文字数制限 | 未実装 | FORK_FEATURES.md |
-| 登録承認必須モード | 未実装 | FORK_FEATURES.md |
-| メディアNSFW強制マーク | 未実装 | FORK_FEATURES.md |
+| ローカル/リモート別文字数制限 | ✅ 完了 | DB/エンティティ/API実装済 |
+| 登録承認必須モード | ✅ 完了 | DB/エンティティ/API実装済 |
+| メディアNSFW強制マーク | ✅ 完了 | DB/エンティティ/API実装済 |
 
 ---
 
@@ -159,7 +159,7 @@
 |--------|----------|------|
 | メッセージングのブロックチェック | messaging.rs:81 | IMPLEMENTATION_STATUS.md |
 | ドライブのファイル実体削除 | drive.rs:218 | IMPLEMENTATION_STATUS.md |
-| NodeInfo実統計取得 | nodeinfo.rs | IMPLEMENTATION_STATUS.md |
+| NodeInfo実統計取得 | ✅ 実装済 | nodeinfo.rs |
 | Mastodon API base_url設定 | timelines.rs | IMPLEMENTATION_STATUS.md |
 
 ---
@@ -182,13 +182,19 @@
 - タイムラインワードフィルター、チャンネルタイムライン
 - 2FA/WebAuthnログイン検証、プッシュ通知ジョブサービス
 
+### 管理機能強化 (100%完了)
+- ローカル/リモート別文字数制限（`max_note_text_length` / `max_remote_note_text_length`）
+- 登録承認必須モード（`require_registration_approval` + `registration_approval`テーブル）
+- メディアNSFW強制マーク（`force_nsfw_media`）
+- 管理APIエンドポイント（`/admin/meta`, `/admin/registration-approvals/*`）
+
 ---
 
 ## 次のアクション推奨
 
 1. **フェデレーション**: ActivityPub Update activity対応 → ノート編集が他サーバーに反映
 2. **Mastodon互換**: メディア添付API完成 → 既存クライアントの完全対応
-3. **管理機能**: 文字数制限設定 → インスタンス運用の柔軟性
+3. **パフォーマンス**: URLプレビューキャッシュ → 外部リンク表示高速化
 
 ---
 

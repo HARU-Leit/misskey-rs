@@ -37,6 +37,7 @@ mod m20250101_000032_add_account_migration_fields;
 mod m20250101_000033_create_group_table;
 mod m20250101_000034_add_channel_id_to_note;
 mod m20250101_000035_add_community_features;
+mod m20250101_000036_add_admin_settings;
 
 pub struct Migrator;
 
@@ -79,6 +80,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250101_000033_create_group_table::Migration),
             Box::new(m20250101_000034_add_channel_id_to_note::Migration),
             Box::new(m20250101_000035_add_community_features::Migration),
+            Box::new(m20250101_000036_add_admin_settings::Migration),
         ]
     }
 }

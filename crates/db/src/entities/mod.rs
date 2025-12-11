@@ -47,6 +47,7 @@ pub mod group;
 pub mod group_member;
 pub mod group_invite;
 pub mod meta_settings;
+pub mod registration_approval;
 
 pub use abuse_report::Entity as AbuseReport;
 pub use announcement::Entity as Announcement;
@@ -95,3 +96,4 @@ pub use group::Entity as Group;
 pub use group_member::Entity as GroupMember;
 pub use group_invite::Entity as GroupInvite;
 pub use meta_settings::Entity as MetaSettings;
+pub use registration_approval::Entity as RegistrationApproval;
