@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (EmojiReact Activity対応)
+*Last Updated: 2025-12-11* (URLプレビューキャッシュ対応)
 
 ---
 
@@ -59,7 +59,7 @@
 
 | タスク | 状況 | 参照 |
 |--------|------|------|
-| URLプレビューキャッシュ | 未実装 | FORK_FEATURES.md |
+| URLプレビューキャッシュ | ✅ 完了 | url_preview_cache.rs |
 | Redis分散カウンター（レート制限） | 未実装 | MISSING_FEATURES.md |
 | 読み取りレプリカ対応 | 未実装 | COMMUNITY_FEATURES.md |
 
@@ -205,13 +205,16 @@
 - **ActivityPub Update activity対応** - ローカルノート編集時にUpdate activityを配信、リモートからのUpdate activity受信でノート更新
 - **EmojiReact Activity対応** - Pleroma/Akkoma形式のエモジリアクション受信に対応。Like Activityに`content`フィールドを追加してPleroma互換性向上
 
+### パフォーマンス最適化 (2025-12-11)
+- **URLプレビューキャッシュ** - Redis-backed caching for URL previews. 24時間TTLでキャッシュ、失敗したURLは1時間ネガティブキャッシュ。`get_or_fetch()`メソッドで自動的にキャッシュ/フェッチを管理
+
 ---
 
 ## 次のアクション推奨
 
-1. **パフォーマンス**: URLプレビューキャッシュ → 外部リンク表示高速化
-2. **タイムライン**: バブルタイムライン → 信頼インスタンス間の連携強化
-3. **フェデレーション**: 引用リノートのMastodon連合（FEP-e232対応）
+1. **タイムライン**: バブルタイムライン → 信頼インスタンス間の連携強化
+2. **フェデレーション**: 引用リノートのMastodon連合（FEP-e232対応）
+3. **パフォーマンス**: Redis分散カウンター（レート制限）
 
 ---
 

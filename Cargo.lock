@@ -3017,6 +3017,7 @@ dependencies = [
  "chrono",
  "config",
  "dotenvy",
+ "fred",
  "md5",
  "once_cell",
  "rand 0.8.5",

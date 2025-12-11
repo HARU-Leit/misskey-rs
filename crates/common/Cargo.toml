@@ -43,6 +43,9 @@ reqwest.workspace = true
 regex.workspace = true
 once_cell.workspace = true
 
+# Cache
+fred.workspace = true
+
 # Storage
 tokio = { workspace = true, features = ["fs"] }
 async-trait = "0.1"
