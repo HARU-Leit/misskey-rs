@@ -25,13 +25,46 @@ use misskey_db::repositories::{
 use misskey_queue::{DeliverJob, RedisDeliveryService};
 use misskey_queue::workers::{DeliverContext, deliver_worker};
 use sea_orm::{ConnectOptions, Database};
+use tokio::signal;
 use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
-use tracing::info;
+use tracing::{info, warn};
 use url::Url;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+/// Waits for a shutdown signal (SIGINT or SIGTERM).
+///
+/// On Unix systems, this listens for both SIGINT (Ctrl+C) and SIGTERM.
+/// On Windows, this only listens for Ctrl+C.
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        () = ctrl_c => {
+            info!("Received SIGINT, initiating graceful shutdown...");
+        },
+        () = terminate => {
+            info!("Received SIGTERM, initiating graceful shutdown...");
+        },
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -413,12 +446,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("ActivityPub delivery worker started");
     }
 
-    // Start server
+    // Start server with graceful shutdown
     let addr = SocketAddr::from(([0, 0, 0, 0], config.server.port));
     info!("Listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
 
+    info!("Server shutdown complete");
     Ok(())
 }

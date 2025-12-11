@@ -131,6 +131,7 @@ missing_docs = "warn"
 all = "warn"
 pedantic = "warn"
 nursery = "warn"
+cargo = "warn"
 redundant_clone = "warn"
 clone_on_ref_ptr = "warn"
 implicit_clone = "warn"
@@ -140,6 +141,8 @@ expect_used = "warn"
 panic = "warn"
 todo = "warn"
 unimplemented = "warn"
+# Allow common pedantic exceptions
+module_name_repetitions = "allow"
 
 [profile.dev]
 opt-level = 0
@@ -149,7 +152,7 @@ debug = true
 opt-level = 3
 lto = "fat"
 codegen-units = 1
-strip = true
+strip = "symbols"
 panic = "abort"
 
 # Profile for profiling (release with debug symbols)
