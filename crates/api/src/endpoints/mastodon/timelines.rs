@@ -89,6 +89,9 @@ fn note_to_status(note: note::Model, base_url: &str) -> Status {
         emojis: vec![],
         card: None,
         poll: None,
+        favourited: None,
+        reblogged: None,
+        bookmarked: None,
     }
 }
 
