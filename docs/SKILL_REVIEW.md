@@ -134,49 +134,14 @@
 
 ---
 
-## 4. 設定ファイル欠落分析
-
-### 4.1 設定ファイル状況
+## 4. 設定ファイル状況
 
 | ファイル | 目的 | 状態 |
 |---------|------|--------|
-| `rustfmt.toml` | フォーマット設定 | ✅ 作成済み |
-| `clippy.toml` | Clippy詳細設定 | ➖ (Cargo.tomlで設定) |
-| `deny.toml` | セキュリティ・ライセンス | ✅ 作成済み |
-| `.cargo/config.toml` | 高速リンカー設定 | ➖ (オプショナル) |
-
-### 4.2 推奨 rustfmt.toml
-
-```toml
-edition = "2024"
-max_width = 100
-imports_granularity = "Module"
-group_imports = "StdExternalCrate"
-reorder_imports = true
-use_field_init_shorthand = true
-use_try_shorthand = true
-```
-
-### 4.3 推奨 deny.toml
-
-```toml
-[advisories]
-vulnerability = "deny"
-unmaintained = "warn"
-yanked = "warn"
-
-[licenses]
-allow = ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "MPL-2.0", "AGPL-3.0"]
-copyleft = "warn"
-
-[bans]
-multiple-versions = "warn"
-wildcards = "deny"
-
-[sources]
-unknown-registry = "deny"
-unknown-git = "deny"
-```
+| `rustfmt.toml` | フォーマット設定 | ✅ 設定済み |
+| `clippy.toml` | Clippy詳細設定 | ➖ Cargo.tomlで設定 |
+| `deny.toml` | セキュリティ・ライセンス | ✅ 設定済み |
+| `.cargo/config.toml` | 高速リンカー設定 | ➖ オプショナル |
 
 ---
 
@@ -231,20 +196,17 @@ unknown-git = "deny"
 3. **体系的**: 参照ドキュメントが適切に分離
 4. **ベストプラクティス準拠**: 2025年時点の推奨設定を反映
 
-### プロジェクトの準拠状況 (2025-12-11更新)
+### プロジェクトの準拠状況
 
-- **高準拠**: Cargo.toml構成、依存関係選択、CI/CD基盤、Lint設定
-- **高準拠**: 設定ファイル(rustfmt.toml, deny.toml) ✅ 作成済み
+- **高準拠**: Cargo.toml、依存関係、CI/CD、Lint設定、設定ファイル
 - **中準拠**: テスト構成、ドキュメント
 
-### 推奨アクション (優先度順)
+### 今後の推奨アクション
 
-1. ~~**高**: `deny.toml` 作成とCI統合~~ ✅ 完了
-2. ~~**高**: `[lints.clippy]` に `unwrap_used = "deny"` 追加~~ ✅ 完了
-3. ~~**中**: `rustfmt.toml` 作成~~ ✅ 完了
-4. ~~**中**: CI テストマトリックス拡張 (macOS, Windows, beta)~~ ✅ 完了
-5. **低**: ベンチマークスイート (`benches/`) 追加
-6. **低**: `.cargo/config.toml` での mold リンカー設定
+| 優先度 | アクション |
+|--------|-----------|
+| 低 | ベンチマークスイート (`benches/`) 追加 |
+| 低 | `.cargo/config.toml` での mold リンカー設定 |
 
 ---
 
