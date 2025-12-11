@@ -7,7 +7,7 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set,
 };
 
-use crate::entities::push_subscription::{self, ActiveModel, Column, Entity, Model};
+use crate::entities::push_subscription::{ActiveModel, Column, Entity, Model};
 use misskey_common::{AppError, AppResult};
 
 /// Repository for push subscription operations.

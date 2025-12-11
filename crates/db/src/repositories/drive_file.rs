@@ -199,7 +199,6 @@ impl DriveFileRepository {
 
         let mut files = Vec::new();
         for row in result {
-            use sea_orm::TryGetable;
             let file = drive_file::Model {
                 id: row.try_get("", "id").unwrap_or_default(),
                 user_id: row.try_get("", "user_id").unwrap_or_default(),
@@ -276,7 +275,6 @@ impl DriveFileRepository {
             .map_err(|e| AppError::Database(e.to_string()))?;
 
         if let Some(row) = result {
-            use sea_orm::TryGetable;
             let count: i64 = row.try_get("", "count").unwrap_or(0);
             Ok(count)
         } else {
@@ -286,8 +284,6 @@ impl DriveFileRepository {
 
     /// Delete multiple files by IDs.
     pub async fn delete_many(&self, ids: &[String]) -> AppResult<u64> {
-        use sea_orm::DeleteMany;
-
         let result = DriveFile::delete_many()
             .filter(drive_file::Column::Id.is_in(ids.to_vec()))
             .exec(self.db.as_ref())
