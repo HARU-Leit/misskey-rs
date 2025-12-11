@@ -1,6 +1,6 @@
 //! Authentication endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
@@ -162,7 +162,10 @@ async fn signin_webauthn_begin(
     }
 
     // Begin WebAuthn authentication
-    let auth_response = state.webauthn_service.begin_authentication(&user.id).await?;
+    let auth_response = state
+        .webauthn_service
+        .begin_authentication(&user.id)
+        .await?;
 
     Ok(ApiResponse::ok(SigninResponse {
         id: user.id.clone(),
@@ -238,7 +241,9 @@ async fn regenerate_token(
 ) -> AppResult<ApiResponse<RegenerateTokenResponse>> {
     let new_token = state.user_service.regenerate_token(&user.id).await?;
 
-    Ok(ApiResponse::ok(RegenerateTokenResponse { token: new_token }))
+    Ok(ApiResponse::ok(RegenerateTokenResponse {
+        token: new_token,
+    }))
 }
 
 /// Signout response.

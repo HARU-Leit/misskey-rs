@@ -41,7 +41,7 @@ pub struct ModerationService {
 
 impl ModerationService {
     /// Create a new moderation service.
-    #[must_use] 
+    #[must_use]
     pub const fn new(moderation_repo: ModerationRepository, user_repo: UserRepository) -> Self {
         Self {
             moderation_repo,
@@ -71,9 +71,7 @@ impl ModerationService {
 
         // Can't report yourself
         if reporter_id == input.target_user_id {
-            return Err(AppError::BadRequest(
-                "Cannot report yourself".to_string(),
-            ));
+            return Err(AppError::BadRequest("Cannot report yourself".to_string()));
         }
 
         // Check target user exists
@@ -107,7 +105,9 @@ impl ModerationService {
         limit: u64,
         offset: u64,
     ) -> AppResult<Vec<abuse_report::Model>> {
-        self.moderation_repo.get_pending_reports(limit, offset).await
+        self.moderation_repo
+            .get_pending_reports(limit, offset)
+            .await
     }
 
     /// Get all abuse reports.
@@ -117,7 +117,9 @@ impl ModerationService {
         limit: u64,
         offset: u64,
     ) -> AppResult<Vec<abuse_report::Model>> {
-        self.moderation_repo.get_reports(status, limit, offset).await
+        self.moderation_repo
+            .get_reports(status, limit, offset)
+            .await
     }
 
     /// Resolve an abuse report.
@@ -168,7 +170,9 @@ impl ModerationService {
         user_id: &str,
         limit: u64,
     ) -> AppResult<Vec<abuse_report::Model>> {
-        self.moderation_repo.get_reports_for_user(user_id, limit).await
+        self.moderation_repo
+            .get_reports_for_user(user_id, limit)
+            .await
     }
 
     // ========== User Suspensions ==========
@@ -189,9 +193,7 @@ impl ModerationService {
 
         // Can't suspend yourself
         if moderator_id == input.user_id {
-            return Err(AppError::BadRequest(
-                "Cannot suspend yourself".to_string(),
-            ));
+            return Err(AppError::BadRequest("Cannot suspend yourself".to_string()));
         }
 
         // Check target user exists
@@ -199,9 +201,7 @@ impl ModerationService {
 
         // Can't suspend admins
         if target.is_admin {
-            return Err(AppError::Forbidden(
-                "Cannot suspend an admin".to_string(),
-            ));
+            return Err(AppError::Forbidden("Cannot suspend an admin".to_string()));
         }
 
         // Check if already suspended
@@ -217,9 +217,9 @@ impl ModerationService {
             ));
         }
 
-        let expires_at = input.duration.map(|d| {
-            chrono::Utc::now() + chrono::Duration::seconds(d)
-        });
+        let expires_at = input
+            .duration
+            .map(|d| chrono::Utc::now() + chrono::Duration::seconds(d));
 
         let id = self.id_gen.generate();
         let model = user_suspension::ActiveModel {
@@ -291,7 +291,9 @@ impl ModerationService {
         limit: u64,
         offset: u64,
     ) -> AppResult<Vec<user_suspension::Model>> {
-        self.moderation_repo.get_active_suspensions(limit, offset).await
+        self.moderation_repo
+            .get_active_suspensions(limit, offset)
+            .await
     }
 }
 

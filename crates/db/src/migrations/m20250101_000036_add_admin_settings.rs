@@ -74,11 +74,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .unique_key(),
                     )
-                    .col(
-                        ColumnDef::new(RegistrationApproval::Reason)
-                            .text()
-                            .null(),
-                    )
+                    .col(ColumnDef::new(RegistrationApproval::Reason).text().null())
                     .col(
                         ColumnDef::new(RegistrationApproval::Status)
                             .string_len(16)

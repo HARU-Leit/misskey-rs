@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{note_favorite, NoteFavorite};
+use crate::entities::{NoteFavorite, note_favorite};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
@@ -17,7 +17,7 @@ pub struct NoteFavoriteRepository {
 
 impl NoteFavoriteRepository {
     /// Create a new note favorite repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
@@ -46,7 +46,10 @@ impl NoteFavoriteRepository {
 
     /// Check if a note is favorited by user.
     pub async fn is_favorited(&self, user_id: &str, note_id: &str) -> AppResult<bool> {
-        Ok(self.find_by_user_and_note(user_id, note_id).await?.is_some())
+        Ok(self
+            .find_by_user_and_note(user_id, note_id)
+            .await?
+            .is_some())
     }
 
     /// Create a new favorite.

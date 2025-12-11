@@ -9,11 +9,9 @@ use sea_orm::{
     QueryFilter, QueryOrder, QuerySelect, Set,
 };
 
-use crate::entities::{
-    group, group_invite, group_member, Group, GroupInvite, GroupMember,
-};
 use crate::entities::group_invite::{InviteStatus, InviteType};
 use crate::entities::group_member::GroupRole;
+use crate::entities::{Group, GroupInvite, GroupMember, group, group_invite, group_member};
 
 /// Repository for group operations.
 #[derive(Clone)]

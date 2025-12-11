@@ -65,7 +65,9 @@ impl InstanceService {
         sort_by: Option<&str>,
         sort_order: Option<&str>,
     ) -> AppResult<Vec<instance::Model>> {
-        self.instance_repo.find_all(limit, offset, sort_by, sort_order).await
+        self.instance_repo
+            .find_all(limit, offset, sort_by, sort_order)
+            .await
     }
 
     /// Search instances by hostname.

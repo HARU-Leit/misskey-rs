@@ -31,7 +31,7 @@ mod parser;
 mod render;
 
 pub use nodes::{MfmNode, MfmNodeType};
-pub use parser::{extract_hashtags, extract_mentions, parse, Mention};
+pub use parser::{Mention, extract_hashtags, extract_mentions, parse};
 pub use render::{from_html, to_html, to_plain_text};
 
 #[cfg(test)]

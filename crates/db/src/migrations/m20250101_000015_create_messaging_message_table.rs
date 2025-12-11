@@ -14,13 +14,27 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(MessagingMessage::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(MessagingMessage::Id).string_len(32).not_null().primary_key())
-                    .col(ColumnDef::new(MessagingMessage::UserId).string_len(32).not_null())
+                    .col(
+                        ColumnDef::new(MessagingMessage::Id)
+                            .string_len(32)
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(MessagingMessage::UserId)
+                            .string_len(32)
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(MessagingMessage::RecipientId).string_len(32))
                     .col(ColumnDef::new(MessagingMessage::GroupId).string_len(32))
                     .col(ColumnDef::new(MessagingMessage::Text).text())
                     .col(ColumnDef::new(MessagingMessage::FileId).string_len(32))
-                    .col(ColumnDef::new(MessagingMessage::IsRead).boolean().not_null().default(false))
+                    .col(
+                        ColumnDef::new(MessagingMessage::IsRead)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
                     .col(ColumnDef::new(MessagingMessage::Uri).string_len(512))
                     .col(
                         ColumnDef::new(MessagingMessage::CreatedAt)

@@ -271,10 +271,8 @@ fn convert_blockquotes(html: &str) -> String {
     let mut result = html.to_string();
 
     // Simple blockquote conversion
-    while let (Some(start), Some(end)) = (
-        result.find("<blockquote>"),
-        result.find("</blockquote>"),
-    ) {
+    while let (Some(start), Some(end)) = (result.find("<blockquote>"), result.find("</blockquote>"))
+    {
         if start < end {
             let content = &result[start + 12..end];
             let quoted = content
@@ -313,8 +311,8 @@ fn convert_links(html: &str) -> String {
 fn convert_code_blocks(html: &str) -> String {
     use regex::Regex;
 
-    let code_re = Regex::new(r#"<pre><code(?:\s+class="language-(\w+)")?>([^<]*)</code></pre>"#)
-        .unwrap();
+    let code_re =
+        Regex::new(r#"<pre><code(?:\s+class="language-(\w+)")?>([^<]*)</code></pre>"#).unwrap();
 
     code_re
         .replace_all(html, |caps: &regex::Captures| {

@@ -49,13 +49,15 @@ impl NotificationService {
     ) -> AppResult<notification::Model> {
         // Don't notify yourself
         if notifiee_id == notifier_id {
-            return self.create_internal(
-                notifiee_id,
-                Some(notifier_id),
-                NotificationType::Follow,
-                None,
-                None,
-            ).await;
+            return self
+                .create_internal(
+                    notifiee_id,
+                    Some(notifier_id),
+                    NotificationType::Follow,
+                    None,
+                    None,
+                )
+                .await;
         }
 
         self.create_internal(
@@ -77,13 +79,15 @@ impl NotificationService {
     ) -> AppResult<notification::Model> {
         // Don't notify yourself
         if notifiee_id == notifier_id {
-            return self.create_internal(
-                notifiee_id,
-                Some(notifier_id),
-                NotificationType::Mention,
-                Some(note_id),
-                None,
-            ).await;
+            return self
+                .create_internal(
+                    notifiee_id,
+                    Some(notifier_id),
+                    NotificationType::Mention,
+                    Some(note_id),
+                    None,
+                )
+                .await;
         }
 
         self.create_internal(
@@ -105,13 +109,15 @@ impl NotificationService {
     ) -> AppResult<notification::Model> {
         // Don't notify yourself
         if notifiee_id == notifier_id {
-            return self.create_internal(
-                notifiee_id,
-                Some(notifier_id),
-                NotificationType::Reply,
-                Some(note_id),
-                None,
-            ).await;
+            return self
+                .create_internal(
+                    notifiee_id,
+                    Some(notifier_id),
+                    NotificationType::Reply,
+                    Some(note_id),
+                    None,
+                )
+                .await;
         }
 
         self.create_internal(
@@ -133,13 +139,15 @@ impl NotificationService {
     ) -> AppResult<notification::Model> {
         // Don't notify yourself
         if notifiee_id == notifier_id {
-            return self.create_internal(
-                notifiee_id,
-                Some(notifier_id),
-                NotificationType::Renote,
-                Some(note_id),
-                None,
-            ).await;
+            return self
+                .create_internal(
+                    notifiee_id,
+                    Some(notifier_id),
+                    NotificationType::Renote,
+                    Some(note_id),
+                    None,
+                )
+                .await;
         }
 
         self.create_internal(
@@ -161,13 +169,15 @@ impl NotificationService {
     ) -> AppResult<notification::Model> {
         // Don't notify yourself
         if notifiee_id == notifier_id {
-            return self.create_internal(
-                notifiee_id,
-                Some(notifier_id),
-                NotificationType::Quote,
-                Some(note_id),
-                None,
-            ).await;
+            return self
+                .create_internal(
+                    notifiee_id,
+                    Some(notifier_id),
+                    NotificationType::Quote,
+                    Some(note_id),
+                    None,
+                )
+                .await;
         }
 
         self.create_internal(
@@ -190,13 +200,15 @@ impl NotificationService {
     ) -> AppResult<notification::Model> {
         // Don't notify yourself
         if notifiee_id == notifier_id {
-            return self.create_internal(
-                notifiee_id,
-                Some(notifier_id),
-                NotificationType::Reaction,
-                Some(note_id),
-                Some(reaction),
-            ).await;
+            return self
+                .create_internal(
+                    notifiee_id,
+                    Some(notifier_id),
+                    NotificationType::Reaction,
+                    Some(note_id),
+                    Some(reaction),
+                )
+                .await;
         }
 
         self.create_internal(
@@ -282,7 +294,13 @@ impl NotificationService {
 
         if let Some(ref event_publisher) = self.event_publisher {
             if let Err(e) = event_publisher
-                .publish_notification(&notification_id, notifiee_id, type_str, notifier_id, note_id)
+                .publish_notification(
+                    &notification_id,
+                    notifiee_id,
+                    type_str,
+                    notifier_id,
+                    note_id,
+                )
                 .await
             {
                 tracing::warn!(error = %e, "Failed to publish notification event");
@@ -299,8 +317,12 @@ impl NotificationService {
                 NotificationType::Quote => PushNotificationType::Quote,
                 NotificationType::Reaction => PushNotificationType::Reaction,
                 NotificationType::PollEnded => PushNotificationType::PollEnded,
-                NotificationType::ReceiveFollowRequest => PushNotificationType::FollowRequestReceived,
-                NotificationType::FollowRequestAccepted => PushNotificationType::FollowRequestAccepted,
+                NotificationType::ReceiveFollowRequest => {
+                    PushNotificationType::FollowRequestReceived
+                }
+                NotificationType::FollowRequestAccepted => {
+                    PushNotificationType::FollowRequestAccepted
+                }
                 NotificationType::App => PushNotificationType::App,
             };
 
@@ -342,9 +364,10 @@ impl NotificationService {
         // Verify the notification belongs to the user
         let notification = self.notification_repo.find_by_id(notification_id).await?;
         if let Some(n) = notification
-            && n.notifiee_id == user_id {
-                self.notification_repo.mark_as_read(notification_id).await?;
-            }
+            && n.notifiee_id == user_id
+        {
+            self.notification_repo.mark_as_read(notification_id).await?;
+        }
         Ok(())
     }
 
@@ -363,9 +386,10 @@ impl NotificationService {
         // Verify the notification belongs to the user
         let notification = self.notification_repo.find_by_id(notification_id).await?;
         if let Some(n) = notification
-            && n.notifiee_id == user_id {
-                self.notification_repo.delete(notification_id).await?;
-            }
+            && n.notifiee_id == user_id
+        {
+            self.notification_repo.delete(notification_id).await?;
+        }
         Ok(())
     }
 

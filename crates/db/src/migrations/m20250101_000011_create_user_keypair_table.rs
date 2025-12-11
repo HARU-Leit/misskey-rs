@@ -19,16 +19,8 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(
-                        ColumnDef::new(UserKeypair::PublicKey)
-                            .text()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(UserKeypair::PrivateKey)
-                            .text()
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(UserKeypair::PublicKey).text().not_null())
+                    .col(ColumnDef::new(UserKeypair::PrivateKey).text().not_null())
                     .col(
                         ColumnDef::new(UserKeypair::KeyId)
                             .string_len(512)

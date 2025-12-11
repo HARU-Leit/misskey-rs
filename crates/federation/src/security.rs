@@ -34,7 +34,7 @@ pub struct ReplayProtection {
 
 impl ReplayProtection {
     /// Create a new replay protection instance with default settings.
-    #[must_use] 
+    #[must_use]
     pub const fn new(redis: Arc<RedisClient>) -> Self {
         Self {
             redis,
@@ -44,7 +44,7 @@ impl ReplayProtection {
     }
 
     /// Create with custom settings.
-    #[must_use] 
+    #[must_use]
     pub const fn with_settings(
         redis: Arc<RedisClient>,
         max_clock_skew_secs: i64,
@@ -114,11 +114,7 @@ impl ReplayProtection {
     }
 
     /// Full replay protection check: timestamp + deduplication.
-    pub async fn validate(
-        &self,
-        date_header: &str,
-        activity_id: &str,
-    ) -> Result<(), ReplayError> {
+    pub async fn validate(&self, date_header: &str, activity_id: &str) -> Result<(), ReplayError> {
         // First check timestamp
         self.validate_timestamp(date_header)?;
 
@@ -139,7 +135,7 @@ pub struct FederationRateLimiter {
 
 impl FederationRateLimiter {
     /// Create a new rate limiter with default settings.
-    #[must_use] 
+    #[must_use]
     pub const fn new(redis: Arc<RedisClient>) -> Self {
         Self {
             redis,
@@ -149,8 +145,12 @@ impl FederationRateLimiter {
     }
 
     /// Create with custom settings.
-    #[must_use] 
-    pub const fn with_settings(redis: Arc<RedisClient>, window_secs: i64, max_activities: u64) -> Self {
+    #[must_use]
+    pub const fn with_settings(
+        redis: Arc<RedisClient>,
+        window_secs: i64,
+        max_activities: u64,
+    ) -> Self {
         Self {
             redis,
             window_secs,
@@ -252,7 +252,7 @@ pub struct ActivitySecurityChecker {
 
 impl ActivitySecurityChecker {
     /// Create a new security checker.
-    #[must_use] 
+    #[must_use]
     pub fn new(redis: Arc<RedisClient>) -> Self {
         Self {
             replay_protection: ReplayProtection::new(Arc::clone(&redis)),
@@ -261,7 +261,7 @@ impl ActivitySecurityChecker {
     }
 
     /// Create with custom settings.
-    #[must_use] 
+    #[must_use]
     pub fn with_settings(
         redis: Arc<RedisClient>,
         max_clock_skew_secs: i64,
@@ -294,7 +294,9 @@ impl ActivitySecurityChecker {
         let remaining = self.rate_limiter.check(instance_host).await?;
 
         // Then check for replay attacks
-        self.replay_protection.validate(date_header, activity_id).await?;
+        self.replay_protection
+            .validate(date_header, activity_id)
+            .await?;
 
         info!(
             instance = %instance_host,
@@ -309,13 +311,13 @@ impl ActivitySecurityChecker {
     }
 
     /// Get the replay protection component.
-    #[must_use] 
+    #[must_use]
     pub const fn replay_protection(&self) -> &ReplayProtection {
         &self.replay_protection
     }
 
     /// Get the rate limiter component.
-    #[must_use] 
+    #[must_use]
     pub const fn rate_limiter(&self) -> &FederationRateLimiter {
         &self.rate_limiter
     }
@@ -372,10 +374,10 @@ fn parse_http_date(date_str: &str) -> Result<DateTime<Utc>, ReplayError> {
 
     // Try common HTTP date format
     let formats = [
-        "%a, %d %b %Y %H:%M:%S GMT",     // RFC 7231
-        "%a, %d %b %Y %H:%M:%S %z",       // With timezone
-        "%A, %d-%b-%y %H:%M:%S GMT",      // RFC 850
-        "%a %b %d %H:%M:%S %Y",           // ANSI C's asctime()
+        "%a, %d %b %Y %H:%M:%S GMT", // RFC 7231
+        "%a, %d %b %Y %H:%M:%S %z",  // With timezone
+        "%A, %d-%b-%y %H:%M:%S GMT", // RFC 850
+        "%a %b %d %H:%M:%S %Y",      // ANSI C's asctime()
     ];
 
     for format in &formats {

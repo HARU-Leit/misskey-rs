@@ -16,7 +16,7 @@ pub struct MessagingRepository {
 
 impl MessagingRepository {
     /// Create a new messaging repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
@@ -181,9 +181,10 @@ impl MessagingRepository {
             .order_by_desc(Column::CreatedAt);
 
         if let Some(until) = until_id
-            && let Some(until_msg) = self.find_by_id(until).await? {
-                query = query.filter(Column::CreatedAt.lt(until_msg.created_at));
-            }
+            && let Some(until_msg) = self.find_by_id(until).await?
+        {
+            query = query.filter(Column::CreatedAt.lt(until_msg.created_at));
+        }
 
         query
             .limit(limit)

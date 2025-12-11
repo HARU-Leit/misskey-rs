@@ -1,6 +1,6 @@
 //! Meta endpoints.
 
-use axum::{routing::post, Json, Router};
+use axum::{Json, Router, routing::post};
 use serde::Serialize;
 
 use crate::middleware::AppState;

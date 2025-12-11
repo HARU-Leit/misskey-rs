@@ -8,7 +8,7 @@
 
 use std::time::Duration;
 
-use misskey_queue::{pubsub_channels, PubSubEvent, RedisPubSub};
+use misskey_queue::{PubSubEvent, RedisPubSub, pubsub_channels};
 
 fn get_redis_url() -> String {
     std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string())
@@ -20,7 +20,11 @@ fn get_redis_url() -> String {
 async fn test_redis_connection() {
     let url = get_redis_url();
     let pubsub = RedisPubSub::new(&url).await;
-    assert!(pubsub.is_ok(), "Failed to connect to Redis: {:?}", pubsub.err());
+    assert!(
+        pubsub.is_ok(),
+        "Failed to connect to Redis: {:?}",
+        pubsub.err()
+    );
 }
 
 /// Test pub/sub channel subscription.
@@ -28,10 +32,16 @@ async fn test_redis_connection() {
 #[ignore = "requires running Redis instance"]
 async fn test_pubsub_subscribe_channels() {
     let url = get_redis_url();
-    let pubsub = RedisPubSub::new(&url).await.expect("Failed to connect to Redis");
+    let pubsub = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect to Redis");
 
     let result = pubsub.start().await;
-    assert!(result.is_ok(), "Failed to subscribe to channels: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to subscribe to channels: {:?}",
+        result.err()
+    );
 
     pubsub.shutdown().await.expect("Failed to shutdown");
 }
@@ -41,14 +51,18 @@ async fn test_pubsub_subscribe_channels() {
 #[ignore = "requires running Redis instance"]
 async fn test_publish_note_created() {
     let url = get_redis_url();
-    let pubsub = RedisPubSub::new(&url).await.expect("Failed to connect to Redis");
+    let pubsub = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect to Redis");
 
-    let result = pubsub.publish_note_created(
-        "test-note-123",
-        "test-user-456",
-        Some("Hello from integration test!"),
-        "public",
-    ).await;
+    let result = pubsub
+        .publish_note_created(
+            "test-note-123",
+            "test-user-456",
+            Some("Hello from integration test!"),
+            "public",
+        )
+        .await;
 
     assert!(result.is_ok(), "Failed to publish note: {:?}", result.err());
 
@@ -60,17 +74,25 @@ async fn test_publish_note_created() {
 #[ignore = "requires running Redis instance"]
 async fn test_publish_notification() {
     let url = get_redis_url();
-    let pubsub = RedisPubSub::new(&url).await.expect("Failed to connect to Redis");
+    let pubsub = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect to Redis");
 
-    let result = pubsub.publish_notification(
-        "notif-123",
-        "recipient-456",
-        "follow",
-        Some("follower-789"),
-        None,
-    ).await;
+    let result = pubsub
+        .publish_notification(
+            "notif-123",
+            "recipient-456",
+            "follow",
+            Some("follower-789"),
+            None,
+        )
+        .await;
 
-    assert!(result.is_ok(), "Failed to publish notification: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to publish notification: {:?}",
+        result.err()
+    );
 
     pubsub.shutdown().await.expect("Failed to shutdown");
 }
@@ -80,11 +102,19 @@ async fn test_publish_notification() {
 #[ignore = "requires running Redis instance"]
 async fn test_publish_followed() {
     let url = get_redis_url();
-    let pubsub = RedisPubSub::new(&url).await.expect("Failed to connect to Redis");
+    let pubsub = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect to Redis");
 
-    let result = pubsub.publish_followed("follower-123", "followee-456").await;
+    let result = pubsub
+        .publish_followed("follower-123", "followee-456")
+        .await;
 
-    assert!(result.is_ok(), "Failed to publish follow: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to publish follow: {:?}",
+        result.err()
+    );
 
     pubsub.shutdown().await.expect("Failed to shutdown");
 }
@@ -94,16 +124,19 @@ async fn test_publish_followed() {
 #[ignore = "requires running Redis instance"]
 async fn test_publish_reaction() {
     let url = get_redis_url();
-    let pubsub = RedisPubSub::new(&url).await.expect("Failed to connect to Redis");
+    let pubsub = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect to Redis");
 
-    let result = pubsub.publish_reaction_added(
-        "note-123",
-        "reactor-456",
-        "👍",
-        "note-author-789",
-    ).await;
+    let result = pubsub
+        .publish_reaction_added("note-123", "reactor-456", "👍", "note-author-789")
+        .await;
 
-    assert!(result.is_ok(), "Failed to publish reaction: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to publish reaction: {:?}",
+        result.err()
+    );
 
     pubsub.shutdown().await.expect("Failed to shutdown");
 }
@@ -113,13 +146,23 @@ async fn test_publish_reaction() {
 #[ignore = "requires running Redis instance"]
 async fn test_subscribe_user_channel() {
     let url = get_redis_url();
-    let pubsub = RedisPubSub::new(&url).await.expect("Failed to connect to Redis");
+    let pubsub = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect to Redis");
 
     let result = pubsub.subscribe_user("user-123").await;
-    assert!(result.is_ok(), "Failed to subscribe to user channel: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to subscribe to user channel: {:?}",
+        result.err()
+    );
 
     let result = pubsub.unsubscribe_user("user-123").await;
-    assert!(result.is_ok(), "Failed to unsubscribe from user channel: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to unsubscribe from user channel: {:?}",
+        result.err()
+    );
 
     pubsub.shutdown().await.expect("Failed to shutdown");
 }
@@ -129,7 +172,9 @@ async fn test_subscribe_user_channel() {
 #[ignore = "requires running Redis instance"]
 async fn test_local_subscriber_count() {
     let url = get_redis_url();
-    let pubsub = RedisPubSub::new(&url).await.expect("Failed to connect to Redis");
+    let pubsub = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect to Redis");
 
     // Initially no subscribers
     assert_eq!(pubsub.local_subscriber_count(), 0);
@@ -149,7 +194,9 @@ async fn test_local_subscriber_count() {
 #[ignore = "requires running Redis instance"]
 async fn test_local_broadcast_roundtrip() {
     let url = get_redis_url();
-    let pubsub = RedisPubSub::new(&url).await.expect("Failed to connect to Redis");
+    let pubsub = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect to Redis");
 
     // Start the subscriber (this sets up the message loop)
     pubsub.start().await.expect("Failed to start");
@@ -165,7 +212,9 @@ async fn test_local_broadcast_roundtrip() {
         visibility: "public".to_string(),
     };
 
-    pubsub.publish(pubsub_channels::NOTES, &event).await
+    pubsub
+        .publish(pubsub_channels::NOTES, &event)
+        .await
         .expect("Failed to publish");
 
     // Wait for the event to come back
@@ -194,8 +243,12 @@ async fn test_cross_instance_communication() {
     let url = get_redis_url();
 
     // Create two pubsub instances (simulating two server instances)
-    let pubsub1 = RedisPubSub::new(&url).await.expect("Failed to connect instance 1");
-    let pubsub2 = RedisPubSub::new(&url).await.expect("Failed to connect instance 2");
+    let pubsub1 = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect instance 1");
+    let pubsub2 = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect instance 2");
 
     // Start both instances
     pubsub1.start().await.expect("Failed to start instance 1");
@@ -213,7 +266,9 @@ async fn test_cross_instance_communication() {
         text: "Hello from instance 1".to_string(),
     };
 
-    pubsub1.publish(pubsub_channels::NOTIFICATIONS, &event).await
+    pubsub1
+        .publish(pubsub_channels::NOTIFICATIONS, &event)
+        .await
         .expect("Failed to publish from instance 1");
 
     // Wait for instance 2 to receive
@@ -228,11 +283,19 @@ async fn test_cross_instance_communication() {
             _ => panic!("Unexpected event type"),
         }
     } else {
-        eprintln!("Warning: Cross-instance test timed out - this may be expected in some environments");
+        eprintln!(
+            "Warning: Cross-instance test timed out - this may be expected in some environments"
+        );
     }
 
-    pubsub1.shutdown().await.expect("Failed to shutdown instance 1");
-    pubsub2.shutdown().await.expect("Failed to shutdown instance 2");
+    pubsub1
+        .shutdown()
+        .await
+        .expect("Failed to shutdown instance 1");
+    pubsub2
+        .shutdown()
+        .await
+        .expect("Failed to shutdown instance 2");
 }
 
 /// Test publishing events to different visibility levels.
@@ -240,42 +303,42 @@ async fn test_cross_instance_communication() {
 #[ignore = "requires running Redis instance"]
 async fn test_visibility_based_publishing() {
     let url = get_redis_url();
-    let pubsub = RedisPubSub::new(&url).await.expect("Failed to connect to Redis");
+    let pubsub = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect to Redis");
 
     // Public note should go to both global and local
-    let result = pubsub.publish_note_created(
-        "public-note",
-        "user-1",
-        Some("Public post"),
-        "public",
-    ).await;
+    let result = pubsub
+        .publish_note_created("public-note", "user-1", Some("Public post"), "public")
+        .await;
     assert!(result.is_ok());
 
     // Home note should only go to local
-    let result = pubsub.publish_note_created(
-        "home-note",
-        "user-1",
-        Some("Home post"),
-        "home",
-    ).await;
+    let result = pubsub
+        .publish_note_created("home-note", "user-1", Some("Home post"), "home")
+        .await;
     assert!(result.is_ok());
 
     // Followers note should only go to local
-    let result = pubsub.publish_note_created(
-        "followers-note",
-        "user-1",
-        Some("Followers only post"),
-        "followers",
-    ).await;
+    let result = pubsub
+        .publish_note_created(
+            "followers-note",
+            "user-1",
+            Some("Followers only post"),
+            "followers",
+        )
+        .await;
     assert!(result.is_ok());
 
     // Specified note should not go to timelines
-    let result = pubsub.publish_note_created(
-        "specified-note",
-        "user-1",
-        Some("Direct message"),
-        "specified",
-    ).await;
+    let result = pubsub
+        .publish_note_created(
+            "specified-note",
+            "user-1",
+            Some("Direct message"),
+            "specified",
+        )
+        .await;
     assert!(result.is_ok());
 
     pubsub.shutdown().await.expect("Failed to shutdown");
@@ -286,13 +349,18 @@ async fn test_visibility_based_publishing() {
 #[ignore = "requires running Redis instance"]
 async fn test_graceful_shutdown() {
     let url = get_redis_url();
-    let pubsub = RedisPubSub::new(&url).await.expect("Failed to connect to Redis");
+    let pubsub = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect to Redis");
 
     pubsub.start().await.expect("Failed to start");
 
     // Do some operations
     pubsub.subscribe_user("shutdown-test-user").await.ok();
-    pubsub.publish_notification("n1", "u1", "test", None, None).await.ok();
+    pubsub
+        .publish_notification("n1", "u1", "test", None, None)
+        .await
+        .ok();
 
     // Shutdown should complete without errors
     let result = pubsub.shutdown().await;
@@ -307,7 +375,8 @@ async fn test_multiple_connections() {
 
     // Create multiple connections in quick succession
     for i in 0..5 {
-        let pubsub = RedisPubSub::new(&url).await
+        let pubsub = RedisPubSub::new(&url)
+            .await
             .unwrap_or_else(|_| panic!("Failed to connect (attempt {i})"));
         pubsub.shutdown().await.expect("Failed to shutdown");
     }
@@ -318,20 +387,29 @@ async fn test_multiple_connections() {
 #[ignore = "requires running Redis instance"]
 async fn test_rapid_publishing() {
     let url = get_redis_url();
-    let pubsub = RedisPubSub::new(&url).await.expect("Failed to connect to Redis");
+    let pubsub = RedisPubSub::new(&url)
+        .await
+        .expect("Failed to connect to Redis");
 
     pubsub.start().await.expect("Failed to start");
 
     // Publish 100 events rapidly
     for i in 0..100 {
-        let result = pubsub.publish_note_created(
-            &format!("rapid-note-{i}"),
-            "rapid-user",
-            Some(&format!("Rapid message {i}")),
-            "public",
-        ).await;
+        let result = pubsub
+            .publish_note_created(
+                &format!("rapid-note-{i}"),
+                "rapid-user",
+                Some(&format!("Rapid message {i}")),
+                "public",
+            )
+            .await;
 
-        assert!(result.is_ok(), "Failed at iteration {}: {:?}", i, result.err());
+        assert!(
+            result.is_ok(),
+            "Failed at iteration {}: {:?}",
+            i,
+            result.err()
+        );
     }
 
     pubsub.shutdown().await.expect("Failed to shutdown");

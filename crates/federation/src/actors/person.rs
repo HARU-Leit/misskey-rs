@@ -75,7 +75,7 @@ pub struct ApPublicKey {
 
 impl ApPerson {
     /// Create a new Person actor.
-    #[must_use] 
+    #[must_use]
     pub const fn new(id: Url, username: String, inbox: Url, outbox: Url) -> Self {
         Self {
             kind: PersonType::Person,

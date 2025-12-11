@@ -1,6 +1,6 @@
 //! Webhook endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_core::{
     CreateWebhookInput, UpdateWebhookInput, WebhookResponse, WebhookWithSecretResponse,

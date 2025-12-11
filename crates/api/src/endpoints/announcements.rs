@@ -1,9 +1,9 @@
 //! Announcement endpoints.
 
 use axum::{
+    Json, Router,
     extract::{Path, Query, State},
     routing::{delete, get, post, put},
-    Json, Router,
 };
 use chrono::{DateTime, Utc};
 use misskey_common::AppResult;
@@ -109,7 +109,10 @@ async fn list_announcements(
 
     // Non-admins can only see active announcements
     let announcements = if is_admin && !query.active_only {
-        state.announcement_service.list_all(query.limit, query.offset).await?
+        state
+            .announcement_service
+            .list_all(query.limit, query.offset)
+            .await?
     } else {
         state.announcement_service.list_active().await?
     };
@@ -126,9 +129,10 @@ async fn list_announcements(
         let mut response = AnnouncementResponse::from(ann);
         if let Some(ref auth_user) = user {
             response.is_read = Some(
-                state.announcement_service
+                state
+                    .announcement_service
                     .has_read(&auth_user.id, &response.id)
-                    .await?
+                    .await?,
             );
         }
         responses.push(response);
@@ -145,7 +149,10 @@ async fn list_unread_announcements(
     AuthUser(user): AuthUser,
     State(state): State<AppState>,
 ) -> AppResult<ApiResponse<AnnouncementListResponse>> {
-    let announcements = state.announcement_service.get_unread_for_user(&user.id).await?;
+    let announcements = state
+        .announcement_service
+        .get_unread_for_user(&user.id)
+        .await?;
     let total = announcements.len() as u64;
 
     let responses: Vec<AnnouncementResponse> = announcements
@@ -173,16 +180,19 @@ async fn get_announcement(
         .announcement_service
         .get_by_id(&id)
         .await?
-        .ok_or_else(|| misskey_common::AppError::NotFound(format!("Announcement not found: {id}")))?;
+        .ok_or_else(|| {
+            misskey_common::AppError::NotFound(format!("Announcement not found: {id}"))
+        })?;
 
     let mut response = AnnouncementResponse::from(announcement);
 
     // Check if user has read this announcement
     if let Some(auth_user) = user {
         response.is_read = Some(
-            state.announcement_service
+            state
+                .announcement_service
                 .has_read(&auth_user.id, &id)
-                .await?
+                .await?,
         );
     }
 
@@ -330,7 +340,10 @@ async fn mark_as_read(
 ) -> AppResult<ApiResponse<()>> {
     info!(user_id = %user.id, announcement_id = %id, "Marking announcement as read");
 
-    state.announcement_service.mark_as_read(&user.id, &id).await?;
+    state
+        .announcement_service
+        .mark_as_read(&user.id, &id)
+        .await?;
 
     Ok(ApiResponse::ok(()))
 }

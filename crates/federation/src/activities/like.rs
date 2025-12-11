@@ -24,7 +24,7 @@ pub struct LikeActivity {
 
 impl LikeActivity {
     /// Create a new Like activity.
-    #[must_use] 
+    #[must_use]
     pub const fn new(id: Url, actor: Url, object: Url) -> Self {
         Self {
             kind: LikeType::Like,
@@ -37,7 +37,7 @@ impl LikeActivity {
     }
 
     /// Set reaction content.
-    #[must_use] 
+    #[must_use]
     pub fn with_reaction(mut self, reaction: String) -> Self {
         self.misskey_reaction = Some(reaction.clone());
         self.content = Some(reaction);

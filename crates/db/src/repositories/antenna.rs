@@ -9,7 +9,7 @@ use sea_orm::{
     QueryFilter, QueryOrder, QuerySelect, Set,
 };
 
-use crate::entities::{antenna, antenna_note, Antenna, AntennaNotes};
+use crate::entities::{Antenna, AntennaNotes, antenna, antenna_note};
 
 /// Repository for antenna operations.
 #[derive(Clone)]

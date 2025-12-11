@@ -637,11 +637,7 @@ impl AccountService {
 
         // TODO: Queue background job to perform export
 
-        tracing::info!(
-            user_id = user_id,
-            job_id = job_id,
-            "Export job created"
-        );
+        tracing::info!(user_id = user_id, job_id = job_id, "Export job created");
 
         Ok(job)
     }
@@ -726,7 +722,10 @@ impl AccountService {
     /// Get export job status.
     pub async fn get_export_status(&self, _user_id: &str, job_id: &str) -> AppResult<ExportJob> {
         // TODO: Fetch from database
-        Err(AppError::NotFound(format!("Export job {} not found", job_id)))
+        Err(AppError::NotFound(format!(
+            "Export job {} not found",
+            job_id
+        )))
     }
 
     // =====================
@@ -896,7 +895,10 @@ impl AccountService {
     /// Get import job status.
     pub async fn get_import_status(&self, _user_id: &str, job_id: &str) -> AppResult<ImportJob> {
         // TODO: Fetch from database
-        Err(AppError::NotFound(format!("Import job {} not found", job_id)))
+        Err(AppError::NotFound(format!(
+            "Import job {} not found",
+            job_id
+        )))
     }
 }
 
@@ -926,7 +928,7 @@ pub struct DeletionStatusResponse {
 
 /// Verify a password against a hash.
 fn verify_password(password: &str, hash: &str) -> AppResult<bool> {
-    use argon2::{password_hash::PasswordHash, Argon2, PasswordVerifier};
+    use argon2::{Argon2, PasswordVerifier, password_hash::PasswordHash};
 
     let parsed_hash =
         PasswordHash::new(hash).map_err(|e| AppError::Internal(format!("Invalid hash: {e}")))?;

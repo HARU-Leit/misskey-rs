@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
-use crate::entities::{user, User};
+use crate::entities::{User, user};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
-    sea_query::Expr, ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait,
-    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, QuerySelect, Set, sea_query::Expr,
 };
 
 /// User repository for database operations.
@@ -17,7 +17,7 @@ pub struct UserRepository {
 
 impl UserRepository {
     /// Create a new user repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
@@ -56,7 +56,8 @@ impl UserRepository {
         username: &str,
         host: Option<&str>,
     ) -> AppResult<Option<user::Model>> {
-        let mut query = User::find().filter(user::Column::UsernameLower.eq(username.to_lowercase()));
+        let mut query =
+            User::find().filter(user::Column::UsernameLower.eq(username.to_lowercase()));
 
         query = match host {
             Some(h) => query.filter(user::Column::Host.eq(h)),
@@ -206,7 +207,10 @@ impl UserRepository {
         let mut active: user::ActiveModel = user.into();
         active.is_suspended = Set(true);
         active.updated_at = Set(Some(chrono::Utc::now().into()));
-        active.update(self.db.as_ref()).await.map_err(|e| AppError::Database(e.to_string()))?;
+        active
+            .update(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
         Ok(())
     }
 
@@ -266,7 +270,7 @@ impl UserRepository {
             .add(
                 Condition::any()
                     .add(user::Column::UsernameLower.like(format!("%{query_lower}%")))
-                    .add(user::Column::Name.like(&search_pattern))
+                    .add(user::Column::Name.like(&search_pattern)),
             );
 
         if local_only {
@@ -287,9 +291,9 @@ impl UserRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use chrono::Utc;
     use sea_orm::{DatabaseBackend, MockDatabase, MockExecResult};
+    use std::sync::Arc;
 
     fn create_test_user(id: &str, username: &str) -> user::Model {
         user::Model {
@@ -326,9 +330,11 @@ mod tests {
     async fn test_find_by_id_found() {
         let user = create_test_user("user1", "testuser");
 
-        let db = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([[user.clone()]])
-            .into_connection());
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([[user.clone()]])
+                .into_connection(),
+        );
 
         let repo = UserRepository::new(db);
         let result = repo.find_by_id("user1").await.unwrap();
@@ -341,9 +347,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_find_by_id_not_found() {
-        let db = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([Vec::<user::Model>::new()])
-            .into_connection());
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([Vec::<user::Model>::new()])
+                .into_connection(),
+        );
 
         let repo = UserRepository::new(db);
         let result = repo.find_by_id("nonexistent").await.unwrap();
@@ -353,9 +361,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_by_id_not_found_returns_error() {
-        let db = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([Vec::<user::Model>::new()])
-            .into_connection());
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([Vec::<user::Model>::new()])
+                .into_connection(),
+        );
 
         let repo = UserRepository::new(db);
         let result = repo.get_by_id("nonexistent").await;
@@ -371,12 +381,17 @@ mod tests {
     async fn test_find_by_username_and_host_local() {
         let user = create_test_user("user1", "testuser");
 
-        let db = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([[user.clone()]])
-            .into_connection());
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([[user.clone()]])
+                .into_connection(),
+        );
 
         let repo = UserRepository::new(db);
-        let result = repo.find_by_username_and_host("testuser", None).await.unwrap();
+        let result = repo
+            .find_by_username_and_host("testuser", None)
+            .await
+            .unwrap();
 
         assert!(result.is_some());
         assert_eq!(result.unwrap().username, "testuser");
@@ -386,9 +401,11 @@ mod tests {
     async fn test_find_by_token() {
         let user = create_test_user("user1", "testuser");
 
-        let db = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([[user.clone()]])
-            .into_connection());
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([[user.clone()]])
+                .into_connection(),
+        );
 
         let repo = UserRepository::new(db);
         let result = repo.find_by_token("test_token").await.unwrap();
@@ -401,13 +418,15 @@ mod tests {
     async fn test_create_user() {
         let user = create_test_user("user1", "newuser");
 
-        let db = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([[user.clone()]])
-            .append_exec_results([MockExecResult {
-                last_insert_id: 0,
-                rows_affected: 1,
-            }])
-            .into_connection());
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([[user.clone()]])
+                .append_exec_results([MockExecResult {
+                    last_insert_id: 0,
+                    rows_affected: 1,
+                }])
+                .into_connection(),
+        );
 
         let repo = UserRepository::new(db);
 
@@ -427,9 +446,11 @@ mod tests {
         let user1 = create_test_user("user1", "user1");
         let user2 = create_test_user("user2", "user2");
 
-        let db = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([[user1, user2]])
-            .into_connection());
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([[user1, user2]])
+                .into_connection(),
+        );
 
         let repo = UserRepository::new(db);
         let result = repo.find_local_users(10, 0).await.unwrap();

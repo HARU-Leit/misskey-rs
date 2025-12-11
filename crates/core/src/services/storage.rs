@@ -32,7 +32,10 @@ pub struct LocalStorage {
 impl LocalStorage {
     /// Create a new local storage backend.
     pub fn new(base_path: PathBuf, base_url: String) -> Self {
-        Self { base_path, base_url }
+        Self {
+            base_path,
+            base_url,
+        }
     }
 
     /// Get the full path for a storage key.
@@ -48,14 +51,14 @@ impl StorageBackend for LocalStorage {
 
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
-            tokio::fs::create_dir_all(parent)
-                .await
-                .map_err(|e| misskey_common::AppError::Internal(format!("Failed to create directory: {e}")))?;
+            tokio::fs::create_dir_all(parent).await.map_err(|e| {
+                misskey_common::AppError::Internal(format!("Failed to create directory: {e}"))
+            })?;
         }
 
-        tokio::fs::write(&path, data)
-            .await
-            .map_err(|e| misskey_common::AppError::Internal(format!("Failed to write file: {e}")))?;
+        tokio::fs::write(&path, data).await.map_err(|e| {
+            misskey_common::AppError::Internal(format!("Failed to write file: {e}"))
+        })?;
 
         Ok(())
     }
@@ -64,9 +67,9 @@ impl StorageBackend for LocalStorage {
         let path = self.get_path(key);
 
         if path.exists() {
-            tokio::fs::remove_file(&path)
-                .await
-                .map_err(|e| misskey_common::AppError::Internal(format!("Failed to delete file: {e}")))?;
+            tokio::fs::remove_file(&path).await.map_err(|e| {
+                misskey_common::AppError::Internal(format!("Failed to delete file: {e}"))
+            })?;
         }
 
         Ok(())

@@ -1,11 +1,11 @@
 //! Group service.
 
 use chrono::Utc;
-use misskey_common::{id::IdGenerator, AppError, AppResult};
-use misskey_db::entities::{group, group_invite, group_member};
+use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::group::GroupJoinPolicy;
 use misskey_db::entities::group_invite::{InviteStatus, InviteType};
 use misskey_db::entities::group_member::GroupRole;
+use misskey_db::entities::{group, group_invite, group_member};
 use misskey_db::repositories::GroupRepository;
 use sea_orm::{ActiveModelTrait, Set};
 use serde::{Deserialize, Serialize};
@@ -151,11 +151,7 @@ impl GroupService {
     }
 
     /// Get a group by ID with member info.
-    pub async fn get_with_member_info(
-        &self,
-        id: &str,
-        user_id: &str,
-    ) -> AppResult<GroupResponse> {
+    pub async fn get_with_member_info(&self, id: &str, user_id: &str) -> AppResult<GroupResponse> {
         let group = self.group_repo.get_by_id(id).await?;
         let member = self.group_repo.get_member(user_id, id).await?;
         let is_member = member.is_some();
@@ -208,13 +204,11 @@ impl GroupService {
     }
 
     /// Create a new group.
-    pub async fn create(
-        &self,
-        user_id: &str,
-        input: CreateGroupInput,
-    ) -> AppResult<group::Model> {
+    pub async fn create(&self, user_id: &str, input: CreateGroupInput) -> AppResult<group::Model> {
         // Validate input
-        input.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+        input
+            .validate()
+            .map_err(|e| AppError::Validation(e.to_string()))?;
 
         // Check group limit
         let count = self.group_repo.count_owned_by_user(user_id).await?;
@@ -273,16 +267,15 @@ impl GroupService {
     }
 
     /// Update a group.
-    pub async fn update(
-        &self,
-        user_id: &str,
-        input: UpdateGroupInput,
-    ) -> AppResult<group::Model> {
+    pub async fn update(&self, user_id: &str, input: UpdateGroupInput) -> AppResult<group::Model> {
         // Validate input
-        input.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+        input
+            .validate()
+            .map_err(|e| AppError::Validation(e.to_string()))?;
 
         // Check permission
-        self.require_manage_settings(&input.group_id, user_id).await?;
+        self.require_manage_settings(&input.group_id, user_id)
+            .await?;
 
         let group = self.group_repo.get_by_id(&input.group_id).await?;
         let now = Utc::now();
@@ -323,7 +316,9 @@ impl GroupService {
         // Only owner can delete
         let group = self.group_repo.get_by_id(group_id).await?;
         if group.owner_id != user_id {
-            return Err(AppError::Forbidden("Only the owner can delete the group".to_string()));
+            return Err(AppError::Forbidden(
+                "Only the owner can delete the group".to_string(),
+            ));
         }
 
         self.group_repo.archive(group_id).await?;
@@ -339,16 +334,27 @@ impl GroupService {
         input: InviteUserInput,
     ) -> AppResult<group_invite::Model> {
         // Check inviter has permission
-        self.require_manage_members(&input.group_id, inviter_id).await?;
+        self.require_manage_members(&input.group_id, inviter_id)
+            .await?;
 
         // Check if user is already a member
-        if self.group_repo.is_member(&input.user_id, &input.group_id).await? {
+        if self
+            .group_repo
+            .is_member(&input.user_id, &input.group_id)
+            .await?
+        {
             return Err(AppError::Validation("User is already a member".to_string()));
         }
 
         // Check if there's already a pending invite
-        if let Some(_) = self.group_repo.get_pending_invite(&input.user_id, &input.group_id).await? {
-            return Err(AppError::Validation("User already has a pending invite".to_string()));
+        if let Some(_) = self
+            .group_repo
+            .get_pending_invite(&input.user_id, &input.group_id)
+            .await?
+        {
+            return Err(AppError::Validation(
+                "User already has a pending invite".to_string(),
+            ));
         }
 
         let now = Utc::now();
@@ -398,8 +404,14 @@ impl GroupService {
         }
 
         // Check if there's already a pending request
-        if let Some(_) = self.group_repo.get_pending_invite(user_id, &input.group_id).await? {
-            return Err(AppError::Validation("Already have a pending request".to_string()));
+        if let Some(_) = self
+            .group_repo
+            .get_pending_invite(user_id, &input.group_id)
+            .await?
+        {
+            return Err(AppError::Validation(
+                "Already have a pending request".to_string(),
+            ));
         }
 
         let now = Utc::now();
@@ -425,7 +437,9 @@ impl GroupService {
 
         // Check if group is open
         if group.join_policy != GroupJoinPolicy::Open {
-            return Err(AppError::Forbidden("Group is not open for direct joining".to_string()));
+            return Err(AppError::Forbidden(
+                "Group is not open for direct joining".to_string(),
+            ));
         }
 
         // Check if already a member
@@ -451,8 +465,15 @@ impl GroupService {
     }
 
     /// Accept an invitation.
-    pub async fn accept_invite(&self, user_id: &str, invite_id: &str) -> AppResult<group_member::Model> {
-        let invite = self.group_repo.get_invite_by_id(invite_id).await?
+    pub async fn accept_invite(
+        &self,
+        user_id: &str,
+        invite_id: &str,
+    ) -> AppResult<group_member::Model> {
+        let invite = self
+            .group_repo
+            .get_invite_by_id(invite_id)
+            .await?
             .ok_or_else(|| AppError::NotFound("Invite not found".to_string()))?;
 
         // Check if this is for the user
@@ -462,16 +483,22 @@ impl GroupService {
 
         // Check status
         if invite.status != InviteStatus::Pending {
-            return Err(AppError::Validation("Invitation is no longer pending".to_string()));
+            return Err(AppError::Validation(
+                "Invitation is no longer pending".to_string(),
+            ));
         }
 
         // Must be an invite (not a request)
         if invite.invite_type != InviteType::Invite {
-            return Err(AppError::Validation("This is a join request, not an invitation".to_string()));
+            return Err(AppError::Validation(
+                "This is a join request, not an invitation".to_string(),
+            ));
         }
 
         // Update invite status
-        self.group_repo.update_invite_status(invite_id, InviteStatus::Accepted).await?;
+        self.group_repo
+            .update_invite_status(invite_id, InviteStatus::Accepted)
+            .await?;
 
         // Add as member
         let now = Utc::now();
@@ -492,7 +519,10 @@ impl GroupService {
 
     /// Reject an invitation.
     pub async fn reject_invite(&self, user_id: &str, invite_id: &str) -> AppResult<()> {
-        let invite = self.group_repo.get_invite_by_id(invite_id).await?
+        let invite = self
+            .group_repo
+            .get_invite_by_id(invite_id)
+            .await?
             .ok_or_else(|| AppError::NotFound("Invite not found".to_string()))?;
 
         // Check if this is for the user
@@ -502,10 +532,14 @@ impl GroupService {
 
         // Check status
         if invite.status != InviteStatus::Pending {
-            return Err(AppError::Validation("Invitation is no longer pending".to_string()));
+            return Err(AppError::Validation(
+                "Invitation is no longer pending".to_string(),
+            ));
         }
 
-        self.group_repo.update_invite_status(invite_id, InviteStatus::Rejected).await?;
+        self.group_repo
+            .update_invite_status(invite_id, InviteStatus::Rejected)
+            .await?;
         Ok(())
     }
 
@@ -515,24 +549,34 @@ impl GroupService {
         approver_id: &str,
         invite_id: &str,
     ) -> AppResult<group_member::Model> {
-        let invite = self.group_repo.get_invite_by_id(invite_id).await?
+        let invite = self
+            .group_repo
+            .get_invite_by_id(invite_id)
+            .await?
             .ok_or_else(|| AppError::NotFound("Request not found".to_string()))?;
 
         // Check approver has permission
-        self.require_manage_members(&invite.group_id, approver_id).await?;
+        self.require_manage_members(&invite.group_id, approver_id)
+            .await?;
 
         // Check status
         if invite.status != InviteStatus::Pending {
-            return Err(AppError::Validation("Request is no longer pending".to_string()));
+            return Err(AppError::Validation(
+                "Request is no longer pending".to_string(),
+            ));
         }
 
         // Must be a request (not an invite)
         if invite.invite_type != InviteType::Request {
-            return Err(AppError::Validation("This is an invitation, not a join request".to_string()));
+            return Err(AppError::Validation(
+                "This is an invitation, not a join request".to_string(),
+            ));
         }
 
         // Update invite status
-        self.group_repo.update_invite_status(invite_id, InviteStatus::Accepted).await?;
+        self.group_repo
+            .update_invite_status(invite_id, InviteStatus::Accepted)
+            .await?;
 
         // Add as member
         let now = Utc::now();
@@ -553,24 +597,35 @@ impl GroupService {
 
     /// Reject a join request (by group admin).
     pub async fn reject_request(&self, rejecter_id: &str, invite_id: &str) -> AppResult<()> {
-        let invite = self.group_repo.get_invite_by_id(invite_id).await?
+        let invite = self
+            .group_repo
+            .get_invite_by_id(invite_id)
+            .await?
             .ok_or_else(|| AppError::NotFound("Request not found".to_string()))?;
 
         // Check rejecter has permission
-        self.require_manage_members(&invite.group_id, rejecter_id).await?;
+        self.require_manage_members(&invite.group_id, rejecter_id)
+            .await?;
 
         // Check status
         if invite.status != InviteStatus::Pending {
-            return Err(AppError::Validation("Request is no longer pending".to_string()));
+            return Err(AppError::Validation(
+                "Request is no longer pending".to_string(),
+            ));
         }
 
-        self.group_repo.update_invite_status(invite_id, InviteStatus::Rejected).await?;
+        self.group_repo
+            .update_invite_status(invite_id, InviteStatus::Rejected)
+            .await?;
         Ok(())
     }
 
     /// Leave a group.
     pub async fn leave(&self, user_id: &str, group_id: &str) -> AppResult<()> {
-        let member = self.group_repo.get_member(user_id, group_id).await?
+        let member = self
+            .group_repo
+            .get_member(user_id, group_id)
+            .await?
             .ok_or_else(|| AppError::NotFound("Not a member".to_string()))?;
 
         // Owner cannot leave (must transfer first)
@@ -584,16 +639,14 @@ impl GroupService {
     }
 
     /// Kick a member from the group.
-    pub async fn kick(
-        &self,
-        kicker_id: &str,
-        group_id: &str,
-        user_id: &str,
-    ) -> AppResult<()> {
+    pub async fn kick(&self, kicker_id: &str, group_id: &str, user_id: &str) -> AppResult<()> {
         // Check kicker has permission
         self.require_manage_members(group_id, kicker_id).await?;
 
-        let member = self.group_repo.get_member(user_id, group_id).await?
+        let member = self
+            .group_repo
+            .get_member(user_id, group_id)
+            .await?
             .ok_or_else(|| AppError::NotFound("User is not a member".to_string()))?;
 
         // Cannot kick owner
@@ -602,11 +655,16 @@ impl GroupService {
         }
 
         // Check kicker has higher role
-        let kicker_role = self.group_repo.get_member_role(kicker_id, group_id).await?
+        let kicker_role = self
+            .group_repo
+            .get_member_role(kicker_id, group_id)
+            .await?
             .ok_or_else(|| AppError::Forbidden("Not authorized".to_string()))?;
 
         if !can_manage(&kicker_role, &member.role) {
-            return Err(AppError::Forbidden("Cannot kick members with equal or higher role".to_string()));
+            return Err(AppError::Forbidden(
+                "Cannot kick members with equal or higher role".to_string(),
+            ));
         }
 
         self.group_repo.remove_member(user_id, group_id).await
@@ -619,30 +677,45 @@ impl GroupService {
         input: UpdateMemberRoleInput,
     ) -> AppResult<group_member::Model> {
         // Check updater has permission
-        self.require_manage_members(&input.group_id, updater_id).await?;
+        self.require_manage_members(&input.group_id, updater_id)
+            .await?;
 
-        let member = self.group_repo.get_member(&input.user_id, &input.group_id).await?
+        let member = self
+            .group_repo
+            .get_member(&input.user_id, &input.group_id)
+            .await?
             .ok_or_else(|| AppError::NotFound("User is not a member".to_string()))?;
 
-        let updater_role = self.group_repo.get_member_role(updater_id, &input.group_id).await?
+        let updater_role = self
+            .group_repo
+            .get_member_role(updater_id, &input.group_id)
+            .await?
             .ok_or_else(|| AppError::Forbidden("Not authorized".to_string()))?;
 
         // Cannot change owner role directly
         if member.role == GroupRole::Owner {
-            return Err(AppError::Forbidden("Use transfer_ownership to change owner".to_string()));
+            return Err(AppError::Forbidden(
+                "Use transfer_ownership to change owner".to_string(),
+            ));
         }
 
         // Cannot promote to owner
         if input.role == GroupRole::Owner {
-            return Err(AppError::Forbidden("Use transfer_ownership to promote to owner".to_string()));
+            return Err(AppError::Forbidden(
+                "Use transfer_ownership to promote to owner".to_string(),
+            ));
         }
 
         // Check updater has higher role
         if !can_manage(&updater_role, &member.role) {
-            return Err(AppError::Forbidden("Cannot manage members with equal or higher role".to_string()));
+            return Err(AppError::Forbidden(
+                "Cannot manage members with equal or higher role".to_string(),
+            ));
         }
 
-        self.group_repo.update_member_role(&input.user_id, &input.group_id, input.role).await
+        self.group_repo
+            .update_member_role(&input.user_id, &input.group_id, input.role)
+            .await
     }
 
     /// Transfer group ownership.
@@ -656,12 +729,16 @@ impl GroupService {
 
         // Check current owner
         if group.owner_id != owner_id {
-            return Err(AppError::Forbidden("Only the owner can transfer ownership".to_string()));
+            return Err(AppError::Forbidden(
+                "Only the owner can transfer ownership".to_string(),
+            ));
         }
 
         // Check new owner is a member
         if !self.group_repo.is_member(new_owner_id, group_id).await? {
-            return Err(AppError::Validation("New owner must be a member".to_string()));
+            return Err(AppError::Validation(
+                "New owner must be a member".to_string(),
+            ));
         }
 
         // Update group owner
@@ -671,10 +748,14 @@ impl GroupService {
         self.group_repo.update(active).await?;
 
         // Update old owner role to admin
-        self.group_repo.update_member_role(owner_id, group_id, GroupRole::Admin).await?;
+        self.group_repo
+            .update_member_role(owner_id, group_id, GroupRole::Admin)
+            .await?;
 
         // Update new owner role
-        self.group_repo.update_member_role(new_owner_id, group_id, GroupRole::Owner).await?;
+        self.group_repo
+            .update_member_role(new_owner_id, group_id, GroupRole::Owner)
+            .await?;
 
         Ok(())
     }
@@ -696,7 +777,9 @@ impl GroupService {
         limit: u64,
         offset: u64,
     ) -> AppResult<Vec<group_invite::Model>> {
-        self.group_repo.list_pending_invites_for_user(user_id, limit, offset).await
+        self.group_repo
+            .list_pending_invites_for_user(user_id, limit, offset)
+            .await
     }
 
     /// List pending join requests for a group.
@@ -710,18 +793,25 @@ impl GroupService {
         // Check permission
         self.require_manage_members(group_id, user_id).await?;
 
-        self.group_repo.list_pending_requests_for_group(group_id, limit, offset).await
+        self.group_repo
+            .list_pending_requests_for_group(group_id, limit, offset)
+            .await
     }
 
     // ==================== Permission Helpers ====================
 
     /// Check if user can manage members.
     async fn require_manage_members(&self, group_id: &str, user_id: &str) -> AppResult<()> {
-        let role = self.group_repo.get_member_role(user_id, group_id).await?
+        let role = self
+            .group_repo
+            .get_member_role(user_id, group_id)
+            .await?
             .ok_or_else(|| AppError::Forbidden("Not a member of this group".to_string()))?;
 
         if !role.can_manage_members() {
-            return Err(AppError::Forbidden("No permission to manage members".to_string()));
+            return Err(AppError::Forbidden(
+                "No permission to manage members".to_string(),
+            ));
         }
 
         Ok(())
@@ -729,11 +819,16 @@ impl GroupService {
 
     /// Check if user can manage settings.
     async fn require_manage_settings(&self, group_id: &str, user_id: &str) -> AppResult<()> {
-        let role = self.group_repo.get_member_role(user_id, group_id).await?
+        let role = self
+            .group_repo
+            .get_member_role(user_id, group_id)
+            .await?
             .ok_or_else(|| AppError::Forbidden("Not a member of this group".to_string()))?;
 
         if !role.can_manage_settings() {
-            return Err(AppError::Forbidden("No permission to manage settings".to_string()));
+            return Err(AppError::Forbidden(
+                "No permission to manage settings".to_string(),
+            ));
         }
 
         Ok(())

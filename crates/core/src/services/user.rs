@@ -1,10 +1,10 @@
 //! User service.
 
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
-use misskey_common::{generate_rsa_keypair, AppError, AppResult, Config, IdGenerator};
+use misskey_common::{AppError, AppResult, Config, IdGenerator, generate_rsa_keypair};
 use misskey_db::{
     entities::{user, user_keypair, user_profile},
     repositories::{NoteRepository, UserKeypairRepository, UserProfileRepository, UserRepository},
@@ -173,7 +173,9 @@ impl UserService {
 
     /// Find a local user by username.
     pub async fn find_local_by_username(&self, username: &str) -> AppResult<Option<user::Model>> {
-        self.user_repo.find_by_username_and_host(username, None).await
+        self.user_repo
+            .find_by_username_and_host(username, None)
+            .await
     }
 
     /// Authenticate a user by token.
@@ -274,7 +276,9 @@ impl UserService {
         offset: u64,
         local_only: bool,
     ) -> AppResult<Vec<user::Model>> {
-        self.user_repo.search(query, limit, offset, local_only).await
+        self.user_repo
+            .search(query, limit, offset, local_only)
+            .await
     }
 
     /// Get pinned note IDs for a user.
@@ -459,7 +463,12 @@ mod tests {
         assert!(verify_password(password, &hash2).unwrap());
     }
 
-    fn create_test_service(user_db: Arc<sea_orm::DatabaseConnection>, profile_db: Arc<sea_orm::DatabaseConnection>, keypair_db: Arc<sea_orm::DatabaseConnection>, note_db: Arc<sea_orm::DatabaseConnection>) -> UserService {
+    fn create_test_service(
+        user_db: Arc<sea_orm::DatabaseConnection>,
+        profile_db: Arc<sea_orm::DatabaseConnection>,
+        keypair_db: Arc<sea_orm::DatabaseConnection>,
+        note_db: Arc<sea_orm::DatabaseConnection>,
+    ) -> UserService {
         let user_repo = UserRepository::new(user_db);
         let profile_repo = UserProfileRepository::new(profile_db);
         let keypair_repo = UserKeypairRepository::new(keypair_db);

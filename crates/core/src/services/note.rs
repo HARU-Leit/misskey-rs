@@ -199,14 +199,18 @@ impl NoteService {
 
         // Update reply count if this is a reply
         if let Some(ref reply_note) = reply {
-            self.note_repo.increment_replies_count(&reply_note.id).await?;
+            self.note_repo
+                .increment_replies_count(&reply_note.id)
+                .await?;
             tracing::debug!(reply_to = %reply_note.id, "Created reply");
         }
 
         // Update renote count if this is a renote (pure renote without text)
         if let Some(ref renote_note) = renote {
             if note.text.is_none() {
-                self.note_repo.increment_renote_count(&renote_note.id).await?;
+                self.note_repo
+                    .increment_renote_count(&renote_note.id)
+                    .await?;
             }
             tracing::debug!(renote_of = %renote_note.id, "Created renote");
         }
@@ -230,7 +234,12 @@ impl NoteService {
                 Visibility::Specified => "specified",
             };
             if let Err(e) = event_publisher
-                .publish_note_created(&note.id, &note.user_id, note.text.as_deref(), visibility_str)
+                .publish_note_created(
+                    &note.id,
+                    &note.user_id,
+                    note.text.as_deref(),
+                    visibility_str,
+                )
                 .await
             {
                 tracing::warn!(error = %e, note_id = %note.id, "Failed to publish note created event");
@@ -260,11 +269,12 @@ impl NoteService {
         let followers_url = format!("{}/followers", actor_url);
         let public_url = "https://www.w3.org/ns/activitystreams#Public".to_string();
 
-        let (to_field, cc_field): (Vec<String>, Vec<String>) = if note.visibility == Visibility::Public {
-            (vec![public_url.clone()], vec![followers_url.clone()])
-        } else {
-            (vec![followers_url.clone()], vec![])
-        };
+        let (to_field, cc_field): (Vec<String>, Vec<String>) =
+            if note.visibility == Visibility::Public {
+                (vec![public_url.clone()], vec![followers_url.clone()])
+            } else {
+                (vec![followers_url.clone()], vec![])
+            };
 
         let ap_note = json!({
             "type": "Note",
@@ -294,7 +304,9 @@ impl NoteService {
         let inboxes = self.get_follower_inboxes(&user.id).await?;
 
         if !inboxes.is_empty() {
-            delivery.queue_create_note(&user.id, &note.id, activity, inboxes).await?;
+            delivery
+                .queue_create_note(&user.id, &note.id, activity, inboxes)
+                .await?;
             tracing::debug!(note_id = %note.id, "Queued ActivityPub Create delivery");
         }
 
@@ -303,7 +315,10 @@ impl NoteService {
 
     /// Get unique inbox URLs for a user's followers.
     async fn get_follower_inboxes(&self, user_id: &str) -> AppResult<Vec<String>> {
-        let followers = self.following_repo.find_followers(user_id, 10000, None).await?;
+        let followers = self
+            .following_repo
+            .find_followers(user_id, 10000, None)
+            .await?;
 
         let mut inboxes: Vec<String> = followers
             .into_iter()
@@ -331,7 +346,9 @@ impl NoteService {
 
         // Check ownership
         if note.user_id != user_id {
-            return Err(AppError::Forbidden("Cannot delete other user's note".to_string()));
+            return Err(AppError::Forbidden(
+                "Cannot delete other user's note".to_string(),
+            ));
         }
 
         // Queue ActivityPub Delete before actually deleting
@@ -351,9 +368,10 @@ impl NoteService {
 
         // Decrement renote count if this was a pure renote
         if let Some(ref renote_id) = note.renote_id
-            && note.text.is_none() {
-                let _ = self.note_repo.decrement_renote_count(renote_id).await;
-            }
+            && note.text.is_none()
+        {
+            let _ = self.note_repo.decrement_renote_count(renote_id).await;
+        }
 
         self.note_repo.delete(note_id).await?;
 
@@ -399,7 +417,9 @@ impl NoteService {
         let inboxes = self.get_follower_inboxes(&note.user_id).await?;
 
         if !inboxes.is_empty() {
-            delivery.queue_delete_note(&note.user_id, &note.id, activity, inboxes).await?;
+            delivery
+                .queue_delete_note(&note.user_id, &note.id, activity, inboxes)
+                .await?;
             tracing::debug!(note_id = %note.id, "Queued ActivityPub Delete delivery");
         }
 
@@ -462,7 +482,9 @@ impl NoteService {
         user_id: Option<&str>,
         host: Option<&str>,
     ) -> AppResult<Vec<note::Model>> {
-        self.note_repo.search(query, limit, until_id, user_id, host).await
+        self.note_repo
+            .search(query, limit, until_id, user_id, host)
+            .await
     }
 
     /// Search notes by hashtag.
@@ -482,7 +504,9 @@ impl NoteService {
         min_reactions: i32,
         hours: i64,
     ) -> AppResult<Vec<note::Model>> {
-        self.note_repo.find_trending(limit, min_reactions, hours).await
+        self.note_repo
+            .find_trending(limit, min_reactions, hours)
+            .await
     }
 
     /// Get replies to a note.
@@ -506,9 +530,10 @@ impl NoteService {
 
         // Add the current note at the end
         if let Ok(note) = self.note_repo.find_by_id(note_id).await
-            && let Some(n) = note {
-                conversation.push(n);
-            }
+            && let Some(n) = note
+        {
+            conversation.push(n);
+        }
 
         Ok(conversation)
     }
@@ -554,7 +579,8 @@ impl NoteService {
         // Track what's being changed
         let old_text = note.text.clone();
         let old_cw = note.cw.clone();
-        let old_file_ids: Vec<String> = serde_json::from_value(note.file_ids.clone()).unwrap_or_default();
+        let old_file_ids: Vec<String> =
+            serde_json::from_value(note.file_ids.clone()).unwrap_or_default();
 
         // Check if anything actually changed
         let text_changed = input.text.is_some();
@@ -569,7 +595,10 @@ impl NoteService {
         // Compute new values for history
         let new_text = input.text.clone().unwrap_or_else(|| old_text.clone());
         let new_cw = input.cw.clone().unwrap_or_else(|| old_cw.clone());
-        let new_file_ids = input.file_ids.clone().unwrap_or_else(|| old_file_ids.clone());
+        let new_file_ids = input
+            .file_ids
+            .clone()
+            .unwrap_or_else(|| old_file_ids.clone());
 
         // Create edit history record
         let edit_id = self.id_gen.generate();
@@ -640,7 +669,9 @@ impl NoteService {
         // Verify the note exists
         let _ = self.note_repo.get_by_id(note_id).await?;
 
-        self.note_repo.get_edit_history(note_id, limit, offset).await
+        self.note_repo
+            .get_edit_history(note_id, limit, offset)
+            .await
     }
 
     /// Count edits for a note.

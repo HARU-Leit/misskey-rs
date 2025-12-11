@@ -53,41 +53,53 @@ impl Default for UrlPreviewConfig {
 static TITLE_RE: std::sync::LazyLock<Regex> =
     std::sync::LazyLock::new(|| Regex::new(r"<title[^>]*>([^<]*)</title>").unwrap());
 
-static OG_TITLE_RE: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r#"<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']"#).unwrap());
+static OG_TITLE_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r#"<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']"#).unwrap()
+});
 
-static OG_TITLE_RE2: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:title["']"#).unwrap());
+static OG_TITLE_RE2: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:title["']"#).unwrap()
+});
 
-static OG_DESC_RE: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r#"<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']*)["']"#).unwrap());
+static OG_DESC_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r#"<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']*)["']"#).unwrap()
+});
 
-static OG_DESC_RE2: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:description["']"#).unwrap());
+static OG_DESC_RE2: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:description["']"#).unwrap()
+});
 
-static META_DESC_RE: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r#"<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']"#).unwrap());
+static META_DESC_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r#"<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']"#).unwrap()
+});
 
-static META_DESC_RE2: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+name=["']description["']"#).unwrap());
+static META_DESC_RE2: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+name=["']description["']"#).unwrap()
+});
 
-static OG_IMAGE_RE: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r#"<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']*)["']"#).unwrap());
+static OG_IMAGE_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r#"<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']*)["']"#).unwrap()
+});
 
-static OG_IMAGE_RE2: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:image["']"#).unwrap());
+static OG_IMAGE_RE2: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:image["']"#).unwrap()
+});
 
-static OG_SITE_RE: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r#"<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']*)["']"#).unwrap());
+static OG_SITE_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r#"<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']*)["']"#).unwrap()
+});
 
-static OG_SITE_RE2: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:site_name["']"#).unwrap());
+static OG_SITE_RE2: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r#"<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:site_name["']"#).unwrap()
+});
 
-static ICON_RE: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r#"<link[^>]+rel=["'](?:shortcut )?icon["'][^>]+href=["']([^"']*)["']"#).unwrap());
+static ICON_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r#"<link[^>]+rel=["'](?:shortcut )?icon["'][^>]+href=["']([^"']*)["']"#).unwrap()
+});
 
-static ICON_RE2: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r#"<link[^>]+href=["']([^"']*)["'][^>]+rel=["'](?:shortcut )?icon["']"#).unwrap());
+static ICON_RE2: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r#"<link[^>]+href=["']([^"']*)["'][^>]+rel=["'](?:shortcut )?icon["']"#).unwrap()
+});
 
 /// Fetch URL preview metadata.
 pub async fn fetch_preview(url: &str, config: &UrlPreviewConfig) -> Option<UrlPreview> {
@@ -124,7 +136,11 @@ pub async fn fetch_preview(url: &str, config: &UrlPreviewConfig) -> Option<UrlPr
 
     // Check status
     if !response.status().is_success() {
-        debug!("URL returned non-success status: {} - {}", url, response.status());
+        debug!(
+            "URL returned non-success status: {} - {}",
+            url,
+            response.status()
+        );
         return None;
     }
 
@@ -176,7 +192,10 @@ pub async fn fetch_preview(url: &str, config: &UrlPreviewConfig) -> Option<UrlPr
 /// Extract page title.
 fn extract_title(html: &str) -> Option<String> {
     // Try og:title first
-    if let Some(cap) = OG_TITLE_RE.captures(html).or_else(|| OG_TITLE_RE2.captures(html)) {
+    if let Some(cap) = OG_TITLE_RE
+        .captures(html)
+        .or_else(|| OG_TITLE_RE2.captures(html))
+    {
         return Some(decode_html_entities(cap.get(1)?.as_str()));
     }
 
@@ -191,12 +210,18 @@ fn extract_title(html: &str) -> Option<String> {
 /// Extract page description.
 fn extract_description(html: &str) -> Option<String> {
     // Try og:description first
-    if let Some(cap) = OG_DESC_RE.captures(html).or_else(|| OG_DESC_RE2.captures(html)) {
+    if let Some(cap) = OG_DESC_RE
+        .captures(html)
+        .or_else(|| OG_DESC_RE2.captures(html))
+    {
         return Some(decode_html_entities(cap.get(1)?.as_str()));
     }
 
     // Fall back to meta description
-    if let Some(cap) = META_DESC_RE.captures(html).or_else(|| META_DESC_RE2.captures(html)) {
+    if let Some(cap) = META_DESC_RE
+        .captures(html)
+        .or_else(|| META_DESC_RE2.captures(html))
+    {
         return Some(decode_html_entities(cap.get(1)?.as_str()));
     }
 
@@ -205,14 +230,18 @@ fn extract_description(html: &str) -> Option<String> {
 
 /// Extract preview image URL.
 fn extract_image(html: &str, base_url: &Url) -> Option<String> {
-    let cap = OG_IMAGE_RE.captures(html).or_else(|| OG_IMAGE_RE2.captures(html))?;
+    let cap = OG_IMAGE_RE
+        .captures(html)
+        .or_else(|| OG_IMAGE_RE2.captures(html))?;
     let image_url = cap.get(1)?.as_str();
     resolve_url(image_url, base_url)
 }
 
 /// Extract site name.
 fn extract_site_name(html: &str) -> Option<String> {
-    let cap = OG_SITE_RE.captures(html).or_else(|| OG_SITE_RE2.captures(html))?;
+    let cap = OG_SITE_RE
+        .captures(html)
+        .or_else(|| OG_SITE_RE2.captures(html))?;
     Some(decode_html_entities(cap.get(1)?.as_str()))
 }
 
@@ -224,7 +253,11 @@ fn extract_icon(html: &str, base_url: &Url) -> Option<String> {
     }
 
     // Default favicon location
-    let favicon_url = format!("{}://{}/favicon.ico", base_url.scheme(), base_url.host_str()?);
+    let favicon_url = format!(
+        "{}://{}/favicon.ico",
+        base_url.scheme(),
+        base_url.host_str()?
+    );
     Some(favicon_url)
 }
 
@@ -280,45 +313,67 @@ mod tests {
     #[test]
     fn test_extract_og_description() {
         let html = r#"<html><head><meta property="og:description" content="OG Description"></head></html>"#;
-        assert_eq!(extract_description(html), Some("OG Description".to_string()));
+        assert_eq!(
+            extract_description(html),
+            Some("OG Description".to_string())
+        );
     }
 
     #[test]
     fn test_extract_image() {
         let html = r#"<html><head><meta property="og:image" content="https://example.com/image.png"></head></html>"#;
         let base = Url::parse("https://example.com/").unwrap();
-        assert_eq!(extract_image(html, &base), Some("https://example.com/image.png".to_string()));
+        assert_eq!(
+            extract_image(html, &base),
+            Some("https://example.com/image.png".to_string())
+        );
     }
 
     #[test]
     fn test_extract_image_relative() {
-        let html = r#"<html><head><meta property="og:image" content="/images/preview.png"></head></html>"#;
+        let html =
+            r#"<html><head><meta property="og:image" content="/images/preview.png"></head></html>"#;
         let base = Url::parse("https://example.com/page").unwrap();
-        assert_eq!(extract_image(html, &base), Some("https://example.com/images/preview.png".to_string()));
+        assert_eq!(
+            extract_image(html, &base),
+            Some("https://example.com/images/preview.png".to_string())
+        );
     }
 
     #[test]
     fn test_decode_html_entities() {
         assert_eq!(decode_html_entities("Hello &amp; World"), "Hello & World");
         assert_eq!(decode_html_entities("&lt;script&gt;"), "<script>");
-        assert_eq!(decode_html_entities("She said &quot;Hi&quot;"), "She said \"Hi\"");
+        assert_eq!(
+            decode_html_entities("She said &quot;Hi&quot;"),
+            "She said \"Hi\""
+        );
     }
 
     #[test]
     fn test_resolve_url_absolute() {
         let base = Url::parse("https://example.com/page").unwrap();
-        assert_eq!(resolve_url("https://other.com/img.png", &base), Some("https://other.com/img.png".to_string()));
+        assert_eq!(
+            resolve_url("https://other.com/img.png", &base),
+            Some("https://other.com/img.png".to_string())
+        );
     }
 
     #[test]
     fn test_resolve_url_relative() {
         let base = Url::parse("https://example.com/page/").unwrap();
-        assert_eq!(resolve_url("img.png", &base), Some("https://example.com/page/img.png".to_string()));
+        assert_eq!(
+            resolve_url("img.png", &base),
+            Some("https://example.com/page/img.png".to_string())
+        );
     }
 
     #[test]
     fn test_resolve_url_protocol_relative() {
         let base = Url::parse("https://example.com/").unwrap();
-        assert_eq!(resolve_url("//cdn.example.com/img.png", &base), Some("https://cdn.example.com/img.png".to_string()));
+        assert_eq!(
+            resolve_url("//cdn.example.com/img.png", &base),
+            Some("https://cdn.example.com/img.png".to_string())
+        );
     }
 }

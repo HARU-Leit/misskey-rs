@@ -1,6 +1,6 @@
 //! Scheduled notes endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use chrono::{DateTime, Utc};
 use misskey_common::AppResult;
 use misskey_core::services::scheduled_note::{CreateScheduledNoteInput, UpdateScheduledNoteInput};
@@ -154,10 +154,7 @@ async fn create(
         scheduled_at: req.scheduled_at,
     };
 
-    let note = state
-        .scheduled_note_service
-        .create(&user.id, input)
-        .await?;
+    let note = state.scheduled_note_service.create(&user.id, input).await?;
 
     Ok(ApiResponse::ok(note.into()))
 }
@@ -178,10 +175,7 @@ async fn update(
         scheduled_at: req.scheduled_at,
     };
 
-    let note = state
-        .scheduled_note_service
-        .update(&user.id, input)
-        .await?;
+    let note = state.scheduled_note_service.update(&user.id, input).await?;
 
     Ok(ApiResponse::ok(note.into()))
 }
@@ -219,9 +213,7 @@ async fn list(
             .await?
     };
 
-    Ok(ApiResponse::ok(
-        notes.into_iter().map(Into::into).collect(),
-    ))
+    Ok(ApiResponse::ok(notes.into_iter().map(Into::into).collect()))
 }
 
 /// Cancel a scheduled note.

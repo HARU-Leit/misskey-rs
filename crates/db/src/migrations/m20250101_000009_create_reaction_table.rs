@@ -21,7 +21,11 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Reaction::UserId).string_len(32).not_null())
                     .col(ColumnDef::new(Reaction::NoteId).string_len(32).not_null())
-                    .col(ColumnDef::new(Reaction::Reaction).string_len(256).not_null())
+                    .col(
+                        ColumnDef::new(Reaction::Reaction)
+                            .string_len(256)
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(Reaction::CreatedAt)
                             .timestamp_with_time_zone()

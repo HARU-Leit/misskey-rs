@@ -34,29 +34,34 @@ impl QueryPlan {
         let plan_text = rows.join("\n");
 
         // Parse timing from EXPLAIN ANALYZE output
-        let planning_time = rows.iter()
+        let planning_time = rows
+            .iter()
             .find(|r| r.contains("Planning Time:"))
             .and_then(|r| r.split(':').last())
             .and_then(|s| s.trim().trim_end_matches(" ms").parse::<f64>().ok())
             .unwrap_or(0.0);
 
-        let execution_time = rows.iter()
+        let execution_time = rows
+            .iter()
             .find(|r| r.contains("Execution Time:"))
             .and_then(|r| r.split(':').last())
             .and_then(|s| s.trim().trim_end_matches(" ms").parse::<f64>().ok())
             .unwrap_or(0.0);
 
         // Check for index usage
-        let uses_index = plan_text.contains("Index Scan") ||
-                         plan_text.contains("Index Only Scan") ||
-                         plan_text.contains("Bitmap Index Scan");
+        let uses_index = plan_text.contains("Index Scan")
+            || plan_text.contains("Index Only Scan")
+            || plan_text.contains("Bitmap Index Scan");
 
         // Parse total cost from first line (format: "cost=0.00..XX.XX")
-        let total_cost = rows.first()
+        let total_cost = rows
+            .first()
             .and_then(|r| {
                 r.find("cost=").map(|start| {
                     let cost_str = &r[start + 5..];
-                    cost_str.split("..").nth(1)
+                    cost_str
+                        .split("..")
+                        .nth(1)
                         .and_then(|s| s.split_whitespace().next())
                         .and_then(|s| s.parse::<f64>().ok())
                         .unwrap_or(0.0)
@@ -65,12 +70,14 @@ impl QueryPlan {
             .unwrap_or(0.0);
 
         // Parse actual rows
-        let rows_scanned = rows.iter()
+        let rows_scanned = rows
+            .iter()
             .filter_map(|r| {
                 if r.contains("actual time=") && r.contains("rows=") {
                     r.find("rows=").and_then(|start| {
                         let rest = &r[start + 5..];
-                        rest.split_whitespace().next()
+                        rest.split_whitespace()
+                            .next()
                             .and_then(|s| s.parse::<i64>().ok())
                     })
                 } else {
@@ -97,7 +104,10 @@ impl QueryPlan {
         println!("Planning Time:  {:.3} ms", self.planning_time_ms);
         println!("Execution Time: {:.3} ms", self.execution_time_ms);
         println!("Total Cost:     {:.2}", self.total_cost);
-        println!("Uses Index:     {}", if self.uses_index { "YES" } else { "NO ⚠️" });
+        println!(
+            "Uses Index:     {}",
+            if self.uses_index { "YES" } else { "NO ⚠️" }
+        );
         println!("Rows Scanned:   {}", self.rows_scanned);
         println!("\nPlan:\n{}", self.plan_text);
     }
@@ -121,7 +131,11 @@ impl QueryPlan {
     }
 }
 
-async fn run_explain_analyze(db: &sea_orm::DatabaseConnection, query_name: &str, sql: &str) -> QueryPlan {
+async fn run_explain_analyze(
+    db: &sea_orm::DatabaseConnection,
+    query_name: &str,
+    sql: &str,
+) -> QueryPlan {
     let explain_sql = format!("EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) {}", sql);
 
     let rows: Vec<String> = db
@@ -137,9 +151,10 @@ async fn run_explain_analyze(db: &sea_orm::DatabaseConnection, query_name: &str,
 
 async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
     // Create tables if they don't exist (run migrations)
-    let _ = db.execute(Statement::from_string(
-        DbBackend::Postgres,
-        r#"
+    let _ = db
+        .execute(Statement::from_string(
+            DbBackend::Postgres,
+            r#"
         CREATE TABLE IF NOT EXISTS "user" (
             id VARCHAR(32) PRIMARY KEY,
             username VARCHAR(128) NOT NULL,
@@ -164,11 +179,13 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
         CREATE INDEX IF NOT EXISTS idx_user_host ON "user" (host);
         CREATE INDEX IF NOT EXISTS idx_user_token ON "user" (token);
         "#,
-    )).await;
+        ))
+        .await;
 
-    let _ = db.execute(Statement::from_string(
-        DbBackend::Postgres,
-        r#"
+    let _ = db
+        .execute(Statement::from_string(
+            DbBackend::Postgres,
+            r#"
         CREATE TABLE IF NOT EXISTS note (
             id VARCHAR(32) PRIMARY KEY,
             user_id VARCHAR(32) NOT NULL,
@@ -204,11 +221,13 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
         CREATE INDEX IF NOT EXISTS idx_note_is_local_visibility ON note (is_local, visibility);
         CREATE INDEX IF NOT EXISTS idx_note_uri ON note (uri);
         "#,
-    )).await;
+        ))
+        .await;
 
-    let _ = db.execute(Statement::from_string(
-        DbBackend::Postgres,
-        r#"
+    let _ = db
+        .execute(Statement::from_string(
+            DbBackend::Postgres,
+            r#"
         CREATE TABLE IF NOT EXISTS following (
             id VARCHAR(32) PRIMARY KEY,
             follower_id VARCHAR(32) NOT NULL,
@@ -220,11 +239,13 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
         CREATE INDEX IF NOT EXISTS idx_following_follower ON following (follower_id);
         CREATE INDEX IF NOT EXISTS idx_following_followee ON following (followee_id);
         "#,
-    )).await;
+        ))
+        .await;
 
-    let _ = db.execute(Statement::from_string(
-        DbBackend::Postgres,
-        r#"
+    let _ = db
+        .execute(Statement::from_string(
+            DbBackend::Postgres,
+            r#"
         CREATE TABLE IF NOT EXISTS reaction (
             id VARCHAR(32) PRIMARY KEY,
             user_id VARCHAR(32) NOT NULL,
@@ -237,20 +258,23 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
         CREATE INDEX IF NOT EXISTS idx_reaction_note ON reaction (note_id);
         CREATE INDEX IF NOT EXISTS idx_reaction_user ON reaction (user_id);
         "#,
-    )).await;
+        ))
+        .await;
 
     // Insert test data
     for i in 0..100 {
         let user_id = format!("user{:04}", i);
-        let _ = db.execute(Statement::from_string(
-            DbBackend::Postgres,
-            format!(
-                r#"INSERT INTO "user" (id, username, username_lower, host, created_at)
+        let _ = db
+            .execute(Statement::from_string(
+                DbBackend::Postgres,
+                format!(
+                    r#"INSERT INTO "user" (id, username, username_lower, host, created_at)
                    VALUES ('{}', 'user{}', 'user{}', NULL, NOW())
                    ON CONFLICT (id) DO NOTHING"#,
-                user_id, i, i
-            ),
-        )).await;
+                    user_id, i, i
+                ),
+            ))
+            .await;
     }
 
     // Insert test notes (1000 notes)
@@ -275,21 +299,24 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
     for i in 0..200 {
         let follower = format!("user{:04}", i % 100);
         let followee = format!("user{:04}", (i + 1) % 100);
-        let _ = db.execute(Statement::from_string(
-            DbBackend::Postgres,
-            format!(
-                r#"INSERT INTO following (id, follower_id, followee_id, created_at)
+        let _ = db
+            .execute(Statement::from_string(
+                DbBackend::Postgres,
+                format!(
+                    r#"INSERT INTO following (id, follower_id, followee_id, created_at)
                    VALUES ('follow{:04}', '{}', '{}', NOW())
                    ON CONFLICT (follower_id, followee_id) DO NOTHING"#,
-                i, follower, followee
-            ),
-        )).await;
+                    i, follower, followee
+                ),
+            ))
+            .await;
     }
 }
 
 #[tokio::test]
 async fn analyze_note_by_id_query() {
-    let db = Database::connect(DATABASE_URL).await
+    let db = Database::connect(DATABASE_URL)
+        .await
         .expect("Failed to connect to database");
 
     setup_test_data(&db).await;
@@ -297,8 +324,9 @@ async fn analyze_note_by_id_query() {
     let plan = run_explain_analyze(
         &db,
         "Note by ID",
-        "SELECT * FROM note WHERE id = 'note000001'"
-    ).await;
+        "SELECT * FROM note WHERE id = 'note000001'",
+    )
+    .await;
 
     plan.print_summary();
     plan.assert_uses_index();
@@ -307,7 +335,8 @@ async fn analyze_note_by_id_query() {
 
 #[tokio::test]
 async fn analyze_notes_by_user_query() {
-    let db = Database::connect(DATABASE_URL).await
+    let db = Database::connect(DATABASE_URL)
+        .await
         .expect("Failed to connect to database");
 
     setup_test_data(&db).await;
@@ -315,8 +344,9 @@ async fn analyze_notes_by_user_query() {
     let plan = run_explain_analyze(
         &db,
         "Notes by User (paginated)",
-        "SELECT * FROM note WHERE user_id = 'user0001' ORDER BY id DESC LIMIT 20"
-    ).await;
+        "SELECT * FROM note WHERE user_id = 'user0001' ORDER BY id DESC LIMIT 20",
+    )
+    .await;
 
     plan.print_summary();
     plan.assert_uses_index();
@@ -325,7 +355,8 @@ async fn analyze_notes_by_user_query() {
 
 #[tokio::test]
 async fn analyze_local_timeline_query() {
-    let db = Database::connect(DATABASE_URL).await
+    let db = Database::connect(DATABASE_URL)
+        .await
         .expect("Failed to connect to database");
 
     setup_test_data(&db).await;
@@ -343,7 +374,8 @@ async fn analyze_local_timeline_query() {
 
 #[tokio::test]
 async fn analyze_global_timeline_query() {
-    let db = Database::connect(DATABASE_URL).await
+    let db = Database::connect(DATABASE_URL)
+        .await
         .expect("Failed to connect to database");
 
     setup_test_data(&db).await;
@@ -351,8 +383,9 @@ async fn analyze_global_timeline_query() {
     let plan = run_explain_analyze(
         &db,
         "Global Timeline",
-        "SELECT * FROM note WHERE visibility = 'public' ORDER BY id DESC LIMIT 20"
-    ).await;
+        "SELECT * FROM note WHERE visibility = 'public' ORDER BY id DESC LIMIT 20",
+    )
+    .await;
 
     plan.print_summary();
     plan.assert_uses_index();
@@ -361,7 +394,8 @@ async fn analyze_global_timeline_query() {
 
 #[tokio::test]
 async fn analyze_home_timeline_query() {
-    let db = Database::connect(DATABASE_URL).await
+    let db = Database::connect(DATABASE_URL)
+        .await
         .expect("Failed to connect to database");
 
     setup_test_data(&db).await;
@@ -380,8 +414,9 @@ async fn analyze_home_timeline_query() {
         AND n.visibility IN ('public', 'home', 'followers')
         ORDER BY n.id DESC
         LIMIT 20
-        "#
-    ).await;
+        "#,
+    )
+    .await;
 
     plan.print_summary();
     plan.assert_performance(200.0);
@@ -389,7 +424,8 @@ async fn analyze_home_timeline_query() {
 
 #[tokio::test]
 async fn analyze_user_by_username_query() {
-    let db = Database::connect(DATABASE_URL).await
+    let db = Database::connect(DATABASE_URL)
+        .await
         .expect("Failed to connect to database");
 
     setup_test_data(&db).await;
@@ -397,8 +433,9 @@ async fn analyze_user_by_username_query() {
     let plan = run_explain_analyze(
         &db,
         "User by Username (local)",
-        r#"SELECT * FROM "user" WHERE username_lower = 'user1' AND host IS NULL"#
-    ).await;
+        r#"SELECT * FROM "user" WHERE username_lower = 'user1' AND host IS NULL"#,
+    )
+    .await;
 
     plan.print_summary();
     plan.assert_uses_index();
@@ -407,7 +444,8 @@ async fn analyze_user_by_username_query() {
 
 #[tokio::test]
 async fn analyze_followers_query() {
-    let db = Database::connect(DATABASE_URL).await
+    let db = Database::connect(DATABASE_URL)
+        .await
         .expect("Failed to connect to database");
 
     setup_test_data(&db).await;
@@ -421,8 +459,9 @@ async fn analyze_followers_query() {
         WHERE f.followee_id = 'user0001'
         ORDER BY f.created_at DESC
         LIMIT 20
-        "#
-    ).await;
+        "#,
+    )
+    .await;
 
     plan.print_summary();
     plan.assert_uses_index();
@@ -431,7 +470,8 @@ async fn analyze_followers_query() {
 
 #[tokio::test]
 async fn analyze_note_replies_query() {
-    let db = Database::connect(DATABASE_URL).await
+    let db = Database::connect(DATABASE_URL)
+        .await
         .expect("Failed to connect to database");
 
     setup_test_data(&db).await;
@@ -439,8 +479,9 @@ async fn analyze_note_replies_query() {
     let plan = run_explain_analyze(
         &db,
         "Note Replies",
-        "SELECT * FROM note WHERE reply_id = 'note000100' ORDER BY id ASC LIMIT 20"
-    ).await;
+        "SELECT * FROM note WHERE reply_id = 'note000100' ORDER BY id ASC LIMIT 20",
+    )
+    .await;
 
     plan.print_summary();
     plan.assert_uses_index();
@@ -449,7 +490,8 @@ async fn analyze_note_replies_query() {
 
 #[tokio::test]
 async fn analyze_note_reactions_query() {
-    let db = Database::connect(DATABASE_URL).await
+    let db = Database::connect(DATABASE_URL)
+        .await
         .expect("Failed to connect to database");
 
     setup_test_data(&db).await;
@@ -457,8 +499,9 @@ async fn analyze_note_reactions_query() {
     let plan = run_explain_analyze(
         &db,
         "Note Reactions",
-        "SELECT * FROM reaction WHERE note_id = 'note000001' LIMIT 100"
-    ).await;
+        "SELECT * FROM reaction WHERE note_id = 'note000001' LIMIT 100",
+    )
+    .await;
 
     plan.print_summary();
     plan.assert_uses_index();
@@ -467,7 +510,8 @@ async fn analyze_note_reactions_query() {
 
 #[tokio::test]
 async fn analyze_text_search_query() {
-    let db = Database::connect(DATABASE_URL).await
+    let db = Database::connect(DATABASE_URL)
+        .await
         .expect("Failed to connect to database");
 
     setup_test_data(&db).await;
@@ -491,7 +535,8 @@ async fn analyze_text_search_query() {
 /// Summary test that runs all queries and generates a report
 #[tokio::test]
 async fn generate_query_performance_report() {
-    let db = Database::connect(DATABASE_URL).await
+    let db = Database::connect(DATABASE_URL)
+        .await
         .expect("Failed to connect to database");
 
     setup_test_data(&db).await;
@@ -503,11 +548,26 @@ async fn generate_query_performance_report() {
 
     let queries = vec![
         ("Note by ID", "SELECT * FROM note WHERE id = 'note000001'"),
-        ("Notes by User", "SELECT * FROM note WHERE user_id = 'user0001' ORDER BY id DESC LIMIT 20"),
-        ("Local Timeline", "SELECT * FROM note WHERE visibility = 'public' AND is_local = true ORDER BY id DESC LIMIT 20"),
-        ("Global Timeline", "SELECT * FROM note WHERE visibility = 'public' ORDER BY id DESC LIMIT 20"),
-        ("User by Username", r#"SELECT * FROM "user" WHERE username_lower = 'user1' AND host IS NULL"#),
-        ("Note Replies", "SELECT * FROM note WHERE reply_id = 'note000100' ORDER BY id ASC LIMIT 20"),
+        (
+            "Notes by User",
+            "SELECT * FROM note WHERE user_id = 'user0001' ORDER BY id DESC LIMIT 20",
+        ),
+        (
+            "Local Timeline",
+            "SELECT * FROM note WHERE visibility = 'public' AND is_local = true ORDER BY id DESC LIMIT 20",
+        ),
+        (
+            "Global Timeline",
+            "SELECT * FROM note WHERE visibility = 'public' ORDER BY id DESC LIMIT 20",
+        ),
+        (
+            "User by Username",
+            r#"SELECT * FROM "user" WHERE username_lower = 'user1' AND host IS NULL"#,
+        ),
+        (
+            "Note Replies",
+            "SELECT * FROM note WHERE reply_id = 'note000100' ORDER BY id ASC LIMIT 20",
+        ),
     ];
 
     let mut results = Vec::new();
@@ -523,11 +583,9 @@ async fn generate_query_performance_report() {
 
     for result in &results {
         let index_status = if result.uses_index { "✓" } else { "✗" };
-        println!("│ {:22} │ {:9.3} │ {:9.2} │    {}     │",
-            result.query_name,
-            result.execution_time_ms,
-            result.total_cost,
-            index_status
+        println!(
+            "│ {:22} │ {:9.3} │ {:9.2} │    {}     │",
+            result.query_name, result.execution_time_ms, result.total_cost, index_status
         );
     }
 
@@ -541,8 +599,10 @@ async fn generate_query_performance_report() {
             println!("  ⚠️ {}: Consider adding an index", result.query_name);
         }
         if result.execution_time_ms > 50.0 {
-            println!("  ⚠️ {}: Query is slow ({:.2}ms), consider optimization",
-                result.query_name, result.execution_time_ms);
+            println!(
+                "  ⚠️ {}: Query is slow ({:.2}ms), consider optimization",
+                result.query_name, result.execution_time_ms
+            );
         }
     }
 

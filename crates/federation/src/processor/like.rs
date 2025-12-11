@@ -50,9 +50,7 @@ impl LikeProcessor {
             .note_repo
             .find_by_uri(activity.object.as_str())
             .await?
-            .ok_or_else(|| {
-                AppError::NotFound(format!("Note not found: {}", activity.object))
-            })?;
+            .ok_or_else(|| AppError::NotFound(format!("Note not found: {}", activity.object)))?;
 
         // Find or fetch the actor
         let actor = self.find_or_fetch_actor(&activity.actor).await?;
@@ -101,13 +99,15 @@ impl LikeProcessor {
     fn normalize_reaction(&self, activity: &LikeActivity) -> String {
         // Try Misskey-specific reaction first, then content, then default
         if let Some(ref reaction) = activity.misskey_reaction
-            && !reaction.is_empty() {
-                return reaction.clone();
-            }
+            && !reaction.is_empty()
+        {
+            return reaction.clone();
+        }
         if let Some(ref content) = activity.content
-            && !content.is_empty() {
-                return content.clone();
-            }
+            && !content.is_empty()
+        {
+            return content.clone();
+        }
         // Default reaction (Misskey uses ❤️ for standard Like)
         "❤️".to_string()
     }

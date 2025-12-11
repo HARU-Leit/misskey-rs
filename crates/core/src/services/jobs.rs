@@ -7,7 +7,9 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, warn};
 
-use crate::services::push_notification::{PushNotificationService, PushNotificationType, PushPayload};
+use crate::services::push_notification::{
+    PushNotificationService, PushNotificationType, PushPayload,
+};
 use crate::services::webhook::WebhookService;
 
 /// Maximum number of concurrent job workers.
@@ -32,9 +34,7 @@ pub enum Job {
         payload: serde_json::Value,
     },
     /// Clean up expired data.
-    Cleanup {
-        task: CleanupTask,
-    },
+    Cleanup { task: CleanupTask },
 }
 
 /// Cleanup task types.
@@ -299,9 +299,7 @@ mod tests {
         });
 
         // Should be able to enqueue a job
-        let result = sender
-            .cleanup(CleanupTask::ExpiredWordFilters)
-            .await;
+        let result = sender.cleanup(CleanupTask::ExpiredWordFilters).await;
 
         assert!(result.is_ok());
     }

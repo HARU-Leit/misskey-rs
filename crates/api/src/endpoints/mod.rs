@@ -2,6 +2,7 @@
 
 #![allow(missing_docs)]
 
+mod account;
 mod admin;
 mod announcements;
 mod antennas;
@@ -13,8 +14,10 @@ mod drive;
 mod emojis;
 mod favorites;
 mod following;
-mod lists;
+mod gallery;
+mod groups;
 mod hashtags;
+mod lists;
 pub mod mastodon;
 mod messaging;
 mod meta;
@@ -22,22 +25,19 @@ mod metrics;
 mod muting;
 mod notes;
 mod notifications;
-mod poll;
-mod reactions;
-mod search;
-mod users;
-mod word_filters;
-mod scheduled_notes;
-mod two_factor;
-mod security_keys;
 mod oauth;
 mod pages;
-mod gallery;
-mod webhooks;
-mod translation;
+mod poll;
+mod reactions;
+mod scheduled_notes;
+mod search;
+mod security_keys;
 mod sw;
-mod account;
-mod groups;
+mod translation;
+mod two_factor;
+mod users;
+mod webhooks;
+mod word_filters;
 
 use axum::Router;
 

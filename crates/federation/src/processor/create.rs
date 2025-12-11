@@ -10,7 +10,7 @@ use serde_json::json;
 use tracing::info;
 
 use super::ActorFetcher;
-use crate::{client::ApClient, objects::ApNote, CreateActivity};
+use crate::{CreateActivity, client::ApClient, objects::ApNote};
 
 /// Processor for Create activities (notes).
 #[derive(Clone)]
@@ -23,11 +23,7 @@ pub struct CreateProcessor {
 impl CreateProcessor {
     /// Create a new create processor.
     #[must_use]
-    pub fn new(
-        note_repo: NoteRepository,
-        user_repo: UserRepository,
-        ap_client: ApClient,
-    ) -> Self {
+    pub fn new(note_repo: NoteRepository, user_repo: UserRepository, ap_client: ApClient) -> Self {
         Self {
             note_repo,
             actor_fetcher: ActorFetcher::new(user_repo, ap_client),
@@ -44,7 +40,11 @@ impl CreateProcessor {
         );
 
         // Check if we already have this note
-        if let Some(existing) = self.note_repo.find_by_uri(activity.object.id.as_str()).await? {
+        if let Some(existing) = self
+            .note_repo
+            .find_by_uri(activity.object.id.as_str())
+            .await?
+        {
             info!(note_id = %existing.id, "Note already exists");
             return Ok(existing);
         }

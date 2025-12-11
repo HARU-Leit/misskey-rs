@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{blocking, Blocking};
+use crate::entities::{Blocking, blocking};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, QueryFilter,
@@ -17,7 +17,7 @@ pub struct BlockingRepository {
 
 impl BlockingRepository {
     /// Create a new blocking repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }

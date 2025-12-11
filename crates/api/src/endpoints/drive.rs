@@ -1,15 +1,14 @@
 //! Drive endpoints for file management.
 
 use axum::{
+    Json, Router,
     extract::{Multipart, State},
     routing::post,
-    Json, Router,
 };
 use misskey_common::AppResult;
 use misskey_core::{CreateFileInput, CreateFolderInput};
 use misskey_db::entities::{
-    drive_file::Model as DriveFileModel,
-    drive_folder::Model as DriveFolderModel,
+    drive_file::Model as DriveFileModel, drive_folder::Model as DriveFolderModel,
 };
 use serde::{Deserialize, Serialize};
 
@@ -131,9 +130,8 @@ async fn upload_file(
         }
     }
 
-    let data = file_data.ok_or_else(|| {
-        misskey_common::AppError::BadRequest("No file provided".to_string())
-    })?;
+    let data = file_data
+        .ok_or_else(|| misskey_common::AppError::BadRequest("No file provided".to_string()))?;
 
     let name = file_name.unwrap_or_else(|| "unnamed".to_string());
     let content_type = content_type.unwrap_or_else(|| "application/octet-stream".to_string());
@@ -176,7 +174,12 @@ async fn list_files(
     let limit = req.limit.min(100);
     let files = state
         .drive_service
-        .get_user_files(&user.id, limit, req.until_id.as_deref(), req.folder_id.as_deref())
+        .get_user_files(
+            &user.id,
+            limit,
+            req.until_id.as_deref(),
+            req.folder_id.as_deref(),
+        )
         .await?;
     Ok(ApiResponse::ok(files.into_iter().map(Into::into).collect()))
 }
@@ -336,7 +339,9 @@ async fn list_folders(
         .drive_service
         .get_user_folders(&user.id, req.parent_id.as_deref(), limit)
         .await?;
-    Ok(ApiResponse::ok(folders.into_iter().map(Into::into).collect()))
+    Ok(ApiResponse::ok(
+        folders.into_iter().map(Into::into).collect(),
+    ))
 }
 
 /// Show folder request.
@@ -430,7 +435,10 @@ async fn cleanup_preview(
 ) -> AppResult<ApiResponse<CleanupPreviewResponse>> {
     let limit = req.limit.min(100);
     let count = state.drive_service.count_unattached_files(&user.id).await?;
-    let files = state.drive_service.get_unattached_files(&user.id, limit).await?;
+    let files = state
+        .drive_service
+        .get_unattached_files(&user.id, limit)
+        .await?;
     let total_size: i64 = files.iter().map(|f| f.size).sum();
 
     Ok(ApiResponse::ok(CleanupPreviewResponse {
@@ -464,7 +472,10 @@ async fn cleanup_execute(
     Json(req): Json<CleanupExecuteRequest>,
 ) -> AppResult<ApiResponse<CleanupResultResponse>> {
     let limit = req.limit.min(100);
-    let result = state.drive_service.cleanup_unattached_files(&user.id, limit).await?;
+    let result = state
+        .drive_service
+        .cleanup_unattached_files(&user.id, limit)
+        .await?;
 
     Ok(ApiResponse::ok(CleanupResultResponse {
         deleted_count: result.deleted_count,

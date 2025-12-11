@@ -8,9 +8,9 @@
 //! - PUT /api/v1/media/:id - Update media description
 
 use axum::{
+    Json, Router,
     extract::{Multipart, Path, State},
     routing::{get, post, put},
-    Json, Router,
 };
 use misskey_common::AppResult;
 use misskey_core::drive::CreateFileInput;
@@ -89,7 +89,9 @@ fn content_type_to_media_type(content_type: &str) -> String {
 }
 
 /// Convert drive file to Mastodon media attachment.
-fn drive_file_to_media_attachment(file: misskey_db::entities::drive_file::Model) -> MediaAttachment {
+fn drive_file_to_media_attachment(
+    file: misskey_db::entities::drive_file::Model,
+) -> MediaAttachment {
     let media_type = content_type_to_media_type(&file.content_type);
 
     let meta = if file.width.is_some() || file.height.is_some() {
@@ -153,9 +155,18 @@ async fn upload_media(
                 if let Some(fname) = field.file_name() {
                     file_name = fname.to_string();
                 }
-                file_data = Some(field.bytes().await.map_err(|e| {
-                    misskey_common::AppError::BadRequest(format!("Failed to read file: {}", e))
-                })?.to_vec());
+                file_data = Some(
+                    field
+                        .bytes()
+                        .await
+                        .map_err(|e| {
+                            misskey_common::AppError::BadRequest(format!(
+                                "Failed to read file: {}",
+                                e
+                            ))
+                        })?
+                        .to_vec(),
+                );
             }
             "description" => {
                 description = Some(field.text().await.unwrap_or_default());
@@ -167,9 +178,8 @@ async fn upload_media(
         }
     }
 
-    let data = file_data.ok_or_else(|| {
-        misskey_common::AppError::BadRequest("No file provided".to_string())
-    })?;
+    let data = file_data
+        .ok_or_else(|| misskey_common::AppError::BadRequest("No file provided".to_string()))?;
 
     let size = data.len() as i64;
 
@@ -211,7 +221,9 @@ async fn get_media(
 
     // Verify ownership
     if file.user_id != user.id {
-        return Err(misskey_common::AppError::NotFound("Media not found".to_string()));
+        return Err(misskey_common::AppError::NotFound(
+            "Media not found".to_string(),
+        ));
     }
 
     let attachment = drive_file_to_media_attachment(file);
@@ -225,14 +237,17 @@ async fn update_media(
     Path(id): Path<String>,
     Json(req): Json<UpdateMediaRequest>,
 ) -> AppResult<Json<MediaAttachment>> {
-    let file = state.drive_service.update_file(
-        &user.id,
-        &id,
-        None, // name
-        None, // folder_id
-        None, // is_sensitive
-        req.description.map(Some), // comment (wrapped in Some to update)
-    ).await?;
+    let file = state
+        .drive_service
+        .update_file(
+            &user.id,
+            &id,
+            None,                      // name
+            None,                      // folder_id
+            None,                      // is_sensitive
+            req.description.map(Some), // comment (wrapped in Some to update)
+        )
+        .await?;
 
     let attachment = drive_file_to_media_attachment(file);
     Ok(Json(attachment))

@@ -13,13 +13,13 @@ pub struct UrlConfig {
 
 impl UrlConfig {
     /// Create a new URL config.
-    #[must_use] 
+    #[must_use]
     pub const fn new(base_url: Url) -> Self {
         Self { base_url }
     }
 
     /// Generate user URL.
-    #[must_use] 
+    #[must_use]
     pub fn user_url(&self, username: &str) -> Url {
         self.base_url
             .join(&format!("/users/{username}"))
@@ -27,7 +27,7 @@ impl UrlConfig {
     }
 
     /// Generate inbox URL.
-    #[must_use] 
+    #[must_use]
     pub fn inbox_url(&self, username: &str) -> Url {
         self.base_url
             .join(&format!("/users/{username}/inbox"))
@@ -35,7 +35,7 @@ impl UrlConfig {
     }
 
     /// Generate outbox URL.
-    #[must_use] 
+    #[must_use]
     pub fn outbox_url(&self, username: &str) -> Url {
         self.base_url
             .join(&format!("/users/{username}/outbox"))
@@ -43,13 +43,13 @@ impl UrlConfig {
     }
 
     /// Generate shared inbox URL.
-    #[must_use] 
+    #[must_use]
     pub fn shared_inbox_url(&self) -> Url {
         self.base_url.join("/inbox").expect("valid URL")
     }
 
     /// Generate followers URL.
-    #[must_use] 
+    #[must_use]
     pub fn followers_url(&self, username: &str) -> Url {
         self.base_url
             .join(&format!("/users/{username}/followers"))
@@ -57,7 +57,7 @@ impl UrlConfig {
     }
 
     /// Generate following URL.
-    #[must_use] 
+    #[must_use]
     pub fn following_url(&self, username: &str) -> Url {
         self.base_url
             .join(&format!("/users/{username}/following"))
@@ -65,7 +65,7 @@ impl UrlConfig {
     }
 
     /// Generate public key URL.
-    #[must_use] 
+    #[must_use]
     pub fn public_key_url(&self, username: &str) -> String {
         format!("{}#main-key", self.user_url(username))
     }

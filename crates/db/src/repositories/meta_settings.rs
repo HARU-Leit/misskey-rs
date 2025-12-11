@@ -2,11 +2,9 @@
 
 use std::sync::Arc;
 
-use crate::entities::{meta_settings, MetaSettings};
+use crate::entities::{MetaSettings, meta_settings};
 use misskey_common::{AppError, AppResult};
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
-};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use serde_json::json;
 
 /// Repository for instance-wide settings.

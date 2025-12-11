@@ -8,11 +8,10 @@ use misskey_db::repositories::{
     UserRepository,
 };
 use misskey_federation::{
-    client::ApClient,
-    AcceptActivity, AnnounceActivity, CreateActivity, DeleteActivity, FollowActivity,
-    LikeActivity, RejectActivity, UpdateActivity,
-    AcceptProcessor, AnnounceProcessor, CreateProcessor, DeleteProcessor, FollowProcessor,
-    LikeProcessor, ParsedUndoActivity, RejectProcessor, UndoProcessor, UpdateProcessor,
+    AcceptActivity, AcceptProcessor, AnnounceActivity, AnnounceProcessor, CreateActivity,
+    CreateProcessor, DeleteActivity, DeleteProcessor, FollowActivity, FollowProcessor,
+    LikeActivity, LikeProcessor, ParsedUndoActivity, RejectActivity, RejectProcessor,
+    UndoProcessor, UpdateActivity, UpdateProcessor, client::ApClient,
 };
 use sea_orm::DatabaseConnection;
 use tracing::{error, info, warn};
@@ -205,7 +204,12 @@ async fn process_like(
     ctx: &InboxWorkerContext,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let activity: LikeActivity = serde_json::from_value(job.activity.clone())?;
-    let processor = LikeProcessor::new(ctx.user_repo(), ctx.note_repo(), ctx.reaction_repo(), ctx.ap_client());
+    let processor = LikeProcessor::new(
+        ctx.user_repo(),
+        ctx.note_repo(),
+        ctx.reaction_repo(),
+        ctx.ap_client(),
+    );
     processor.process(&activity).await?;
     Ok(())
 }
@@ -248,10 +252,7 @@ async fn process_undo(
             .get("type")
             .and_then(|v| v.as_str())
             .unwrap_or("Unknown");
-        let obj_id = obj_map
-            .get("id")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let obj_id = obj_map.get("id").and_then(|v| v.as_str()).unwrap_or("");
         // For Follow, the object.object is the followee
         // For Like, the object.object is the note
         let obj_obj = obj_map
@@ -268,7 +269,8 @@ async fn process_undo(
         id: Url::parse(id)?,
         actor: Url::parse(actor)?,
         object_type,
-        object_id: Url::parse(&object_id).unwrap_or_else(|_| Url::parse("https://invalid").unwrap()),
+        object_id: Url::parse(&object_id)
+            .unwrap_or_else(|_| Url::parse("https://invalid").unwrap()),
         object_object,
     };
 

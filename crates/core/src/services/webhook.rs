@@ -1,7 +1,7 @@
 //! Webhook service for event notifications.
 
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
-use misskey_common::{id::IdGenerator, AppError, AppResult};
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::webhook;
 use misskey_db::repositories::WebhookRepository;
 use sea_orm::Set;
@@ -24,7 +24,9 @@ pub mod events {
     /// Get all valid events.
     #[must_use]
     pub fn all() -> Vec<&'static str> {
-        vec![NOTE, REPLY, RENOTE, MENTION, FOLLOW, FOLLOWED, UNFOLLOW, REACTION]
+        vec![
+            NOTE, REPLY, RENOTE, MENTION, FOLLOW, FOLLOWED, UNFOLLOW, REACTION,
+        ]
     }
 
     /// Check if an event is valid.
@@ -419,9 +421,8 @@ impl WebhookService {
             data: json!({ "message": "This is a test webhook delivery" }),
         };
 
-        let payload_json = serde_json::to_string(&payload).map_err(|e| {
-            AppError::Internal(format!("Failed to serialize payload: {e}"))
-        })?;
+        let payload_json = serde_json::to_string(&payload)
+            .map_err(|e| AppError::Internal(format!("Failed to serialize payload: {e}")))?;
 
         let signature = self.sign_payload(&payload_json, &webhook.secret);
 
@@ -455,8 +456,8 @@ impl WebhookService {
 
         type HmacSha256 = Hmac<Sha256>;
 
-        let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
-            .expect("HMAC can take key of any size");
+        let mut mac =
+            HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC can take key of any size");
         mac.update(payload.as_bytes());
         let result = mac.finalize();
 

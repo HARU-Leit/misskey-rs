@@ -3,8 +3,9 @@
 use std::sync::Arc;
 
 use crate::entities::{
+    AbuseReport, UserSuspension,
     abuse_report::{self, ReportStatus},
-    user_suspension, AbuseReport, UserSuspension,
+    user_suspension,
 };
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
@@ -20,7 +21,7 @@ pub struct ModerationRepository {
 
 impl ModerationRepository {
     /// Create a new moderation repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }

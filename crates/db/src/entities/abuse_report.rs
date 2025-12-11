@@ -17,7 +17,6 @@ pub enum ReportStatus {
     Rejected,
 }
 
-
 /// Abuse report model.
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "abuse_report")]

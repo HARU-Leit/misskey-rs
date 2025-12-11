@@ -4,26 +4,42 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use apalis::prelude::*;
-use axum::{middleware, routing::{get, post}, Router};
-use misskey_api::{middleware::AppState, rate_limit::RateLimiterState, router as api_router, streaming_handler, StreamingState, SseBroadcaster};
+use axum::{
+    Router, middleware,
+    routing::{get, post},
+};
+use misskey_api::{
+    SseBroadcaster, StreamingState, middleware::AppState, rate_limit::RateLimiterState,
+    router as api_router, streaming_handler,
+};
 use misskey_common::Config;
-use misskey_core::{AccountService, AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DeliveryService, DriveService, EmojiService, FollowingService, GalleryService, GroupService, InstanceService, MessagingService, MetaSettingsService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService, PageService, PollService, ReactionService, RegistrationApprovalService, ScheduledNoteService, TwoFactorService, UserListService, UserService, WebAuthnConfig, WebAuthnService, WebhookService, WordFilterService};
-use misskey_federation::{
-    clip_handler, clips_list_handler, followers_handler, following_handler, inbox_handler,
-    nodeinfo_2_1, outbox_handler, user_inbox_handler, user_handler, webfinger_handler,
-    well_known_nodeinfo, ClipCollectionState, CollectionState, InboxState, NodeInfoState,
-    UserApState, WebfingerState,
+use misskey_core::{
+    AccountService, AnnouncementService, AntennaService, BlockingService, ChannelService,
+    ClipService, DeliveryService, DriveService, EmojiService, FollowingService, GalleryService,
+    GroupService, InstanceService, MessagingService, MetaSettingsService, ModerationService,
+    MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService,
+    PageService, PollService, ReactionService, RegistrationApprovalService, ScheduledNoteService,
+    TwoFactorService, UserListService, UserService, WebAuthnConfig, WebAuthnService,
+    WebhookService, WordFilterService,
 };
 use misskey_db::repositories::{
-    AnnouncementRepository, AntennaRepository, BlockingRepository, ChannelRepository, ClipRepository, DriveFileRepository, DriveFolderRepository,
-    EmojiRepository, FollowRequestRepository, FollowingRepository, GroupRepository, InstanceRepository, MessagingRepository,
-    MutingRepository, NoteFavoriteRepository, NoteRepository, NotificationRepository, OAuthRepository,
-    PollRepository, PollVoteRepository, ReactionRepository, ScheduledNoteRepository, SecurityKeyRepository, UserKeypairRepository,
-    UserListRepository, UserProfileRepository, UserRepository, ModerationRepository,
-    PageRepository, GalleryRepository, WebhookRepository, WordFilterRepository,
+    AnnouncementRepository, AntennaRepository, BlockingRepository, ChannelRepository,
+    ClipRepository, DriveFileRepository, DriveFolderRepository, EmojiRepository,
+    FollowRequestRepository, FollowingRepository, GalleryRepository, GroupRepository,
+    InstanceRepository, MessagingRepository, ModerationRepository, MutingRepository,
+    NoteFavoriteRepository, NoteRepository, NotificationRepository, OAuthRepository,
+    PageRepository, PollRepository, PollVoteRepository, ReactionRepository,
+    ScheduledNoteRepository, SecurityKeyRepository, UserKeypairRepository, UserListRepository,
+    UserProfileRepository, UserRepository, WebhookRepository, WordFilterRepository,
 };
-use misskey_queue::{DeliverJob, RedisDeliveryService};
+use misskey_federation::{
+    ClipCollectionState, CollectionState, InboxState, NodeInfoState, UserApState, WebfingerState,
+    clip_handler, clips_list_handler, followers_handler, following_handler, inbox_handler,
+    nodeinfo_2_1, outbox_handler, user_handler, user_inbox_handler, webfinger_handler,
+    well_known_nodeinfo,
+};
 use misskey_queue::workers::{DeliverContext, deliver_worker};
+use misskey_queue::{DeliverJob, RedisDeliveryService};
 use sea_orm::{ConnectOptions, Database};
 use tokio::signal;
 use tower_http::{
@@ -31,8 +47,8 @@ use tower_http::{
     trace::TraceLayer,
 };
 use tracing::info;
-use url::Url;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use url::Url;
 
 /// Waits for a shutdown signal (SIGINT or SIGTERM).
 ///
@@ -98,17 +114,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Connect to Redis and initialize job queue
     info!("Connecting to Redis...");
-    let redis_client = redis::Client::open(config.redis.url.as_str())
-        .expect("Failed to create Redis client");
-    let redis_conn = redis::aio::ConnectionManager::new(redis_client).await
+    let redis_client =
+        redis::Client::open(config.redis.url.as_str()).expect("Failed to create Redis client");
+    let redis_conn = redis::aio::ConnectionManager::new(redis_client)
+        .await
         .expect("Failed to connect to Redis");
     let redis_storage = apalis_redis::RedisStorage::<DeliverJob>::new(redis_conn);
     info!("Connected to Redis job queue");
 
     // Create ActivityPub delivery service
-    let delivery_service: DeliveryService = Arc::new(
-        RedisDeliveryService::new(redis_storage.clone())
-    );
+    let delivery_service: DeliveryService =
+        Arc::new(RedisDeliveryService::new(redis_storage.clone()));
     let server_url = config.server.url.clone();
 
     // Initialize repositories
@@ -180,7 +196,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             server_url.clone(),
         )
     } else {
-        FollowingService::new(following_repo.clone(), follow_request_repo.clone(), user_repo.clone())
+        FollowingService::new(
+            following_repo.clone(),
+            follow_request_repo.clone(),
+            user_repo.clone(),
+        )
     };
 
     let reaction_service = if config.federation.enabled {
@@ -196,7 +216,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let notification_service = NotificationService::new(notification_repo);
     let muting_service = MutingService::new(muting_repo);
-    let drive_service = DriveService::new(drive_file_repo.clone(), drive_folder_repo, config.server.url.clone());
+    let drive_service = DriveService::new(
+        drive_file_repo.clone(),
+        drive_folder_repo,
+        config.server.url.clone(),
+    );
     let poll_service = PollService::new(poll_repo, poll_vote_repo, note_repo.clone());
     let hashtag_service = misskey_core::HashtagService::new(hashtag_repo);
     let note_favorite_service = NoteFavoriteService::new(note_favorite_repo, note_repo.clone());
@@ -214,16 +238,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let two_factor_service = TwoFactorService::new(user_profile_repo.clone());
 
     // Initialize WebAuthn service
-    let webauthn_config = WebAuthnConfig::from_server_url(
-        &config.server.url,
-        &config.federation.instance_name,
-    ).expect("Failed to create WebAuthn config");
+    let webauthn_config =
+        WebAuthnConfig::from_server_url(&config.server.url, &config.federation.instance_name)
+            .expect("Failed to create WebAuthn config");
     let webauthn_service = WebAuthnService::new(
         &webauthn_config,
         security_key_repo,
         user_repo.clone(),
         user_profile_repo.clone(),
-    ).expect("Failed to create WebAuthn service");
+    )
+    .expect("Failed to create WebAuthn service");
 
     // Initialize OAuth service
     let oauth_service = OAuthService::new(oauth_repo);
@@ -330,7 +354,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         env!("CARGO_PKG_VERSION").to_string(),
         true, // open_registrations
     );
-    let user_ap_state = UserApState::new(user_repo.clone(), user_keypair_repo.clone(), base_url.clone());
+    let user_ap_state = UserApState::new(
+        user_repo.clone(),
+        user_keypair_repo.clone(),
+        base_url.clone(),
+    );
 
     // Create collection state for outbox/followers/following
     let collection_state = CollectionState::new(
@@ -439,13 +467,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Spawn the worker in the background
         tokio::spawn(async move {
-            let monitor = Monitor::new()
-                .register({
-                    WorkerBuilder::new("deliver")
-                        .data(deliver_ctx)
-                        .backend(redis_storage)
-                        .build_fn(deliver_worker)
-                });
+            let monitor = Monitor::new().register({
+                WorkerBuilder::new("deliver")
+                    .data(deliver_ctx)
+                    .backend(redis_storage)
+                    .build_fn(deliver_worker)
+            });
 
             if let Err(e) = monitor.run().await {
                 tracing::error!(error = %e, "Delivery worker failed");

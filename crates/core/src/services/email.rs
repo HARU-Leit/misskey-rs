@@ -197,9 +197,10 @@ impl EmailService {
 
     /// Send an email.
     pub async fn send(&self, message: EmailMessage) -> AppResult<EmailDeliveryResult> {
-        let config = self.config.as_ref().ok_or_else(|| {
-            AppError::BadRequest("Email service not configured".to_string())
-        })?;
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| AppError::BadRequest("Email service not configured".to_string()))?;
 
         match &config.provider {
             EmailProvider::Smtp(smtp) => self.send_smtp(smtp, config, message).await,
@@ -216,11 +217,13 @@ impl EmailService {
         to: &str,
         vars: EmailTemplateVars,
     ) -> AppResult<EmailDeliveryResult> {
-        let config = self.config.as_ref().ok_or_else(|| {
-            AppError::BadRequest("Email service not configured".to_string())
-        })?;
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| AppError::BadRequest("Email service not configured".to_string()))?;
 
-        let (subject, text_body, html_body) = self.render_template(notification_type, &vars, config)?;
+        let (subject, text_body, html_body) =
+            self.render_template(notification_type, &vars, config)?;
 
         let message = EmailMessage {
             to: to.to_string(),
@@ -253,15 +256,18 @@ impl EmailService {
                     config.instance_url,
                     vars.actor_username.as_deref().unwrap_or("unknown")
                 );
-                let html = self.wrap_html(&format!(
-                    "<p><strong>{}</strong> (@{}) is now following you on {}.</p>\
+                let html = self.wrap_html(
+                    &format!(
+                        "<p><strong>{}</strong> (@{}) is now following you on {}.</p>\
                     <p><a href=\"{}/users/{}\">View their profile</a></p>",
-                    actor,
-                    vars.actor_username.as_deref().unwrap_or("unknown"),
-                    config.instance_name,
-                    config.instance_url,
-                    vars.actor_username.as_deref().unwrap_or("unknown")
-                ), config);
+                        actor,
+                        vars.actor_username.as_deref().unwrap_or("unknown"),
+                        config.instance_name,
+                        config.instance_url,
+                        vars.actor_username.as_deref().unwrap_or("unknown")
+                    ),
+                    config,
+                );
                 (subject, text, html)
             }
 
@@ -274,14 +280,17 @@ impl EmailService {
                     vars.note_text.as_deref().unwrap_or(""),
                     vars.note_url.as_deref().unwrap_or("")
                 );
-                let html = self.wrap_html(&format!(
-                    "<p><strong>{}</strong> mentioned you:</p>\
+                let html = self.wrap_html(
+                    &format!(
+                        "<p><strong>{}</strong> mentioned you:</p>\
                     <blockquote>{}</blockquote>\
                     <p><a href=\"{}\">View the post</a></p>",
-                    actor,
-                    vars.note_text.as_deref().unwrap_or(""),
-                    vars.note_url.as_deref().unwrap_or("")
-                ), config);
+                        actor,
+                        vars.note_text.as_deref().unwrap_or(""),
+                        vars.note_url.as_deref().unwrap_or("")
+                    ),
+                    config,
+                );
                 (subject, text, html)
             }
 
@@ -290,15 +299,16 @@ impl EmailService {
                 let subject = format!("New message from {} on {}", actor, config.instance_name);
                 let text = format!(
                     "You have a new message from {}.\n\nLog in to read it: {}/messaging",
-                    actor,
-                    config.instance_url
+                    actor, config.instance_url
                 );
-                let html = self.wrap_html(&format!(
-                    "<p>You have a new message from <strong>{}</strong>.</p>\
+                let html = self.wrap_html(
+                    &format!(
+                        "<p>You have a new message from <strong>{}</strong>.</p>\
                     <p><a href=\"{}/messaging\">Log in to read it</a></p>",
-                    actor,
-                    config.instance_url
-                ), config);
+                        actor, config.instance_url
+                    ),
+                    config,
+                );
                 (subject, text, html)
             }
 
@@ -309,8 +319,7 @@ impl EmailService {
                     "You requested a password reset for your account on {}.\n\n\
                     Click the following link to reset your password:\n{}\n\n\
                     If you didn't request this, you can safely ignore this email.",
-                    config.instance_name,
-                    action_url
+                    config.instance_name, action_url
                 );
                 let html = self.wrap_html(&format!(
                     "<p>You requested a password reset for your account on {}.</p>\
@@ -351,18 +360,17 @@ impl EmailService {
                     "Here's what happened on {} this week:\n\n\
                     {} new notifications\n\n\
                     Log in to see more: {}",
-                    config.instance_name,
-                    count,
-                    config.instance_url
+                    config.instance_name, count, config.instance_url
                 );
-                let html = self.wrap_html(&format!(
-                    "<p>Here's what happened on {} this week:</p>\
+                let html = self.wrap_html(
+                    &format!(
+                        "<p>Here's what happened on {} this week:</p>\
                     <p><strong>{}</strong> new notifications</p>\
                     <p><a href=\"{}\">Log in to see more</a></p>",
-                    config.instance_name,
-                    count,
-                    config.instance_url
-                ), config);
+                        config.instance_name, count, config.instance_url
+                    ),
+                    config,
+                );
                 (subject, text, html)
             }
 
@@ -373,18 +381,17 @@ impl EmailService {
                     "Here's your monthly summary from {}:\n\n\
                     {} activities this month\n\n\
                     Log in to see more: {}",
-                    config.instance_name,
-                    count,
-                    config.instance_url
+                    config.instance_name, count, config.instance_url
                 );
-                let html = self.wrap_html(&format!(
-                    "<p>Here's your monthly summary from {}:</p>\
+                let html = self.wrap_html(
+                    &format!(
+                        "<p>Here's your monthly summary from {}:</p>\
                     <p><strong>{}</strong> activities this month</p>\
                     <p><a href=\"{}\">Log in to see more</a></p>",
-                    config.instance_name,
-                    count,
-                    config.instance_url
-                ), config);
+                        config.instance_name, count, config.instance_url
+                    ),
+                    config,
+                );
                 (subject, text, html)
             }
 
@@ -393,8 +400,7 @@ impl EmailService {
                 let text = format!(
                     "We detected unusual activity on your {} account.\n\n\
                     If this wasn't you, please change your password immediately: {}/settings/security",
-                    config.instance_name,
-                    config.instance_url
+                    config.instance_name, config.instance_url
                 );
                 let html = self.wrap_html(&format!(
                     "<p style=\"color:#dc3545;\"><strong>Security Alert</strong></p>\
@@ -414,9 +420,7 @@ impl EmailService {
                     Welcome to {}! We're glad to have you.\n\n\
                     Get started: {}\n\n\
                     If you have any questions, feel free to reach out.",
-                    user_name,
-                    config.instance_name,
-                    config.instance_url
+                    user_name, config.instance_name, config.instance_url
                 );
                 let html = self.wrap_html(&format!(
                     "<p>Hi {}!</p>\
@@ -457,9 +461,7 @@ impl EmailService {
     </p>
 </body>
 </html>"#,
-            content,
-            config.instance_url,
-            config.instance_name
+            content, config.instance_url, config.instance_name
         )
     }
 
@@ -568,7 +570,10 @@ impl EmailService {
         };
 
         let mut form_params = vec![
-            ("from", format!("{} <{}>", config.from_name, config.from_address)),
+            (
+                "from",
+                format!("{} <{}>", config.from_name, config.from_address),
+            ),
             ("to", message.to),
             ("subject", message.subject),
             ("text", message.text_body),
@@ -592,7 +597,10 @@ impl EmailService {
             struct MailgunResponse {
                 id: Option<String>,
             }
-            let result: MailgunResponse = response.json().await.unwrap_or(MailgunResponse { id: None });
+            let result: MailgunResponse = response
+                .json()
+                .await
+                .unwrap_or(MailgunResponse { id: None });
             Ok(EmailDeliveryResult {
                 success: true,
                 message_id: result.id,

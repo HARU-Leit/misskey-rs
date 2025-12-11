@@ -21,8 +21,8 @@
 //! ```
 
 use rsa::{
-    pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey, LineEnding},
     RsaPrivateKey, RsaPublicKey,
+    pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey, LineEnding},
 };
 
 use crate::{AppError, AppResult};

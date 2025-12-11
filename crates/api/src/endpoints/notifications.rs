@@ -1,6 +1,6 @@
 //! Notifications endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_db::entities::notification::{Model as NotificationModel, NotificationType};
 use serde::{Deserialize, Serialize};
@@ -56,7 +56,6 @@ pub struct ListNotificationsRequest {
     pub unread_only: bool,
 
     // === Advanced filters (上位互換) ===
-
     /// Include only these notification types
     pub include_types: Option<Vec<NotificationTypeFilter>>,
     /// Exclude these notification types
@@ -220,10 +219,7 @@ async fn unread_count(
     AuthUser(user): AuthUser,
     State(state): State<AppState>,
 ) -> AppResult<ApiResponse<UnreadCountResponse>> {
-    let count = state
-        .notification_service
-        .count_unread(&user.id)
-        .await?;
+    let count = state.notification_service.count_unread(&user.id).await?;
     Ok(ApiResponse::ok(UnreadCountResponse { count }))
 }
 
@@ -252,10 +248,7 @@ async fn delete_all_notifications(
     AuthUser(user): AuthUser,
     State(state): State<AppState>,
 ) -> AppResult<ApiResponse<DeleteAllResponse>> {
-    let count = state
-        .notification_service
-        .delete_all(&user.id)
-        .await?;
+    let count = state.notification_service.delete_all(&user.id).await?;
     Ok(ApiResponse::ok(DeleteAllResponse { count }))
 }
 

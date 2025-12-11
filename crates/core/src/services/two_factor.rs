@@ -1,8 +1,8 @@
 //! Two-factor authentication service.
 
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
+    password_hash::{PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use misskey_common::{AppError, AppResult};
 use misskey_db::entities::user_profile;
@@ -97,10 +97,7 @@ impl TwoFactorService {
         issuer: &str,
     ) -> AppResult<TwoFactorSetupResponse> {
         // Check if already enabled
-        let profile = self
-            .profile_repo
-            .get_by_user_id(user_id)
-            .await?;
+        let profile = self.profile_repo.get_by_user_id(user_id).await?;
 
         if profile.two_factor_enabled {
             return Err(AppError::Validation(
@@ -118,7 +115,9 @@ impl TwoFactorService {
             TOTP_DIGITS,
             TOTP_SKEW,
             TOTP_STEP,
-            secret.to_bytes().map_err(|e| AppError::Internal(e.to_string()))?,
+            secret
+                .to_bytes()
+                .map_err(|e| AppError::Internal(e.to_string()))?,
             Some(issuer.to_string()),
             username.to_string(),
         )
@@ -163,7 +162,9 @@ impl TwoFactorService {
 
         // Verify the token
         if !self.verify_totp(&pending_secret, &input.token)? {
-            return Err(AppError::Validation("Invalid verification code".to_string()));
+            return Err(AppError::Validation(
+                "Invalid verification code".to_string(),
+            ));
         }
 
         // Generate backup codes
@@ -183,11 +184,7 @@ impl TwoFactorService {
     }
 
     /// Disable 2FA for a user.
-    pub async fn disable(
-        &self,
-        user_id: &str,
-        input: DisableTwoFactorInput,
-    ) -> AppResult<()> {
+    pub async fn disable(&self, user_id: &str, input: DisableTwoFactorInput) -> AppResult<()> {
         let profile = self.profile_repo.get_by_user_id(user_id).await?;
 
         if !profile.two_factor_enabled {
@@ -230,11 +227,7 @@ impl TwoFactorService {
     }
 
     /// Verify a 2FA token during login.
-    pub async fn verify(
-        &self,
-        user_id: &str,
-        token: &str,
-    ) -> AppResult<bool> {
+    pub async fn verify(&self, user_id: &str, token: &str) -> AppResult<bool> {
         let profile = self.profile_repo.get_by_user_id(user_id).await?;
 
         if !profile.two_factor_enabled {
@@ -254,7 +247,10 @@ impl TwoFactorService {
         }
 
         // Try backup code
-        if self.verify_and_consume_backup_code(user_id, &profile, token).await? {
+        if self
+            .verify_and_consume_backup_code(user_id, &profile, token)
+            .await?
+        {
             return Ok(true);
         }
 
@@ -294,7 +290,9 @@ impl TwoFactorService {
         let profile = self.profile_repo.get_by_user_id(user_id).await?;
 
         if profile.two_factor_pending.is_none() {
-            return Err(AppError::Validation("No pending 2FA setup to cancel".to_string()));
+            return Err(AppError::Validation(
+                "No pending 2FA setup to cancel".to_string(),
+            ));
         }
 
         let mut active: user_profile::ActiveModel = profile.into();
@@ -382,7 +380,10 @@ impl TwoFactorService {
 
         for hash in &hashed_codes {
             if let Ok(parsed_hash) = argon2::password_hash::PasswordHash::new(hash) {
-                if argon2.verify_password(code.as_bytes(), &parsed_hash).is_ok() {
+                if argon2
+                    .verify_password(code.as_bytes(), &parsed_hash)
+                    .is_ok()
+                {
                     return Ok(true);
                 }
             }
@@ -408,7 +409,10 @@ impl TwoFactorService {
         let mut found_index = None;
         for (i, hash) in hashed_codes.iter().enumerate() {
             if let Ok(parsed_hash) = argon2::password_hash::PasswordHash::new(hash) {
-                if argon2.verify_password(code.as_bytes(), &parsed_hash).is_ok() {
+                if argon2
+                    .verify_password(code.as_bytes(), &parsed_hash)
+                    .is_ok()
+                {
                     found_index = Some(i);
                     break;
                 }

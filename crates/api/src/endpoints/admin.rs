@@ -1,9 +1,13 @@
 //! Admin/Moderation endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
-use misskey_core::{CreateReportInput, CreateSuspensionInput, ReportStatus, ResolveReportInput, UpdateInstanceInput};
-use misskey_db::entities::{abuse_report, instance, meta_settings, registration_approval, user_suspension};
+use misskey_core::{
+    CreateReportInput, CreateSuspensionInput, ReportStatus, ResolveReportInput, UpdateInstanceInput,
+};
+use misskey_db::entities::{
+    abuse_report, instance, meta_settings, registration_approval, user_suspension,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{extractors::AuthUser, middleware::AppState, response::ApiResponse};
@@ -446,7 +450,8 @@ async fn get_reports(
         .get_reports(status, req.limit.min(100), req.offset)
         .await?;
 
-    let responses: Vec<ReportResponse> = reports.into_iter().map(std::convert::Into::into).collect();
+    let responses: Vec<ReportResponse> =
+        reports.into_iter().map(std::convert::Into::into).collect();
 
     Ok(ApiResponse::ok(responses))
 }
@@ -481,7 +486,7 @@ async fn resolve_report(
         _ => {
             return Err(misskey_common::AppError::BadRequest(
                 "Invalid resolution status".to_string(),
-            ))
+            ));
         }
     };
 
@@ -555,7 +560,10 @@ async fn get_suspensions(
         .get_active_suspensions(req.limit.min(100), req.offset)
         .await?;
 
-    let responses: Vec<SuspensionResponse> = suspensions.into_iter().map(std::convert::Into::into).collect();
+    let responses: Vec<SuspensionResponse> = suspensions
+        .into_iter()
+        .map(std::convert::Into::into)
+        .collect();
 
     Ok(ApiResponse::ok(responses))
 }
@@ -604,15 +612,29 @@ async fn list_instances(
 
     let limit = req.limit.min(100);
     let instances = if req.blocked == Some(true) {
-        state.instance_service.list_blocked(limit, req.offset).await?
+        state
+            .instance_service
+            .list_blocked(limit, req.offset)
+            .await?
     } else if req.silenced == Some(true) {
-        state.instance_service.list_silenced(limit, req.offset).await?
+        state
+            .instance_service
+            .list_silenced(limit, req.offset)
+            .await?
     } else if req.suspended == Some(true) {
-        state.instance_service.list_suspended(limit, req.offset).await?
+        state
+            .instance_service
+            .list_suspended(limit, req.offset)
+            .await?
     } else {
         state
             .instance_service
-            .list_all(limit, req.offset, req.sort.as_deref(), req.sort_order.as_deref())
+            .list_all(
+                limit,
+                req.offset,
+                req.sort.as_deref(),
+                req.sort_order.as_deref(),
+            )
             .await?
     };
 

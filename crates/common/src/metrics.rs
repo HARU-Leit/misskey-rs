@@ -3,8 +3,8 @@
 //! Provides application-level metrics for monitoring performance,
 //! tracking usage patterns, and debugging issues.
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 /// Global metrics instance.
@@ -249,9 +249,7 @@ impl Metrics {
             federation_activities_delivered: self
                 .federation_activities_delivered
                 .load(Ordering::Relaxed),
-            federation_delivery_failures: self
-                .federation_delivery_failures
-                .load(Ordering::Relaxed),
+            federation_delivery_failures: self.federation_delivery_failures.load(Ordering::Relaxed),
             federation_cache_hit_rate: self.cache_hit_rate(),
             federation_replay_attacks_blocked: self
                 .federation_replay_attacks_blocked
@@ -264,9 +262,7 @@ impl Metrics {
             users_registered: self.users_registered.load(Ordering::Relaxed),
             follows_created: self.follows_created.load(Ordering::Relaxed),
 
-            websocket_connections_active: self
-                .websocket_connections_active
-                .load(Ordering::Relaxed),
+            websocket_connections_active: self.websocket_connections_active.load(Ordering::Relaxed),
             websocket_messages_sent: self.websocket_messages_sent.load(Ordering::Relaxed),
             sse_connections_active: self.sse_connections_active.load(Ordering::Relaxed),
 
@@ -283,22 +279,14 @@ impl Metrics {
     fn average_latency_us(&self) -> u64 {
         let total = self.http_request_latency_us_total.load(Ordering::Relaxed);
         let count = self.http_request_latency_count.load(Ordering::Relaxed);
-        if count > 0 {
-            total / count
-        } else {
-            0
-        }
+        if count > 0 { total / count } else { 0 }
     }
 
     /// Calculate average database query time.
     fn average_db_query_time_us(&self) -> u64 {
         let total = self.db_query_time_us_total.load(Ordering::Relaxed);
         let count = self.db_query_count.load(Ordering::Relaxed);
-        if count > 0 {
-            total / count
-        } else {
-            0
-        }
+        if count > 0 { total / count } else { 0 }
     }
 
     /// Calculate cache hit rate.
@@ -317,11 +305,7 @@ impl Metrics {
     fn average_search_time_us(&self) -> u64 {
         let total = self.search_time_us_total.load(Ordering::Relaxed);
         let count = self.search_queries_total.load(Ordering::Relaxed);
-        if count > 0 {
-            total / count
-        } else {
-            0
-        }
+        if count > 0 { total / count } else { 0 }
     }
 
     /// Export metrics in Prometheus format.
@@ -408,9 +392,8 @@ impl Metrics {
             snapshot.federation_cache_hit_rate
         ));
 
-        output.push_str(
-            "# HELP misskey_federation_replay_attacks_blocked Replay attacks blocked\n",
-        );
+        output
+            .push_str("# HELP misskey_federation_replay_attacks_blocked Replay attacks blocked\n");
         output.push_str("# TYPE misskey_federation_replay_attacks_blocked counter\n");
         output.push_str(&format!(
             "misskey_federation_replay_attacks_blocked {}\n",

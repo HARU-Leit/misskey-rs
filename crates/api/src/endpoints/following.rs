@@ -1,6 +1,6 @@
 //! Following endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_core::FollowResult;
 use serde::{Deserialize, Serialize};
@@ -27,7 +27,10 @@ async fn follow(
     State(state): State<AppState>,
     Json(req): Json<FollowRequest>,
 ) -> AppResult<ApiResponse<FollowResponse>> {
-    let result = state.following_service.follow(&user.id, &req.user_id).await?;
+    let result = state
+        .following_service
+        .follow(&user.id, &req.user_id)
+        .await?;
 
     let status = match &result {
         FollowResult::Following => {

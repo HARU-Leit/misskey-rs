@@ -24,11 +24,7 @@ impl MigrationTrait for Migration {
                             .string_len(32)
                             .not_null(),
                     )
-                    .col(
-                        ColumnDef::new(DriveFolder::Name)
-                            .string_len(256)
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(DriveFolder::Name).string_len(256).not_null())
                     .col(ColumnDef::new(DriveFolder::ParentId).string_len(32).null())
                     .col(
                         ColumnDef::new(DriveFolder::CreatedAt)

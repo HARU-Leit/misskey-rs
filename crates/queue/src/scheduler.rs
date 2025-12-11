@@ -60,8 +60,7 @@ impl Default for SchedulerConfig {
 }
 
 /// Scheduler state for tracking job runs.
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct SchedulerState {
     pub last_mute_cleanup: Option<DateTime<Utc>>,
     pub last_health_check: Option<DateTime<Utc>>,
@@ -70,7 +69,6 @@ pub struct SchedulerState {
     pub last_scheduled_note_process: Option<DateTime<Utc>>,
     pub last_scheduled_note_cleanup: Option<DateTime<Utc>>,
 }
-
 
 /// Job executor trait for scheduled jobs.
 #[async_trait::async_trait]
@@ -91,7 +89,9 @@ pub trait JobExecutor: Send + Sync {
     ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>>;
 
     /// Process scheduled notes that are due for posting.
-    async fn process_scheduled_notes(&self) -> Result<u64, Box<dyn std::error::Error + Send + Sync>>;
+    async fn process_scheduled_notes(
+        &self,
+    ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>>;
 
     /// Clean up old completed scheduled notes.
     async fn cleanup_scheduled_notes(
@@ -101,10 +101,7 @@ pub trait JobExecutor: Send + Sync {
 }
 
 /// Run the scheduler with the given configuration and executor.
-pub async fn run_scheduler<E: JobExecutor + 'static>(
-    config: SchedulerConfig,
-    executor: Arc<E>,
-) {
+pub async fn run_scheduler<E: JobExecutor + 'static>(config: SchedulerConfig, executor: Arc<E>) {
     let executor_mute = executor.clone();
     let executor_health = executor.clone();
     let executor_chart = executor.clone();
@@ -169,7 +166,11 @@ pub async fn run_scheduler<E: JobExecutor + 'static>(
                 match executor_note.cleanup_old_notes(note_retention_days).await {
                     Ok(count) => {
                         if count > 0 {
-                            tracing::info!(count, retention_days = note_retention_days, "Cleaned up old notes");
+                            tracing::info!(
+                                count,
+                                retention_days = note_retention_days,
+                                "Cleaned up old notes"
+                            );
                         }
                     }
                     Err(e) => {
@@ -203,10 +204,17 @@ pub async fn run_scheduler<E: JobExecutor + 'static>(
         let mut interval = interval(Duration::from_secs(86400)); // Daily
         loop {
             interval.tick().await;
-            match executor_scheduled_cleanup.cleanup_scheduled_notes(scheduled_note_retention_days).await {
+            match executor_scheduled_cleanup
+                .cleanup_scheduled_notes(scheduled_note_retention_days)
+                .await
+            {
                 Ok(count) => {
                     if count > 0 {
-                        tracing::info!(count, retention_days = scheduled_note_retention_days, "Cleaned up old scheduled notes");
+                        tracing::info!(
+                            count,
+                            retention_days = scheduled_note_retention_days,
+                            "Cleaned up old scheduled notes"
+                        );
                     }
                 }
                 Err(e) => {

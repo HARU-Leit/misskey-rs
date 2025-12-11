@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{poll, poll_vote, Poll, PollVote};
+use crate::entities::{Poll, PollVote, poll, poll_vote};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
@@ -16,7 +16,7 @@ pub struct PollRepository {
 
 impl PollRepository {
     /// Create a new poll repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
@@ -70,7 +70,7 @@ pub struct PollVoteRepository {
 
 impl PollVoteRepository {
     /// Create a new poll vote repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }

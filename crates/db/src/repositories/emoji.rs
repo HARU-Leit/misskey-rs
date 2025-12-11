@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{emoji, Emoji};
+use crate::entities::{Emoji, emoji};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, PaginatorTrait,
@@ -17,7 +17,7 @@ pub struct EmojiRepository {
 
 impl EmojiRepository {
     /// Create a new emoji repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
@@ -184,10 +184,7 @@ impl EmojiRepository {
     }
 
     /// Import an emoji from a remote instance.
-    pub async fn import_remote(
-        &self,
-        model: emoji::ActiveModel,
-    ) -> AppResult<emoji::Model> {
+    pub async fn import_remote(&self, model: emoji::ActiveModel) -> AppResult<emoji::Model> {
         // Check if already exists
         let name = model.name.clone().unwrap();
         let host = model.host.clone().unwrap();

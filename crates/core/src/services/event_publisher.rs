@@ -18,14 +18,9 @@ pub enum StreamEvent {
         visibility: String,
     },
     /// A note was deleted.
-    NoteDeleted {
-        id: String,
-        user_id: String,
-    },
+    NoteDeleted { id: String, user_id: String },
     /// A note was updated.
-    NoteUpdated {
-        id: String,
-    },
+    NoteUpdated { id: String },
     /// A user followed another user.
     Followed {
         follower_id: String,

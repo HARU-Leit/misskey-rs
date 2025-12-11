@@ -1,10 +1,10 @@
 //! Push notification service for Web Push.
 
 use chrono::Utc;
-use misskey_db::repositories::PushSubscriptionRepository;
 use misskey_db::entities::push_subscription;
-use serde::{Deserialize, Serialize};
+use misskey_db::repositories::PushSubscriptionRepository;
 use sea_orm::Set;
+use serde::{Deserialize, Serialize};
 
 use misskey_common::{AppError, AppResult};
 
@@ -198,12 +198,18 @@ impl PushNotificationService {
         if let Some(existing) = self.repo.find_by_endpoint(&input.endpoint).await? {
             if existing.user_id == user_id {
                 // Update existing subscription
-                return self.update(user_id, &existing.id, UpdateSubscriptionInput {
-                    types: input.types,
-                    device_name: input.device_name,
-                    quiet_hours_start: None,
-                    quiet_hours_end: None,
-                }).await;
+                return self
+                    .update(
+                        user_id,
+                        &existing.id,
+                        UpdateSubscriptionInput {
+                            types: input.types,
+                            device_name: input.device_name,
+                            quiet_hours_start: None,
+                            quiet_hours_end: None,
+                        },
+                    )
+                    .await;
             } else {
                 // Different user trying to use the same endpoint
                 return Err(AppError::Conflict(
@@ -319,11 +325,18 @@ impl PushNotificationService {
     /// List all subscriptions for a user.
     pub async fn list(&self, user_id: &str) -> AppResult<Vec<PushSubscriptionResponse>> {
         let subscriptions = self.repo.find_by_user_id(user_id).await?;
-        Ok(subscriptions.into_iter().map(|s| self.to_response(s)).collect())
+        Ok(subscriptions
+            .into_iter()
+            .map(|s| self.to_response(s))
+            .collect())
     }
 
     /// Get a subscription by ID.
-    pub async fn get(&self, user_id: &str, subscription_id: &str) -> AppResult<PushSubscriptionResponse> {
+    pub async fn get(
+        &self,
+        user_id: &str,
+        subscription_id: &str,
+    ) -> AppResult<PushSubscriptionResponse> {
         let subscription = self.repo.get_by_id(subscription_id).await?;
 
         if subscription.user_id != user_id {
@@ -375,9 +388,10 @@ impl PushNotificationService {
         subscription: &push_subscription::Model,
         payload: &PushPayload,
     ) -> AppResult<()> {
-        let vapid = self.vapid_config.as_ref().ok_or_else(|| {
-            AppError::BadRequest("VAPID not configured".to_string())
-        })?;
+        let vapid = self
+            .vapid_config
+            .as_ref()
+            .ok_or_else(|| AppError::BadRequest("VAPID not configured".to_string()))?;
 
         // Build Web Push message using VAPID
         let payload_json = serde_json::to_string(payload)
@@ -395,11 +409,15 @@ impl PushNotificationService {
         // 4. Build VAPID JWT for authorization
 
         // Placeholder that shows the structure of what we need to send
-        let _ = self.http_client
+        let _ = self
+            .http_client
             .post(&subscription.endpoint)
             .header("TTL", "86400")
             .header("Content-Encoding", "aes128gcm")
-            .header("Authorization", format!("vapid t={}, k={}", "jwt_token", vapid.public_key))
+            .header(
+                "Authorization",
+                format!("vapid t={}, k={}", "jwt_token", vapid.public_key),
+            )
             .body(payload_json)
             .build()
             .map_err(|e| AppError::Internal(format!("Failed to build request: {}", e)))?;

@@ -14,15 +14,34 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Webhook::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Webhook::Id).string().not_null().primary_key())
+                    .col(
+                        ColumnDef::new(Webhook::Id)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
                     .col(ColumnDef::new(Webhook::UserId).string().not_null())
                     .col(ColumnDef::new(Webhook::Name).string().not_null())
                     .col(ColumnDef::new(Webhook::Url).text().not_null())
                     .col(ColumnDef::new(Webhook::Secret).string().not_null())
                     .col(ColumnDef::new(Webhook::Events).json_binary().not_null())
-                    .col(ColumnDef::new(Webhook::IsActive).boolean().not_null().default(true))
-                    .col(ColumnDef::new(Webhook::LastTriggeredAt).timestamp_with_time_zone().null())
-                    .col(ColumnDef::new(Webhook::FailureCount).integer().not_null().default(0))
+                    .col(
+                        ColumnDef::new(Webhook::IsActive)
+                            .boolean()
+                            .not_null()
+                            .default(true),
+                    )
+                    .col(
+                        ColumnDef::new(Webhook::LastTriggeredAt)
+                            .timestamp_with_time_zone()
+                            .null(),
+                    )
+                    .col(
+                        ColumnDef::new(Webhook::FailureCount)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
                     .col(ColumnDef::new(Webhook::LastError).text().null())
                     .col(
                         ColumnDef::new(Webhook::CreatedAt)
@@ -30,7 +49,11 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default(Expr::current_timestamp()),
                     )
-                    .col(ColumnDef::new(Webhook::UpdatedAt).timestamp_with_time_zone().null())
+                    .col(
+                        ColumnDef::new(Webhook::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .null(),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_webhook_user")

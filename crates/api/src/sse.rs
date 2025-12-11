@@ -8,16 +8,16 @@ use std::convert::Infallible;
 use std::time::Duration;
 
 use axum::{
+    Router,
     extract::State,
     response::sse::{Event, KeepAlive, Sse},
     routing::get,
-    Router,
 };
 use futures::stream::{self, Stream};
 use serde::Serialize;
 use tokio::sync::broadcast;
-use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
+use tokio_stream::wrappers::BroadcastStream;
 
 use crate::{extractors::AuthUser, middleware::AppState};
 
@@ -65,7 +65,9 @@ pub struct SseBroadcaster {
     /// Local timeline events.
     pub local: broadcast::Sender<SseEvent>,
     /// User-specific events (keyed by user ID).
-    user_channels: std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<String, broadcast::Sender<SseEvent>>>>,
+    user_channels: std::sync::Arc<
+        tokio::sync::RwLock<std::collections::HashMap<String, broadcast::Sender<SseEvent>>>,
+    >,
 }
 
 impl SseBroadcaster {
@@ -78,7 +80,9 @@ impl SseBroadcaster {
         Self {
             global,
             local,
-            user_channels: std::sync::Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+            user_channels: std::sync::Arc::new(tokio::sync::RwLock::new(
+                std::collections::HashMap::new(),
+            )),
         }
     }
 
@@ -87,9 +91,10 @@ impl SseBroadcaster {
         let mut channels = self.user_channels.write().await;
 
         if let Some(sender) = channels.get(user_id)
-            && sender.receiver_count() > 0 {
-                return sender.clone();
-            }
+            && sender.receiver_count() > 0
+        {
+            return sender.clone();
+        }
 
         let (sender, _) = broadcast::channel(100);
         channels.insert(user_id.to_string(), sender.clone());
@@ -133,14 +138,13 @@ async fn global_timeline(
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let rx = state.sse_broadcaster.global.subscribe();
 
-    let stream = BroadcastStream::new(rx)
-        .filter_map(|result| {
-            result.ok().map(|event| {
-                Ok(Event::default()
-                    .json_data(&event)
-                    .unwrap_or_else(|_| Event::default().data("error")))
-            })
-        });
+    let stream = BroadcastStream::new(rx).filter_map(|result| {
+        result.ok().map(|event| {
+            Ok(Event::default()
+                .json_data(&event)
+                .unwrap_or_else(|_| Event::default().data("error")))
+        })
+    });
 
     // Add initial connected event
     let initial = stream::once(async {
@@ -162,14 +166,13 @@ async fn local_timeline(
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let rx = state.sse_broadcaster.local.subscribe();
 
-    let stream = BroadcastStream::new(rx)
-        .filter_map(|result| {
-            result.ok().map(|event| {
-                Ok(Event::default()
-                    .json_data(&event)
-                    .unwrap_or_else(|_| Event::default().data("error")))
-            })
-        });
+    let stream = BroadcastStream::new(rx).filter_map(|result| {
+        result.ok().map(|event| {
+            Ok(Event::default()
+                .json_data(&event)
+                .unwrap_or_else(|_| Event::default().data("error")))
+        })
+    });
 
     let initial = stream::once(async {
         Ok(Event::default()
@@ -192,14 +195,13 @@ async fn user_stream(
     let sender = state.sse_broadcaster.user_channel(&user.id).await;
     let rx = sender.subscribe();
 
-    let stream = BroadcastStream::new(rx)
-        .filter_map(|result| {
-            result.ok().map(|event| {
-                Ok(Event::default()
-                    .json_data(&event)
-                    .unwrap_or_else(|_| Event::default().data("error")))
-            })
-        });
+    let stream = BroadcastStream::new(rx).filter_map(|result| {
+        result.ok().map(|event| {
+            Ok(Event::default()
+                .json_data(&event)
+                .unwrap_or_else(|_| Event::default().data("error")))
+        })
+    });
 
     let initial = stream::once(async {
         Ok(Event::default()

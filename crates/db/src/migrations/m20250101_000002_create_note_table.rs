@@ -13,24 +13,79 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Note::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Note::Id).string_len(32).not_null().primary_key())
+                    .col(
+                        ColumnDef::new(Note::Id)
+                            .string_len(32)
+                            .not_null()
+                            .primary_key(),
+                    )
                     .col(ColumnDef::new(Note::UserId).string_len(32).not_null())
                     .col(ColumnDef::new(Note::UserHost).string_len(256))
                     .col(ColumnDef::new(Note::Text).text())
                     .col(ColumnDef::new(Note::Cw).string_len(512))
-                    .col(ColumnDef::new(Note::Visibility).string_len(16).not_null().default("public"))
+                    .col(
+                        ColumnDef::new(Note::Visibility)
+                            .string_len(16)
+                            .not_null()
+                            .default("public"),
+                    )
                     .col(ColumnDef::new(Note::ReplyId).string_len(32))
                     .col(ColumnDef::new(Note::RenoteId).string_len(32))
                     .col(ColumnDef::new(Note::ThreadId).string_len(32))
-                    .col(ColumnDef::new(Note::Mentions).json_binary().not_null().default("[]"))
-                    .col(ColumnDef::new(Note::VisibleUserIds).json_binary().not_null().default("[]"))
-                    .col(ColumnDef::new(Note::FileIds).json_binary().not_null().default("[]"))
-                    .col(ColumnDef::new(Note::Tags).json_binary().not_null().default("[]"))
-                    .col(ColumnDef::new(Note::Reactions).json_binary().not_null().default("{}"))
-                    .col(ColumnDef::new(Note::RepliesCount).integer().not_null().default(0))
-                    .col(ColumnDef::new(Note::RenoteCount).integer().not_null().default(0))
-                    .col(ColumnDef::new(Note::ReactionCount).integer().not_null().default(0))
-                    .col(ColumnDef::new(Note::IsLocal).boolean().not_null().default(true))
+                    .col(
+                        ColumnDef::new(Note::Mentions)
+                            .json_binary()
+                            .not_null()
+                            .default("[]"),
+                    )
+                    .col(
+                        ColumnDef::new(Note::VisibleUserIds)
+                            .json_binary()
+                            .not_null()
+                            .default("[]"),
+                    )
+                    .col(
+                        ColumnDef::new(Note::FileIds)
+                            .json_binary()
+                            .not_null()
+                            .default("[]"),
+                    )
+                    .col(
+                        ColumnDef::new(Note::Tags)
+                            .json_binary()
+                            .not_null()
+                            .default("[]"),
+                    )
+                    .col(
+                        ColumnDef::new(Note::Reactions)
+                            .json_binary()
+                            .not_null()
+                            .default("{}"),
+                    )
+                    .col(
+                        ColumnDef::new(Note::RepliesCount)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(
+                        ColumnDef::new(Note::RenoteCount)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(
+                        ColumnDef::new(Note::ReactionCount)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(
+                        ColumnDef::new(Note::IsLocal)
+                            .boolean()
+                            .not_null()
+                            .default(true),
+                    )
                     .col(ColumnDef::new(Note::Uri).string_len(1024))
                     .col(ColumnDef::new(Note::Url).string_len(1024))
                     .col(

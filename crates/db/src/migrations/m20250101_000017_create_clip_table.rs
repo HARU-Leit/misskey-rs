@@ -14,13 +14,33 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Clip::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Clip::Id).string_len(32).not_null().primary_key())
+                    .col(
+                        ColumnDef::new(Clip::Id)
+                            .string_len(32)
+                            .not_null()
+                            .primary_key(),
+                    )
                     .col(ColumnDef::new(Clip::UserId).string_len(32).not_null())
                     .col(ColumnDef::new(Clip::Name).string_len(128).not_null())
                     .col(ColumnDef::new(Clip::Description).text())
-                    .col(ColumnDef::new(Clip::IsPublic).boolean().not_null().default(false))
-                    .col(ColumnDef::new(Clip::NotesCount).integer().not_null().default(0))
-                    .col(ColumnDef::new(Clip::DisplayOrder).integer().not_null().default(0))
+                    .col(
+                        ColumnDef::new(Clip::IsPublic)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
+                    .col(
+                        ColumnDef::new(Clip::NotesCount)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(
+                        ColumnDef::new(Clip::DisplayOrder)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
                     .col(
                         ColumnDef::new(Clip::CreatedAt)
                             .timestamp_with_time_zone()
@@ -71,10 +91,20 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(ClipNote::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(ClipNote::Id).string_len(32).not_null().primary_key())
+                    .col(
+                        ColumnDef::new(ClipNote::Id)
+                            .string_len(32)
+                            .not_null()
+                            .primary_key(),
+                    )
                     .col(ColumnDef::new(ClipNote::ClipId).string_len(32).not_null())
                     .col(ColumnDef::new(ClipNote::NoteId).string_len(32).not_null())
-                    .col(ColumnDef::new(ClipNote::DisplayOrder).integer().not_null().default(0))
+                    .col(
+                        ColumnDef::new(ClipNote::DisplayOrder)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
                     .col(ColumnDef::new(ClipNote::Comment).text())
                     .col(
                         ColumnDef::new(ClipNote::CreatedAt)

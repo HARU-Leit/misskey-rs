@@ -23,7 +23,7 @@ pub struct CreateListInput {
 
 impl UserListService {
     /// Create a new user list service.
-    #[must_use] 
+    #[must_use]
     pub const fn new(list_repo: UserListRepository, user_repo: UserRepository) -> Self {
         Self {
             list_repo,
@@ -33,7 +33,11 @@ impl UserListService {
     }
 
     /// Create a new list.
-    pub async fn create(&self, user_id: &str, input: CreateListInput) -> AppResult<user_list::Model> {
+    pub async fn create(
+        &self,
+        user_id: &str,
+        input: CreateListInput,
+    ) -> AppResult<user_list::Model> {
         // Validate name
         let name = input.name.trim();
         if name.is_empty() {

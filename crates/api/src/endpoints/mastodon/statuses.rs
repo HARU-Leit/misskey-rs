@@ -15,9 +15,9 @@
 //! - POST /api/v1/statuses/:id/unbookmark - Unbookmark a status
 
 use axum::{
+    Json, Router,
     extract::{Path, State},
     routing::{delete, get, post},
-    Json, Router,
 };
 use misskey_common::{AppError, AppResult};
 use misskey_core::note::CreateNoteInput;
@@ -534,7 +534,10 @@ async fn bookmark_status(
     };
 
     // add_note(clip_id, note_id, user_id, comment)
-    let _ = state.clip_service.add_note(&bookmark_clip.id, &id, &user.id, None).await;
+    let _ = state
+        .clip_service
+        .add_note(&bookmark_clip.id, &id, &user.id, None)
+        .await;
 
     let note = state.note_service.get(&id).await?;
     let author = state.user_service.get(&note.user_id).await.ok();
@@ -557,7 +560,10 @@ async fn unbookmark_status(
     let clips = state.clip_service.list_my_clips(&user.id, 100, 0).await?;
     if let Some(clip) = clips.into_iter().find(|c| c.name == "Bookmarks") {
         // remove_note(clip_id, note_id, user_id)
-        let _ = state.clip_service.remove_note(&clip.id, &id, &user.id).await;
+        let _ = state
+            .clip_service
+            .remove_note(&clip.id, &id, &user.id)
+            .await;
     }
 
     let note = state.note_service.get(&id).await?;

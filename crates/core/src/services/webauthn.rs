@@ -3,8 +3,8 @@
 //! This service handles security key registration and authentication
 //! using the WebAuthn standard.
 
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
-use misskey_common::{id::IdGenerator, AppError, AppResult};
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::security_key;
 use misskey_db::repositories::{SecurityKeyRepository, UserProfileRepository, UserRepository};
 use sea_orm::Set;
@@ -186,10 +186,7 @@ impl WebAuthnService {
     // ==================== Registration ====================
 
     /// Begin security key registration for a user.
-    pub async fn begin_registration(
-        &self,
-        user_id: &str,
-    ) -> AppResult<BeginRegistrationResponse> {
+    pub async fn begin_registration(&self, user_id: &str) -> AppResult<BeginRegistrationResponse> {
         // Check if user exists
         let user = self.user_repo.get_by_id(user_id).await?;
 
@@ -440,19 +437,16 @@ impl WebAuthnService {
     }
 
     /// Rename a security key.
-    pub async fn rename_key(
-        &self,
-        user_id: &str,
-        key_id: &str,
-        name: &str,
-    ) -> AppResult<()> {
+    pub async fn rename_key(&self, user_id: &str, key_id: &str, name: &str) -> AppResult<()> {
         if name.is_empty() || name.len() > 100 {
             return Err(AppError::Validation(
                 "Name must be between 1 and 100 characters".to_string(),
             ));
         }
 
-        self.security_key_repo.update_name(key_id, user_id, name).await
+        self.security_key_repo
+            .update_name(key_id, user_id, name)
+            .await
     }
 
     /// Delete a security key.
@@ -487,10 +481,8 @@ mod tests {
 
     #[test]
     fn test_webauthn_config_from_url() {
-        let config = WebAuthnConfig::from_server_url(
-            "https://example.com",
-            "Example Server",
-        ).unwrap();
+        let config =
+            WebAuthnConfig::from_server_url("https://example.com", "Example Server").unwrap();
 
         assert_eq!(config.rp_id, "example.com");
         assert_eq!(config.rp_name, "Example Server");

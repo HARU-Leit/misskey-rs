@@ -2,14 +2,16 @@
 
 #![allow(missing_docs)]
 
-use axum::{
-    body::Body,
-    extract::State,
-    http::Request,
-    middleware::Next,
-    response::Response,
+use axum::{body::Body, extract::State, http::Request, middleware::Next, response::Response};
+use misskey_core::{
+    AccountService, AnnouncementService, AntennaService, BlockingService, ChannelService,
+    ClipService, DriveService, EmojiService, FollowingService, GalleryService, GroupService,
+    HashtagService, InstanceService, MessagingService, MetaSettingsService, ModerationService,
+    MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService,
+    PageService, PollService, PushNotificationService, ReactionService,
+    RegistrationApprovalService, ScheduledNoteService, TranslationService, TwoFactorService,
+    UserListService, UserService, WebAuthnService, WebhookService, WordFilterService,
 };
-use misskey_core::{AccountService, AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DriveService, EmojiService, FollowingService, GalleryService, GroupService, HashtagService, InstanceService, MessagingService, MetaSettingsService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService, PageService, PollService, PushNotificationService, ReactionService, RegistrationApprovalService, ScheduledNoteService, TranslationService, TwoFactorService, UserListService, UserService, WebAuthnService, WebhookService, WordFilterService};
 
 use crate::sse::SseBroadcaster;
 use crate::streaming::StreamingState;
@@ -64,12 +66,13 @@ pub async fn auth_middleware(
     // Try to extract token from header
     if let Some(auth_header) = req.headers().get("Authorization")
         && let Ok(auth_str) = auth_header.to_str()
-            && let Some(token) = auth_str.strip_prefix("Bearer ") {
-                // Authenticate user by token
-                if let Ok(user) = state.user_service.authenticate_by_token(token).await {
-                    req.extensions_mut().insert(user);
-                }
-            }
+        && let Some(token) = auth_str.strip_prefix("Bearer ")
+    {
+        // Authenticate user by token
+        if let Ok(user) = state.user_service.authenticate_by_token(token).await {
+            req.extensions_mut().insert(user);
+        }
+    }
 
     // Also check i query parameter (Misskey compatibility)
     // This would require parsing the query string or request body

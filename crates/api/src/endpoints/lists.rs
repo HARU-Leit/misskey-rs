@@ -1,6 +1,6 @@
 //! User lists endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_core::CreateListInput;
 use misskey_db::entities::user_list;

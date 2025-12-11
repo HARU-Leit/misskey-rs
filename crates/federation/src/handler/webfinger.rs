@@ -1,10 +1,10 @@
 //! `WebFinger` handler for actor discovery.
 
 use axum::{
+    Json,
     extract::{Query, State},
     http::StatusCode,
     response::IntoResponse,
-    Json,
 };
 use misskey_db::repositories::UserRepository;
 use serde::{Deserialize, Serialize};
@@ -47,7 +47,7 @@ pub struct WebfingerState {
 
 impl WebfingerState {
     /// Create a new `WebFinger` state.
-    #[must_use] 
+    #[must_use]
     pub const fn new(domain: String, base_url: Url, user_repo: UserRepository) -> Self {
         Self {
             domain,

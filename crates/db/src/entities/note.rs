@@ -117,18 +117,10 @@ pub enum Relation {
     )]
     User,
 
-    #[sea_orm(
-        belongs_to = "Entity",
-        from = "Column::ReplyId",
-        to = "Column::Id"
-    )]
+    #[sea_orm(belongs_to = "Entity", from = "Column::ReplyId", to = "Column::Id")]
     Reply,
 
-    #[sea_orm(
-        belongs_to = "Entity",
-        from = "Column::RenoteId",
-        to = "Column::Id"
-    )]
+    #[sea_orm(belongs_to = "Entity", from = "Column::RenoteId", to = "Column::Id")]
     Renote,
 
     #[sea_orm(

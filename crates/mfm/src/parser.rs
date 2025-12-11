@@ -16,11 +16,13 @@ pub struct Mention {
 }
 
 // Regex patterns
-static MENTION_RE: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r"@([a-zA-Z0-9_]+)(?:@([a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]))?").unwrap());
+static MENTION_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r"@([a-zA-Z0-9_]+)(?:@([a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]))?").unwrap()
+});
 
-static HASHTAG_RE: std::sync::LazyLock<Regex> =
-    std::sync::LazyLock::new(|| Regex::new(r"#([a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)").unwrap());
+static HASHTAG_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r"#([a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)").unwrap()
+});
 
 static URL_RE: std::sync::LazyLock<Regex> =
     std::sync::LazyLock::new(|| Regex::new(r"https?://[^\s<>\[\]()]+").unwrap());

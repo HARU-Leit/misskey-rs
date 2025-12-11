@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{drive_folder, DriveFolder};
+use crate::entities::{DriveFolder, drive_folder};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, QueryFilter,
@@ -17,7 +17,7 @@ pub struct DriveFolderRepository {
 
 impl DriveFolderRepository {
     /// Create a new drive folder repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
@@ -38,10 +38,7 @@ impl DriveFolderRepository {
     }
 
     /// Create a new folder.
-    pub async fn create(
-        &self,
-        model: drive_folder::ActiveModel,
-    ) -> AppResult<drive_folder::Model> {
+    pub async fn create(&self, model: drive_folder::ActiveModel) -> AppResult<drive_folder::Model> {
         model
             .insert(self.db.as_ref())
             .await
@@ -49,10 +46,7 @@ impl DriveFolderRepository {
     }
 
     /// Update a folder.
-    pub async fn update(
-        &self,
-        model: drive_folder::ActiveModel,
-    ) -> AppResult<drive_folder::Model> {
+    pub async fn update(&self, model: drive_folder::ActiveModel) -> AppResult<drive_folder::Model> {
         model
             .update(self.db.as_ref())
             .await

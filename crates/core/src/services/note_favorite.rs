@@ -17,7 +17,7 @@ pub struct NoteFavoriteService {
 
 impl NoteFavoriteService {
     /// Create a new note favorite service.
-    #[must_use] 
+    #[must_use]
     pub const fn new(favorite_repo: NoteFavoriteRepository, note_repo: NoteRepository) -> Self {
         Self {
             favorite_repo,
@@ -72,7 +72,9 @@ impl NoteFavoriteService {
         limit: u64,
         until_id: Option<&str>,
     ) -> AppResult<Vec<note_favorite::Model>> {
-        self.favorite_repo.find_by_user(user_id, limit, until_id).await
+        self.favorite_repo
+            .find_by_user(user_id, limit, until_id)
+            .await
     }
 
     /// Count user's favorites.

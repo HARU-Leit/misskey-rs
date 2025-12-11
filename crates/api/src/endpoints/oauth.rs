@@ -1,6 +1,6 @@
 //! OAuth 2.0 endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_core::{
     AuthorizeInput, AuthorizeResponse, AuthorizedAppResponse, CreateAppInput, OAuthAppResponse,
@@ -64,7 +64,10 @@ async fn get_app(
     State(state): State<AppState>,
     Json(req): Json<GetAppRequest>,
 ) -> AppResult<ApiResponse<OAuthAppResponse>> {
-    let app = state.oauth_service.get_app_by_client_id(&req.client_id).await?;
+    let app = state
+        .oauth_service
+        .get_app_by_client_id(&req.client_id)
+        .await?;
     Ok(ApiResponse::ok(app))
 }
 
@@ -96,7 +99,10 @@ async fn delete_app(
     State(state): State<AppState>,
     Json(req): Json<DeleteAppRequest>,
 ) -> AppResult<ApiResponse<()>> {
-    state.oauth_service.delete_app(&user.id, &req.app_id).await?;
+    state
+        .oauth_service
+        .delete_app(&user.id, &req.app_id)
+        .await?;
     Ok(ApiResponse::ok(()))
 }
 

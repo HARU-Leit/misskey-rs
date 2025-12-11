@@ -102,12 +102,8 @@ pub trait ActivityDelivery: Send + Sync {
     /// * `user_id` - The ID of the user who reacted
     /// * `target_inbox` - The inbox URL of the note author
     /// * `activity` - The serialized Like activity
-    async fn queue_like(
-        &self,
-        user_id: &str,
-        target_inbox: &str,
-        activity: Value,
-    ) -> AppResult<()>;
+    async fn queue_like(&self, user_id: &str, target_inbox: &str, activity: Value)
+    -> AppResult<()>;
 
     /// Queue an Announce activity (boost/renote).
     ///

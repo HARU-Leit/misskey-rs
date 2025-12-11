@@ -26,7 +26,7 @@ pub struct DeleteProcessor {
 
 impl DeleteProcessor {
     /// Create a new delete processor.
-    #[must_use] 
+    #[must_use]
     pub const fn new(user_repo: UserRepository, note_repo: NoteRepository) -> Self {
         Self {
             user_repo,
@@ -49,11 +49,12 @@ impl DeleteProcessor {
         if let Some(note) = self.note_repo.find_by_uri(activity.object.as_str()).await? {
             // Verify ownership
             if let Some(ref actor) = actor
-                && note.user_id != actor.id {
-                    return Err(AppError::Forbidden(
-                        "Actor does not own this note".to_string(),
-                    ));
-                }
+                && note.user_id != actor.id
+            {
+                return Err(AppError::Forbidden(
+                    "Actor does not own this note".to_string(),
+                ));
+            }
 
             // Delete the note
             self.note_repo.delete(&note.id).await?;
@@ -68,17 +69,18 @@ impl DeleteProcessor {
 
         // Try to delete as an actor (account deletion)
         if activity.actor == activity.object
-            && let Some(actor) = actor {
-                // Mark user as deleted/suspended
-                self.user_repo.mark_as_deleted(&actor.id).await?;
+            && let Some(actor) = actor
+        {
+            // Mark user as deleted/suspended
+            self.user_repo.mark_as_deleted(&actor.id).await?;
 
-                info!(
-                    user_id = %actor.id,
-                    "Remote user deleted"
-                );
+            info!(
+                user_id = %actor.id,
+                "Remote user deleted"
+            );
 
-                return Ok(DeleteResult::ActorDeleted);
-            }
+            return Ok(DeleteResult::ActorDeleted);
+        }
 
         info!(
             object = %activity.object,

@@ -27,7 +27,7 @@ pub struct CreateActivity {
 
 impl CreateActivity {
     /// Create a new Create activity.
-    #[must_use] 
+    #[must_use]
     pub const fn new(id: Url, actor: Url, object: ApNote, published: DateTime<Utc>) -> Self {
         Self {
             kind: CreateType::Create,

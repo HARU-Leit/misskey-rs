@@ -14,11 +14,24 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(GalleryPost::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(GalleryPost::Id).string().not_null().primary_key())
+                    .col(
+                        ColumnDef::new(GalleryPost::Id)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
                     .col(ColumnDef::new(GalleryPost::UserId).string().not_null())
-                    .col(ColumnDef::new(GalleryPost::Title).string_len(256).not_null())
+                    .col(
+                        ColumnDef::new(GalleryPost::Title)
+                            .string_len(256)
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(GalleryPost::Description).text().null())
-                    .col(ColumnDef::new(GalleryPost::FileIds).json_binary().not_null())
+                    .col(
+                        ColumnDef::new(GalleryPost::FileIds)
+                            .json_binary()
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(GalleryPost::IsSensitive)
                             .boolean()
@@ -37,7 +50,11 @@ impl MigrationTrait for Migration {
                             .timestamp_with_time_zone()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(GalleryPost::UpdatedAt).timestamp_with_time_zone().null())
+                    .col(
+                        ColumnDef::new(GalleryPost::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .null(),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_gallery_post_user")
@@ -86,7 +103,12 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(GalleryLike::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(GalleryLike::Id).string().not_null().primary_key())
+                    .col(
+                        ColumnDef::new(GalleryLike::Id)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
                     .col(ColumnDef::new(GalleryLike::PostId).string().not_null())
                     .col(ColumnDef::new(GalleryLike::UserId).string().not_null())
                     .col(

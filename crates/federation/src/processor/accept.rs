@@ -21,7 +21,7 @@ pub struct AcceptProcessor {
 
 impl AcceptProcessor {
     /// Create a new accept processor.
-    #[must_use] 
+    #[must_use]
     pub const fn new(
         user_repo: UserRepository,
         following_repo: FollowingRepository,
@@ -73,7 +73,10 @@ impl AcceptProcessor {
             .find_by_id(&follow_request.follower_id)
             .await?
             .ok_or_else(|| {
-                AppError::NotFound(format!("Follower not found: {}", follow_request.follower_id))
+                AppError::NotFound(format!(
+                    "Follower not found: {}",
+                    follow_request.follower_id
+                ))
             })?;
 
         // Check if we're already following

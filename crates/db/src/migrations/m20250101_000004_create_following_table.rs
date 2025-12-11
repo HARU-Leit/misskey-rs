@@ -19,8 +19,16 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Following::FollowerId).string_len(32).not_null())
-                    .col(ColumnDef::new(Following::FolloweeId).string_len(32).not_null())
+                    .col(
+                        ColumnDef::new(Following::FollowerId)
+                            .string_len(32)
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(Following::FolloweeId)
+                            .string_len(32)
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Following::FollowerHost).string_len(256))
                     .col(ColumnDef::new(Following::FolloweeHost).string_len(256))
                     .col(ColumnDef::new(Following::FolloweeInbox).string_len(1024))

@@ -20,16 +20,8 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(
-                        ColumnDef::new(Channel::UserId)
-                            .string_len(32)
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(Channel::Name)
-                            .string_len(128)
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(Channel::UserId).string_len(32).not_null())
+                    .col(ColumnDef::new(Channel::Name).string_len(128).not_null())
                     .col(ColumnDef::new(Channel::Description).text())
                     .col(ColumnDef::new(Channel::BannerId).string_len(32))
                     .col(ColumnDef::new(Channel::Color).string_len(16))

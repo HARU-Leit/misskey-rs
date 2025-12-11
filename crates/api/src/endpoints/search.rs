@@ -1,6 +1,6 @@
 //! Search endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_db::entities::{note::Model as NoteModel, user::Model as UserModel};
 use serde::{Deserialize, Serialize};
@@ -114,7 +114,6 @@ pub struct SearchNotesRequest {
     pub host: Option<String>,
 
     // === Advanced filters (上位互換) ===
-
     /// Filter by visibility types
     pub visibility: Option<Vec<SearchVisibility>>,
     /// Filter notes created after this date

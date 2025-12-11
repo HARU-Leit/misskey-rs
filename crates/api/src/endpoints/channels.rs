@@ -1,6 +1,6 @@
 //! Channel endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_core::services::channel::{CreateChannelInput, UpdateChannelInput};
 use misskey_db::entities::channel;

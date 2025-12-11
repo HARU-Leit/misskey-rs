@@ -280,7 +280,10 @@ impl MediaService {
             dimensions,
             format,
             file_size: data.len() as u64,
-            has_alpha: matches!(format, ImageFormat::Png | ImageFormat::WebP | ImageFormat::Gif),
+            has_alpha: matches!(
+                format,
+                ImageFormat::Png | ImageFormat::WebP | ImageFormat::Gif
+            ),
             is_animated: matches!(format, ImageFormat::Gif),
             blurhash: None,
             dominant_color: None,
@@ -291,7 +294,9 @@ impl MediaService {
     /// Detect image format from magic bytes.
     fn detect_image_format(&self, data: &[u8]) -> AppResult<ImageFormat> {
         if data.len() < 12 {
-            return Err(AppError::Validation("Data too short to detect format".to_string()));
+            return Err(AppError::Validation(
+                "Data too short to detect format".to_string(),
+            ));
         }
 
         // JPEG: FF D8 FF
@@ -321,7 +326,9 @@ impl MediaService {
             }
         }
 
-        Err(AppError::Validation("Unknown or unsupported image format".to_string()))
+        Err(AppError::Validation(
+            "Unknown or unsupported image format".to_string(),
+        ))
     }
 
     /// Generate thumbnail from image data.
@@ -348,7 +355,11 @@ impl MediaService {
 
         Ok(ProcessedImage {
             data: data.to_vec(), // Would be processed data
-            format: if self.config.enable_webp_conversion { ImageFormat::WebP } else { format },
+            format: if self.config.enable_webp_conversion {
+                ImageFormat::WebP
+            } else {
+                format
+            },
             dimensions: ImageDimensions {
                 width: max_width,
                 height: max_height,
@@ -383,7 +394,10 @@ impl MediaService {
         Ok(ProcessedImage {
             data: data.to_vec(),
             format: output_format,
-            dimensions: ImageDimensions { width: 0, height: 0 },
+            dimensions: ImageDimensions {
+                width: 0,
+                height: 0,
+            },
             file_size: data.len() as u64,
         })
     }
@@ -421,7 +435,10 @@ impl MediaService {
         Ok(ProcessedImage {
             data: vec![],
             format: ImageFormat::Jpeg,
-            dimensions: ImageDimensions { width: 0, height: 0 },
+            dimensions: ImageDimensions {
+                width: 0,
+                height: 0,
+            },
             file_size: 0,
         })
     }

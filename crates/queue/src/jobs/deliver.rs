@@ -17,7 +17,7 @@ pub struct DeliverJob {
 
 impl DeliverJob {
     /// Create a new deliver job.
-    #[must_use] 
+    #[must_use]
     pub const fn new(user_id: String, inbox: String, activity: serde_json::Value) -> Self {
         Self {
             user_id,

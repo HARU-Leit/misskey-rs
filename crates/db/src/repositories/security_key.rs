@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{security_key, SecurityKey};
+use crate::entities::{SecurityKey, security_key};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
@@ -86,10 +86,7 @@ impl SecurityKeyRepository {
     }
 
     /// Create a new security key.
-    pub async fn create(
-        &self,
-        model: security_key::ActiveModel,
-    ) -> AppResult<security_key::Model> {
+    pub async fn create(&self, model: security_key::ActiveModel) -> AppResult<security_key::Model> {
         model
             .insert(self.db.as_ref())
             .await
@@ -97,10 +94,7 @@ impl SecurityKeyRepository {
     }
 
     /// Update a security key.
-    pub async fn update(
-        &self,
-        model: security_key::ActiveModel,
-    ) -> AppResult<security_key::Model> {
+    pub async fn update(&self, model: security_key::ActiveModel) -> AppResult<security_key::Model> {
         model
             .update(self.db.as_ref())
             .await

@@ -1,10 +1,14 @@
 //! Poll endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use serde::{Deserialize, Serialize};
 
-use crate::{extractors::{AuthUser, MaybeAuthUser}, middleware::AppState, response::ApiResponse};
+use crate::{
+    extractors::{AuthUser, MaybeAuthUser},
+    middleware::AppState,
+    response::ApiResponse,
+};
 
 /// Poll response.
 #[derive(Serialize)]

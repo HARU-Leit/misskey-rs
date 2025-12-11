@@ -1,7 +1,7 @@
 //! Scheduled note service.
 
 use chrono::{DateTime, Duration, Utc};
-use misskey_common::{id::IdGenerator, AppError, AppResult};
+use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::scheduled_note::{self, ScheduledStatus, ScheduledVisibility};
 use misskey_db::repositories::ScheduledNoteRepository;
 use sea_orm::Set;
@@ -132,7 +132,9 @@ impl ScheduledNoteService {
 
     /// Count pending scheduled notes for a user.
     pub async fn count_pending_notes(&self, user_id: &str) -> AppResult<u64> {
-        self.scheduled_note_repo.count_pending_by_user(user_id).await
+        self.scheduled_note_repo
+            .count_pending_by_user(user_id)
+            .await
     }
 
     /// Create a new scheduled note.
@@ -154,7 +156,10 @@ impl ScheduledNoteService {
         }
 
         // Check pending note limit
-        let pending_count = self.scheduled_note_repo.count_pending_by_user(user_id).await?;
+        let pending_count = self
+            .scheduled_note_repo
+            .count_pending_by_user(user_id)
+            .await?;
         if pending_count >= MAX_PENDING_NOTES_PER_USER {
             return Err(AppError::Validation(format!(
                 "Maximum of {} pending scheduled notes allowed",
@@ -356,8 +361,14 @@ impl ScheduledNoteService {
     }
 
     /// Mark a note as failed.
-    pub async fn mark_failed(&self, id: &str, error_message: &str) -> AppResult<scheduled_note::Model> {
-        self.scheduled_note_repo.mark_failed(id, error_message).await
+    pub async fn mark_failed(
+        &self,
+        id: &str,
+        error_message: &str,
+    ) -> AppResult<scheduled_note::Model> {
+        self.scheduled_note_repo
+            .mark_failed(id, error_message)
+            .await
     }
 
     /// Cleanup old completed notes.

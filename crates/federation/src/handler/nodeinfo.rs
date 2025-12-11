@@ -1,11 +1,6 @@
 //! `NodeInfo` handler for instance discovery.
 
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::IntoResponse,
-    Json,
-};
+use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use misskey_db::repositories::{NoteRepository, UserRepository};
 use serde::Serialize;
 use std::sync::Arc;
@@ -138,13 +133,8 @@ impl NodeInfoState {
 }
 
 /// Handle /.well-known/nodeinfo
-pub async fn well_known_nodeinfo(
-    State(state): State<NodeInfoState>,
-) -> impl IntoResponse {
-    let nodeinfo_url = state
-        .base_url
-        .join("/nodeinfo/2.1")
-        .expect("valid URL");
+pub async fn well_known_nodeinfo(State(state): State<NodeInfoState>) -> impl IntoResponse {
+    let nodeinfo_url = state.base_url.join("/nodeinfo/2.1").expect("valid URL");
 
     let response = NodeInfoWellKnown {
         links: vec![NodeInfoLink {
@@ -161,12 +151,9 @@ pub async fn well_known_nodeinfo(
 }
 
 /// Handle /nodeinfo/2.1
-pub async fn nodeinfo_2_1(
-    State(state): State<NodeInfoState>,
-) -> impl IntoResponse {
+pub async fn nodeinfo_2_1(State(state): State<NodeInfoState>) -> impl IntoResponse {
     // Get actual statistics from database if repositories are available
-    let (total_users, active_month, active_halfyear, local_posts) =
-        get_statistics(&state).await;
+    let (total_users, active_month, active_halfyear, local_posts) = get_statistics(&state).await;
 
     let response = NodeInfo {
         version: "2.1".to_string(),
@@ -199,7 +186,10 @@ pub async fn nodeinfo_2_1(
 
     (
         StatusCode::OK,
-        [("Content-Type", "application/json; profile=\"http://nodeinfo.diaspora.software/ns/schema/2.1#\"")],
+        [(
+            "Content-Type",
+            "application/json; profile=\"http://nodeinfo.diaspora.software/ns/schema/2.1#\"",
+        )],
         Json(response),
     )
 }

@@ -63,12 +63,7 @@ pub struct UploadedFile {
 #[async_trait::async_trait]
 pub trait StorageBackend: Send + Sync {
     /// Upload a file.
-    async fn upload(
-        &self,
-        key: &str,
-        data: &[u8],
-        content_type: &str,
-    ) -> AppResult<UploadedFile>;
+    async fn upload(&self, key: &str, data: &[u8], content_type: &str) -> AppResult<UploadedFile>;
 
     /// Delete a file.
     async fn delete(&self, key: &str) -> AppResult<()>;
@@ -88,20 +83,18 @@ pub struct LocalStorage {
 
 impl LocalStorage {
     /// Create a new local storage backend.
-    #[must_use] 
+    #[must_use]
     pub const fn new(base_path: PathBuf, base_url: String) -> Self {
-        Self { base_path, base_url }
+        Self {
+            base_path,
+            base_url,
+        }
     }
 }
 
 #[async_trait::async_trait]
 impl StorageBackend for LocalStorage {
-    async fn upload(
-        &self,
-        key: &str,
-        data: &[u8],
-        content_type: &str,
-    ) -> AppResult<UploadedFile> {
+    async fn upload(&self, key: &str, data: &[u8], content_type: &str) -> AppResult<UploadedFile> {
         let path = self.base_path.join(key);
 
         // Create parent directories if needed
@@ -172,13 +165,8 @@ impl S3Storage {
         use aws_config::Region;
         use aws_sdk_s3::config::Credentials;
 
-        let credentials = Credentials::new(
-            access_key_id,
-            secret_access_key,
-            None,
-            None,
-            "misskey-rs",
-        );
+        let credentials =
+            Credentials::new(access_key_id, secret_access_key, None, None, "misskey-rs");
 
         let config = aws_sdk_s3::Config::builder()
             .endpoint_url(endpoint)
@@ -208,12 +196,7 @@ impl S3Storage {
 #[cfg(feature = "s3")]
 #[async_trait::async_trait]
 impl StorageBackend for S3Storage {
-    async fn upload(
-        &self,
-        key: &str,
-        data: &[u8],
-        content_type: &str,
-    ) -> AppResult<UploadedFile> {
+    async fn upload(&self, key: &str, data: &[u8], content_type: &str) -> AppResult<UploadedFile> {
         use aws_sdk_s3::primitives::ByteStream;
 
         let full_key = self.full_key(key);
@@ -284,7 +267,7 @@ impl StorageBackend for S3Storage {
 }
 
 /// Generate a unique storage key for a file.
-#[must_use] 
+#[must_use]
 pub fn generate_storage_key(user_id: &str, original_name: &str) -> String {
     use chrono::Utc;
 
@@ -300,7 +283,14 @@ pub fn generate_storage_key(user_id: &str, original_name: &str) -> String {
         .filter(|ext| ext.len() <= 10 && !ext.is_empty())
         .unwrap_or("bin");
 
-    format!("{}/{}/{}_{}.{}", date_path, user_id, timestamp, uuid::Uuid::new_v4(), extension)
+    format!(
+        "{}/{}/{}_{}.{}",
+        date_path,
+        user_id,
+        timestamp,
+        uuid::Uuid::new_v4(),
+        extension
+    )
 }
 
 #[cfg(test)]

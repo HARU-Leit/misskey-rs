@@ -19,7 +19,7 @@ pub struct AcceptActivity {
 
 impl AcceptActivity {
     /// Create a new Accept activity.
-    #[must_use] 
+    #[must_use]
     pub const fn new(id: Url, actor: Url, object: Url) -> Self {
         Self {
             kind: AcceptType::Accept,

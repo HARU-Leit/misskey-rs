@@ -1,7 +1,7 @@
 //! Word filter service.
 
 use chrono::{Duration, Utc};
-use misskey_common::{id::IdGenerator, AppError, AppResult};
+use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::word_filter::{self, FilterAction, FilterContext};
 use misskey_db::repositories::WordFilterRepository;
 use regex::Regex;
@@ -104,10 +104,7 @@ impl WordFilterService {
         id: &str,
         user_id: &str,
     ) -> AppResult<word_filter::Model> {
-        let filter = self
-            .filter_repo
-            .get_by_id(id)
-            .await?;
+        let filter = self.filter_repo.get_by_id(id).await?;
 
         if filter.user_id != user_id {
             return Err(AppError::Forbidden("Not the filter owner".to_string()));
@@ -127,10 +124,7 @@ impl WordFilterService {
     }
 
     /// List active (non-expired) filters for a user.
-    pub async fn list_active_filters(
-        &self,
-        user_id: &str,
-    ) -> AppResult<Vec<word_filter::Model>> {
+    pub async fn list_active_filters(&self, user_id: &str) -> AppResult<Vec<word_filter::Model>> {
         self.filter_repo.find_active_by_user(user_id).await
     }
 
@@ -146,7 +140,9 @@ impl WordFilterService {
         input: CreateFilterInput,
     ) -> AppResult<word_filter::Model> {
         // Validate input
-        input.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+        input
+            .validate()
+            .map_err(|e| AppError::Validation(e.to_string()))?;
 
         // Check filter limit
         let count = self.filter_repo.count_by_user(user_id).await?;
@@ -167,9 +163,8 @@ impl WordFilterService {
 
         // Validate regex if is_regex is true
         if input.is_regex {
-            Regex::new(&input.phrase).map_err(|e| {
-                AppError::Validation(format!("Invalid regex pattern: {}", e))
-            })?;
+            Regex::new(&input.phrase)
+                .map_err(|e| AppError::Validation(format!("Invalid regex pattern: {}", e)))?;
         }
 
         // Calculate expiration
@@ -206,7 +201,9 @@ impl WordFilterService {
         input: UpdateFilterInput,
     ) -> AppResult<word_filter::Model> {
         // Validate input
-        input.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+        input
+            .validate()
+            .map_err(|e| AppError::Validation(e.to_string()))?;
 
         // Get filter and verify ownership
         let filter = self.get_by_id_for_user(&input.filter_id, user_id).await?;
@@ -223,9 +220,8 @@ impl WordFilterService {
             // Check if regex is valid
             let is_regex = input.is_regex.unwrap_or(filter.is_regex);
             if is_regex {
-                Regex::new(phrase).map_err(|e| {
-                    AppError::Validation(format!("Invalid regex pattern: {}", e))
-                })?;
+                Regex::new(phrase)
+                    .map_err(|e| AppError::Validation(format!("Invalid regex pattern: {}", e)))?;
             }
         } else if let Some(true) = input.is_regex {
             // Validating existing phrase as regex
@@ -357,9 +353,8 @@ impl WordFilterService {
                 format!("(?i){}", filter.phrase)
             };
 
-            let regex = Regex::new(&pattern).map_err(|e| {
-                AppError::Internal(format!("Invalid regex in filter: {}", e))
-            })?;
+            let regex = Regex::new(&pattern)
+                .map_err(|e| AppError::Internal(format!("Invalid regex in filter: {}", e)))?;
 
             Ok(regex.is_match(content))
         } else if filter.whole_word {
@@ -440,8 +435,16 @@ mod tests {
         )));
 
         // Should match substring
-        assert!(service.check_filter_match(&filter, "This contains bad word in it").unwrap());
-        assert!(!service.check_filter_match(&filter, "This is clean").unwrap());
+        assert!(
+            service
+                .check_filter_match(&filter, "This contains bad word in it")
+                .unwrap()
+        );
+        assert!(
+            !service
+                .check_filter_match(&filter, "This is clean")
+                .unwrap()
+        );
     }
 
     #[tokio::test]
@@ -453,8 +456,16 @@ mod tests {
         )));
 
         // Should only match whole word
-        assert!(service.check_filter_match(&filter, "This is bad content").unwrap());
-        assert!(!service.check_filter_match(&filter, "This is badger content").unwrap());
+        assert!(
+            service
+                .check_filter_match(&filter, "This is bad content")
+                .unwrap()
+        );
+        assert!(
+            !service
+                .check_filter_match(&filter, "This is badger content")
+                .unwrap()
+        );
     }
 
     #[tokio::test]
@@ -466,10 +477,26 @@ mod tests {
         )));
 
         // Should match regex variations
-        assert!(service.check_filter_match(&filter, "This is bad word").unwrap());
-        assert!(service.check_filter_match(&filter, "This is b4d w0rd").unwrap());
-        assert!(service.check_filter_match(&filter, "This is badword").unwrap());
-        assert!(!service.check_filter_match(&filter, "This is clean").unwrap());
+        assert!(
+            service
+                .check_filter_match(&filter, "This is bad word")
+                .unwrap()
+        );
+        assert!(
+            service
+                .check_filter_match(&filter, "This is b4d w0rd")
+                .unwrap()
+        );
+        assert!(
+            service
+                .check_filter_match(&filter, "This is badword")
+                .unwrap()
+        );
+        assert!(
+            !service
+                .check_filter_match(&filter, "This is clean")
+                .unwrap()
+        );
     }
 
     #[tokio::test]
@@ -481,7 +508,15 @@ mod tests {
         )));
 
         // Case insensitive by default
-        assert!(service.check_filter_match(&filter, "This is BADWORD").unwrap());
-        assert!(service.check_filter_match(&filter, "This is badword").unwrap());
+        assert!(
+            service
+                .check_filter_match(&filter, "This is BADWORD")
+                .unwrap()
+        );
+        assert!(
+            service
+                .check_filter_match(&filter, "This is badword")
+                .unwrap()
+        );
     }
 }

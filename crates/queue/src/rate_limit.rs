@@ -159,8 +159,7 @@ impl InstanceRateLimiter {
 
         states.retain(|_, state| {
             // Keep if in cooldown or window hasn't expired
-            state.cooldown_until.is_some()
-                || now.duration_since(state.window_start) < window * 2
+            state.cooldown_until.is_some() || now.duration_since(state.window_start) < window * 2
         });
     }
 

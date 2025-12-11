@@ -12,7 +12,7 @@
 #![cfg(feature = "federation-test")]
 
 use reqwest::Client;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -39,15 +39,21 @@ impl TestInstance {
     }
 
     async fn health_check(&self) -> Result<bool, reqwest::Error> {
-        let res = self.client
+        let res = self
+            .client
             .get(format!("{}/.well-known/nodeinfo", self.base_url))
             .send()
             .await?;
         Ok(res.status().is_success())
     }
 
-    async fn create_user(&mut self, username: &str, password: &str) -> Result<Value, reqwest::Error> {
-        let res = self.client
+    async fn create_user(
+        &mut self,
+        username: &str,
+        password: &str,
+    ) -> Result<Value, reqwest::Error> {
+        let res = self
+            .client
             .post(format!("{}/api/signup", self.base_url))
             .json(&json!({
                 "username": username,
@@ -66,7 +72,8 @@ impl TestInstance {
     }
 
     async fn signin(&mut self, username: &str, password: &str) -> Result<Value, reqwest::Error> {
-        let res = self.client
+        let res = self
+            .client
             .post(format!("{}/api/signin", self.base_url))
             .json(&json!({
                 "username": username,
@@ -85,25 +92,26 @@ impl TestInstance {
     }
 
     async fn api_call(&self, endpoint: &str, body: Value) -> Result<Value, reqwest::Error> {
-        let mut req = self.client
+        let mut req = self
+            .client
             .post(format!("{}/api/{}", self.base_url, endpoint));
 
         if let Some(ref token) = self.token {
             req = req.header("Authorization", format!("Bearer {}", token));
         }
 
-        req.json(&body)
-            .send()
-            .await?
-            .json::<Value>()
-            .await
+        req.json(&body).send().await?.json::<Value>().await
     }
 
     async fn create_note(&self, text: &str) -> Result<Value, reqwest::Error> {
-        self.api_call("notes/create", json!({
-            "text": text,
-            "visibility": "public"
-        })).await
+        self.api_call(
+            "notes/create",
+            json!({
+                "text": text,
+                "visibility": "public"
+            }),
+        )
+        .await
     }
 
     async fn get_user(&self, username: &str, host: Option<&str>) -> Result<Value, reqwest::Error> {
@@ -115,9 +123,13 @@ impl TestInstance {
     }
 
     async fn follow(&self, user_id: &str) -> Result<Value, reqwest::Error> {
-        self.api_call("following/create", json!({
-            "userId": user_id
-        })).await
+        self.api_call(
+            "following/create",
+            json!({
+                "userId": user_id
+            }),
+        )
+        .await
     }
 
     async fn webfinger(&self, resource: &str) -> Result<Value, reqwest::Error> {
@@ -162,7 +174,9 @@ async fn wait_for_instances() -> bool {
 #[tokio::test]
 async fn test_instances_are_running() {
     if !wait_for_instances().await {
-        panic!("Federation instances are not running. Start them with: docker-compose -f docker-compose.test.yml --profile federation up -d");
+        panic!(
+            "Federation instances are not running. Start them with: docker-compose -f docker-compose.test.yml --profile federation up -d"
+        );
     }
 }
 
@@ -176,22 +190,34 @@ async fn test_webfinger_resolution() {
     let mut alpha = TestInstance::new(ALPHA_URL);
 
     // Create a user on alpha
-    let _user = alpha.create_user("webfingertest", "testpass123").await
+    let _user = alpha
+        .create_user("webfingertest", "testpass123")
+        .await
         .expect("Failed to create user on alpha");
 
     // Resolve via webfinger
-    let webfinger = alpha.webfinger("acct:webfingertest@alpha").await
+    let webfinger = alpha
+        .webfinger("acct:webfingertest@alpha")
+        .await
         .expect("Failed to resolve webfinger");
 
     assert!(webfinger.get("subject").is_some());
     assert!(webfinger.get("links").is_some());
 
-    let links = webfinger["links"].as_array().expect("links should be array");
-    let self_link = links.iter()
+    let links = webfinger["links"]
+        .as_array()
+        .expect("links should be array");
+    let self_link = links
+        .iter()
         .find(|l| l["rel"].as_str() == Some("self"))
         .expect("Should have self link");
 
-    assert!(self_link["type"].as_str().unwrap().contains("activity+json"));
+    assert!(
+        self_link["type"]
+            .as_str()
+            .unwrap()
+            .contains("activity+json")
+    );
 }
 
 #[tokio::test]
@@ -204,11 +230,15 @@ async fn test_actor_endpoint() {
     let mut alpha = TestInstance::new(ALPHA_URL);
 
     // Create a user
-    let _user = alpha.create_user("actortest", "testpass123").await
+    let _user = alpha
+        .create_user("actortest", "testpass123")
+        .await
         .expect("Failed to create user");
 
     // Fetch actor via ActivityPub
-    let actor = alpha.fetch_actor(&format!("{}/users/actortest", ALPHA_URL)).await
+    let actor = alpha
+        .fetch_actor(&format!("{}/users/actortest", ALPHA_URL))
+        .await
         .expect("Failed to fetch actor");
 
     assert_eq!(actor["type"], "Person");
@@ -229,15 +259,20 @@ async fn test_cross_instance_user_resolution() {
     let mut beta = TestInstance::new(BETA_URL);
 
     // Create user on alpha
-    alpha.create_user("crosstest", "testpass123").await
+    alpha
+        .create_user("crosstest", "testpass123")
+        .await
         .expect("Failed to create user on alpha");
 
     // Create user on beta to make API calls
-    beta.create_user("resolver", "testpass123").await
+    beta.create_user("resolver", "testpass123")
+        .await
         .expect("Failed to create user on beta");
 
     // Resolve alpha's user from beta
-    let remote_user = beta.get_user("crosstest", Some("alpha")).await
+    let remote_user = beta
+        .get_user("crosstest", Some("alpha"))
+        .await
         .expect("Failed to resolve remote user");
 
     assert_eq!(remote_user["username"], "crosstest");
@@ -255,21 +290,29 @@ async fn test_follow_between_instances() {
     let mut beta = TestInstance::new(BETA_URL);
 
     // Create users
-    alpha.create_user("leader", "testpass123").await
+    alpha
+        .create_user("leader", "testpass123")
+        .await
         .expect("Failed to create leader on alpha");
 
-    beta.create_user("follower", "testpass123").await
+    beta.create_user("follower", "testpass123")
+        .await
         .expect("Failed to create follower on beta");
 
     // Get leader's remote user on beta
-    let remote_leader = beta.get_user("leader", Some("alpha")).await
+    let remote_leader = beta
+        .get_user("leader", Some("alpha"))
+        .await
         .expect("Failed to resolve remote user");
 
-    let leader_id = remote_leader["id"].as_str()
+    let leader_id = remote_leader["id"]
+        .as_str()
         .expect("Remote user should have id");
 
     // Follow from beta to alpha
-    let follow_result = beta.follow(leader_id).await
+    let follow_result = beta
+        .follow(leader_id)
+        .await
         .expect("Failed to create follow");
 
     // Wait for federation
@@ -277,8 +320,7 @@ async fn test_follow_between_instances() {
 
     // Verify follow was processed
     // Note: Depending on lock settings, may need to check follow requests
-    assert!(follow_result.get("error").is_none() ||
-            follow_result.get("followingId").is_some());
+    assert!(follow_result.get("error").is_none() || follow_result.get("followingId").is_some());
 }
 
 #[tokio::test]
@@ -292,17 +334,23 @@ async fn test_note_federation() {
     let mut beta = TestInstance::new(BETA_URL);
 
     // Create users
-    alpha.create_user("noteauthor", "testpass123").await
+    alpha
+        .create_user("noteauthor", "testpass123")
+        .await
         .expect("Failed to create user on alpha");
 
-    beta.create_user("notereader", "testpass123").await
+    beta.create_user("notereader", "testpass123")
+        .await
         .expect("Failed to create user on beta");
 
     // Create a public note on alpha
-    let note = alpha.create_note("Hello from alpha! This is a federation test.").await
+    let note = alpha
+        .create_note("Hello from alpha! This is a federation test.")
+        .await
         .expect("Failed to create note");
 
-    let note_id = note["createdNote"]["id"].as_str()
+    let note_id = note["createdNote"]["id"]
+        .as_str()
         .expect("Note should have id");
 
     // Wait for potential federation
@@ -311,7 +359,8 @@ async fn test_note_federation() {
     // The note should be accessible via its URI
     let note_uri = format!("{}/notes/{}", ALPHA_URL, note_id);
 
-    let fetched = alpha.client
+    let fetched = alpha
+        .client
         .get(&note_uri)
         .header("Accept", "application/activity+json")
         .send()
@@ -322,7 +371,12 @@ async fn test_note_federation() {
         .expect("Failed to parse note");
 
     assert_eq!(fetched["type"], "Note");
-    assert!(fetched["content"].as_str().unwrap().contains("federation test"));
+    assert!(
+        fetched["content"]
+            .as_str()
+            .unwrap()
+            .contains("federation test")
+    );
 }
 
 #[tokio::test]
@@ -335,7 +389,8 @@ async fn test_nodeinfo_endpoint() {
     let alpha = TestInstance::new(ALPHA_URL);
 
     // Get nodeinfo links
-    let well_known = alpha.client
+    let well_known = alpha
+        .client
         .get(format!("{}/.well-known/nodeinfo", ALPHA_URL))
         .send()
         .await
@@ -350,7 +405,8 @@ async fn test_nodeinfo_endpoint() {
     let nodeinfo_url = links[0]["href"].as_str().expect("Link should have href");
 
     // Fetch actual nodeinfo
-    let nodeinfo = alpha.client
+    let nodeinfo = alpha
+        .client
         .get(nodeinfo_url)
         .send()
         .await
@@ -360,8 +416,13 @@ async fn test_nodeinfo_endpoint() {
         .expect("Failed to parse nodeinfo");
 
     assert_eq!(nodeinfo["software"]["name"], "misskey-rs");
-    assert!(nodeinfo["protocols"].as_array().unwrap().iter()
-        .any(|p| p == "activitypub"));
+    assert!(
+        nodeinfo["protocols"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p == "activitypub")
+    );
 }
 
 #[tokio::test]
@@ -374,7 +435,8 @@ async fn test_inbox_signature_verification() {
     let alpha = TestInstance::new(ALPHA_URL);
 
     // Send an unsigned request to inbox - should be rejected
-    let result = alpha.client
+    let result = alpha
+        .client
         .post(format!("{}/inbox", ALPHA_URL))
         .header("Content-Type", "application/activity+json")
         .json(&json!({
@@ -406,35 +468,52 @@ async fn test_full_follow_flow() {
     let mut beta = TestInstance::new(BETA_URL);
 
     // 1. Create user on each instance
-    let alpha_user = alpha.create_user("alice_full", "password123").await
+    let alpha_user = alpha
+        .create_user("alice_full", "password123")
+        .await
         .expect("Failed to create alice on alpha");
-    let beta_user = beta.create_user("bob_full", "password123").await
+    let beta_user = beta
+        .create_user("bob_full", "password123")
+        .await
         .expect("Failed to create bob on beta");
 
     let alice_id = alpha_user["id"].as_str().expect("Alice should have id");
 
     // 2. Bob resolves Alice from beta
-    let remote_alice = beta.get_user("alice_full", Some("alpha")).await
+    let remote_alice = beta
+        .get_user("alice_full", Some("alpha"))
+        .await
         .expect("Failed to resolve alice from beta");
 
-    let remote_alice_id = remote_alice["id"].as_str()
+    let remote_alice_id = remote_alice["id"]
+        .as_str()
         .expect("Remote alice should have id");
 
     // 3. Bob follows Alice
-    beta.follow(remote_alice_id).await
+    beta.follow(remote_alice_id)
+        .await
         .expect("Failed to follow");
 
     // 4. Wait for federation activities
     sleep(Duration::from_secs(3)).await;
 
     // 5. Verify Alice's followers includes Bob
-    let alice_followers = alpha.api_call("users/followers", json!({
-        "userId": alice_id
-    })).await.expect("Failed to get followers");
+    let alice_followers = alpha
+        .api_call(
+            "users/followers",
+            json!({
+                "userId": alice_id
+            }),
+        )
+        .await
+        .expect("Failed to get followers");
 
     // Note: The exact response structure depends on implementation
     // This verifies the federation flow completed without errors
-    println!("Follow flow completed. Followers response: {:?}", alice_followers);
+    println!(
+        "Follow flow completed. Followers response: {:?}",
+        alice_followers
+    );
 }
 
 /// Test that reactions are federated
@@ -449,7 +528,10 @@ async fn test_reaction_federation() {
     let mut beta = TestInstance::new(BETA_URL);
 
     // Create users
-    alpha.create_user("reactionauthor", "password123").await.ok();
+    alpha
+        .create_user("reactionauthor", "password123")
+        .await
+        .ok();
     beta.create_user("reactioner", "password123").await.ok();
 
     // Sign in (in case users already exist)
@@ -457,10 +539,13 @@ async fn test_reaction_federation() {
     beta.signin("reactioner", "password123").await.ok();
 
     // Create a note on alpha
-    let note = alpha.create_note("React to this note!").await
+    let note = alpha
+        .create_note("React to this note!")
+        .await
         .expect("Failed to create note");
 
-    let note_id = note["createdNote"]["id"].as_str()
+    let note_id = note["createdNote"]["id"]
+        .as_str()
         .expect("Note should have id");
 
     // TODO: Once reaction federation is fully implemented, add:

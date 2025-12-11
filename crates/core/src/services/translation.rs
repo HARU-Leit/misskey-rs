@@ -170,12 +170,7 @@ impl TranslationService {
 
     /// Create a cache key from request parameters.
     fn cache_key(text: &str, target_lang: &str, source_lang: Option<&str>) -> String {
-        format!(
-            "{}:{}:{}",
-            source_lang.unwrap_or("auto"),
-            target_lang,
-            text
-        )
+        format!("{}:{}:{}", source_lang.unwrap_or("auto"), target_lang, text)
     }
 
     /// Check cache for translation.
@@ -217,7 +212,11 @@ impl TranslationService {
 
     /// Translate text.
     pub async fn translate(&self, input: TranslateInput) -> AppResult<TranslationResponse> {
-        let cache_key = Self::cache_key(&input.text, &input.target_lang, input.source_lang.as_deref());
+        let cache_key = Self::cache_key(
+            &input.text,
+            &input.target_lang,
+            input.source_lang.as_deref(),
+        );
 
         // Check cache first
         if let Some(cached) = self.check_cache(&cache_key).await {
@@ -227,28 +226,52 @@ impl TranslationService {
         // Perform translation based on provider
         let response = match self.config.provider {
             TranslationProvider::DeepL => {
-                self.translate_deepl(&input.text, &input.target_lang, input.source_lang.as_deref())
-                    .await?
+                self.translate_deepl(
+                    &input.text,
+                    &input.target_lang,
+                    input.source_lang.as_deref(),
+                )
+                .await?
             }
             TranslationProvider::Google => {
-                self.translate_google(&input.text, &input.target_lang, input.source_lang.as_deref())
-                    .await?
+                self.translate_google(
+                    &input.text,
+                    &input.target_lang,
+                    input.source_lang.as_deref(),
+                )
+                .await?
             }
             TranslationProvider::LibreTranslate => {
-                self.translate_libretranslate(&input.text, &input.target_lang, input.source_lang.as_deref())
-                    .await?
+                self.translate_libretranslate(
+                    &input.text,
+                    &input.target_lang,
+                    input.source_lang.as_deref(),
+                )
+                .await?
             }
             TranslationProvider::OpenAI => {
-                self.translate_openai(&input.text, &input.target_lang, input.source_lang.as_deref())
-                    .await?
+                self.translate_openai(
+                    &input.text,
+                    &input.target_lang,
+                    input.source_lang.as_deref(),
+                )
+                .await?
             }
             TranslationProvider::Anthropic => {
-                self.translate_anthropic(&input.text, &input.target_lang, input.source_lang.as_deref())
-                    .await?
+                self.translate_anthropic(
+                    &input.text,
+                    &input.target_lang,
+                    input.source_lang.as_deref(),
+                )
+                .await?
             }
             TranslationProvider::Ollama => {
-                self.translate_ollama(&input.text, &input.target_lang, input.source_lang.as_deref())
-                    .await?
+                self.translate_ollama(
+                    &input.text,
+                    &input.target_lang,
+                    input.source_lang.as_deref(),
+                )
+                .await?
             }
         };
 
@@ -350,9 +373,11 @@ impl TranslationService {
         target_lang: &str,
         source_lang: Option<&str>,
     ) -> AppResult<TranslationResponse> {
-        let api_key = self.config.deepl_api_key.as_ref().ok_or_else(|| {
-            AppError::BadRequest("DeepL API key not configured".to_string())
-        })?;
+        let api_key = self
+            .config
+            .deepl_api_key
+            .as_ref()
+            .ok_or_else(|| AppError::BadRequest("DeepL API key not configured".to_string()))?;
 
         let mut params = vec![
             ("text", text.to_string()),
@@ -391,10 +416,9 @@ impl TranslationService {
             detected_source_language: String,
         }
 
-        let deepl_response: DeepLResponse = response
-            .json()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse DeepL response: {}", e)))?;
+        let deepl_response: DeepLResponse = response.json().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse DeepL response: {}", e))
+        })?;
 
         let translation = deepl_response
             .translations
@@ -441,12 +465,9 @@ impl TranslationService {
             url.push_str(&format!("&source={}", src));
         }
 
-        let response = self
-            .http_client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Google Translate request failed: {}", e)))?;
+        let response = self.http_client.get(&url).send().await.map_err(|e| {
+            AppError::ExternalService(format!("Google Translate request failed: {}", e))
+        })?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -474,10 +495,9 @@ impl TranslationService {
             detected_source_language: Option<String>,
         }
 
-        let google_response: GoogleResponse = response
-            .json()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse Google response: {}", e)))?;
+        let google_response: GoogleResponse = response.json().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse Google response: {}", e))
+        })?;
 
         let translation = google_response
             .data
@@ -502,9 +522,10 @@ impl TranslationService {
         target_lang: &str,
         source_lang: Option<&str>,
     ) -> AppResult<TranslationResponse> {
-        let url = self.config.libretranslate_url.as_ref().ok_or_else(|| {
-            AppError::BadRequest("LibreTranslate URL not configured".to_string())
-        })?;
+        let url =
+            self.config.libretranslate_url.as_ref().ok_or_else(|| {
+                AppError::BadRequest("LibreTranslate URL not configured".to_string())
+            })?;
 
         let mut body = serde_json::json!({
             "q": text,
@@ -522,7 +543,9 @@ impl TranslationService {
             .json(&body)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("LibreTranslate request failed: {}", e)))?;
+            .map_err(|e| {
+                AppError::ExternalService(format!("LibreTranslate request failed: {}", e))
+            })?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -545,10 +568,9 @@ impl TranslationService {
             language: String,
         }
 
-        let libre_response: LibreTranslateResponse = response
-            .json()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse LibreTranslate response: {}", e)))?;
+        let libre_response: LibreTranslateResponse = response.json().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse LibreTranslate response: {}", e))
+        })?;
 
         Ok(TranslationResponse {
             text: libre_response.translated_text,
@@ -567,15 +589,13 @@ impl TranslationService {
         target_lang: &str,
         _source_lang: Option<&str>,
     ) -> AppResult<TranslationResponse> {
-        let api_key = self.config.openai_api_key.as_ref().ok_or_else(|| {
-            AppError::BadRequest("OpenAI API key not configured".to_string())
-        })?;
-
-        let model = self
+        let api_key = self
             .config
-            .openai_model
-            .as_deref()
-            .unwrap_or("gpt-4o-mini");
+            .openai_api_key
+            .as_ref()
+            .ok_or_else(|| AppError::BadRequest("OpenAI API key not configured".to_string()))?;
+
+        let model = self.config.openai_model.as_deref().unwrap_or("gpt-4o-mini");
 
         let lang_name = self.language_code_to_name(target_lang);
         let prompt = format!(
@@ -624,10 +644,9 @@ impl TranslationService {
             content: String,
         }
 
-        let openai_response: OpenAIResponse = response
-            .json()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse OpenAI response: {}", e)))?;
+        let openai_response: OpenAIResponse = response.json().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse OpenAI response: {}", e))
+        })?;
 
         let translated = openai_response
             .choices
@@ -653,9 +672,10 @@ impl TranslationService {
         target_lang: &str,
         _source_lang: Option<&str>,
     ) -> AppResult<TranslationResponse> {
-        let api_key = self.config.anthropic_api_key.as_ref().ok_or_else(|| {
-            AppError::BadRequest("Anthropic API key not configured".to_string())
-        })?;
+        let api_key =
+            self.config.anthropic_api_key.as_ref().ok_or_else(|| {
+                AppError::BadRequest("Anthropic API key not configured".to_string())
+            })?;
 
         let model = self
             .config
@@ -707,10 +727,9 @@ impl TranslationService {
             text: String,
         }
 
-        let anthropic_response: AnthropicResponse = response
-            .json()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse Anthropic response: {}", e)))?;
+        let anthropic_response: AnthropicResponse = response.json().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse Anthropic response: {}", e))
+        })?;
 
         let translated = anthropic_response
             .content
@@ -735,9 +754,11 @@ impl TranslationService {
         target_lang: &str,
         _source_lang: Option<&str>,
     ) -> AppResult<TranslationResponse> {
-        let url = self.config.ollama_url.as_ref().ok_or_else(|| {
-            AppError::BadRequest("Ollama URL not configured".to_string())
-        })?;
+        let url = self
+            .config
+            .ollama_url
+            .as_ref()
+            .ok_or_else(|| AppError::BadRequest("Ollama URL not configured".to_string()))?;
 
         let model = self.config.ollama_model.as_deref().unwrap_or("llama3.2");
 
@@ -775,10 +796,9 @@ impl TranslationService {
             response: String,
         }
 
-        let ollama_response: OllamaResponse = response
-            .json()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse Ollama response: {}", e)))?;
+        let ollama_response: OllamaResponse = response.json().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse Ollama response: {}", e))
+        })?;
 
         Ok(TranslationResponse {
             text: ollama_response.response.trim().to_string(),
@@ -797,10 +817,14 @@ impl TranslationService {
         })
     }
 
-    async fn detect_language_libretranslate(&self, text: &str) -> AppResult<LanguageDetectionResponse> {
-        let url = self.config.libretranslate_url.as_ref().ok_or_else(|| {
-            AppError::BadRequest("LibreTranslate URL not configured".to_string())
-        })?;
+    async fn detect_language_libretranslate(
+        &self,
+        text: &str,
+    ) -> AppResult<LanguageDetectionResponse> {
+        let url =
+            self.config.libretranslate_url.as_ref().ok_or_else(|| {
+                AppError::BadRequest("LibreTranslate URL not configured".to_string())
+            })?;
 
         let mut body = serde_json::json!({
             "q": text,
@@ -816,7 +840,9 @@ impl TranslationService {
             .json(&body)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("LibreTranslate detect request failed: {}", e)))?;
+            .map_err(|e| {
+                AppError::ExternalService(format!("LibreTranslate detect request failed: {}", e))
+            })?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -833,10 +859,9 @@ impl TranslationService {
             confidence: f64,
         }
 
-        let results: Vec<DetectResponse> = response
-            .json()
-            .await
-            .map_err(|e| AppError::ExternalService(format!("Failed to parse detect response: {}", e)))?;
+        let results: Vec<DetectResponse> = response.json().await.map_err(|e| {
+            AppError::ExternalService(format!("Failed to parse detect response: {}", e))
+        })?;
 
         let best = results
             .into_iter()
@@ -887,10 +912,7 @@ impl TranslationService {
             });
         }
 
-        let (max_count, lang) = counts
-            .iter()
-            .max_by_key(|(c, _)| c)
-            .unwrap();
+        let (max_count, lang) = counts.iter().max_by_key(|(c, _)| c).unwrap();
 
         Ok(LanguageDetectionResponse {
             language: lang.to_string(),

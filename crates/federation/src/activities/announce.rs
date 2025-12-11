@@ -27,7 +27,7 @@ pub struct AnnounceActivity {
 
 impl AnnounceActivity {
     /// Create a new Announce activity.
-    #[must_use] 
+    #[must_use]
     pub const fn new(id: Url, actor: Url, object: Url, published: DateTime<Utc>) -> Self {
         Self {
             kind: AnnounceType::Announce,
@@ -43,7 +43,9 @@ impl AnnounceActivity {
     /// Set the public audience.
     #[must_use]
     pub fn public(mut self) -> Self {
-        self.to = Some(vec![Url::parse("https://www.w3.org/ns/activitystreams#Public").unwrap()]);
+        self.to = Some(vec![
+            Url::parse("https://www.w3.org/ns/activitystreams#Public").unwrap(),
+        ]);
         self
     }
 }

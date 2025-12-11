@@ -20,16 +20,8 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(
-                        ColumnDef::new(Group::OwnerId)
-                            .string_len(32)
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(Group::Name)
-                            .string_len(128)
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(Group::OwnerId).string_len(32).not_null())
+                    .col(ColumnDef::new(Group::Name).string_len(128).not_null())
                     .col(ColumnDef::new(Group::Description).text())
                     .col(ColumnDef::new(Group::BannerId).string_len(32))
                     .col(ColumnDef::new(Group::AvatarId).string_len(32))

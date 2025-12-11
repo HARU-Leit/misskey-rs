@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{oauth_app, oauth_token, OAuthApp, OAuthToken};
+use crate::entities::{OAuthApp, OAuthToken, oauth_app, oauth_token};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
@@ -40,7 +40,10 @@ impl OAuthRepository {
     }
 
     /// Find an OAuth application by client ID.
-    pub async fn find_app_by_client_id(&self, client_id: &str) -> AppResult<Option<oauth_app::Model>> {
+    pub async fn find_app_by_client_id(
+        &self,
+        client_id: &str,
+    ) -> AppResult<Option<oauth_app::Model>> {
         OAuthApp::find()
             .filter(oauth_app::Column::ClientId.eq(client_id))
             .one(self.db.as_ref())
@@ -101,7 +104,10 @@ impl OAuthRepository {
     }
 
     /// Find a token by its hash.
-    pub async fn find_token_by_hash(&self, token_hash: &str) -> AppResult<Option<oauth_token::Model>> {
+    pub async fn find_token_by_hash(
+        &self,
+        token_hash: &str,
+    ) -> AppResult<Option<oauth_token::Model>> {
         OAuthToken::find()
             .filter(oauth_token::Column::TokenHash.eq(token_hash))
             .one(self.db.as_ref())
@@ -110,7 +116,10 @@ impl OAuthRepository {
     }
 
     /// Find all tokens for a user.
-    pub async fn find_tokens_by_user_id(&self, user_id: &str) -> AppResult<Vec<oauth_token::Model>> {
+    pub async fn find_tokens_by_user_id(
+        &self,
+        user_id: &str,
+    ) -> AppResult<Vec<oauth_token::Model>> {
         OAuthToken::find()
             .filter(oauth_token::Column::UserId.eq(user_id))
             .filter(oauth_token::Column::IsRevoked.eq(false))
@@ -132,7 +141,10 @@ impl OAuthRepository {
     }
 
     /// Create a new token.
-    pub async fn create_token(&self, model: oauth_token::ActiveModel) -> AppResult<oauth_token::Model> {
+    pub async fn create_token(
+        &self,
+        model: oauth_token::ActiveModel,
+    ) -> AppResult<oauth_token::Model> {
         model
             .insert(self.db.as_ref())
             .await
@@ -140,7 +152,10 @@ impl OAuthRepository {
     }
 
     /// Update a token.
-    pub async fn update_token(&self, model: oauth_token::ActiveModel) -> AppResult<oauth_token::Model> {
+    pub async fn update_token(
+        &self,
+        model: oauth_token::ActiveModel,
+    ) -> AppResult<oauth_token::Model> {
         model
             .update(self.db.as_ref())
             .await
@@ -149,13 +164,17 @@ impl OAuthRepository {
 
     /// Revoke a token by ID.
     pub async fn revoke_token(&self, id: &str) -> AppResult<()> {
-        let token = self.find_token_by_id(id).await?.ok_or_else(|| {
-            AppError::NotFound(format!("OAuthToken: {id}"))
-        })?;
+        let token = self
+            .find_token_by_id(id)
+            .await?
+            .ok_or_else(|| AppError::NotFound(format!("OAuthToken: {id}")))?;
 
         let mut active: oauth_token::ActiveModel = token.into();
         active.is_revoked = Set(true);
-        active.update(self.db.as_ref()).await.map_err(|e| AppError::Database(e.to_string()))?;
+        active
+            .update(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
         Ok(())
     }
 
@@ -189,14 +208,18 @@ impl OAuthRepository {
 
     /// Update last_used_at for a token.
     pub async fn touch_token(&self, id: &str) -> AppResult<()> {
-        let token = self.find_token_by_id(id).await?.ok_or_else(|| {
-            AppError::NotFound(format!("OAuthToken: {id}"))
-        })?;
+        let token = self
+            .find_token_by_id(id)
+            .await?
+            .ok_or_else(|| AppError::NotFound(format!("OAuthToken: {id}")))?;
 
         let now = chrono::Utc::now().fixed_offset();
         let mut active: oauth_token::ActiveModel = token.into();
         active.last_used_at = Set(Some(now));
-        active.update(self.db.as_ref()).await.map_err(|e| AppError::Database(e.to_string()))?;
+        active
+            .update(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
         Ok(())
     }
 

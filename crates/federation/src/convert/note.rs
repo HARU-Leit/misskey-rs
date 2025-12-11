@@ -37,7 +37,8 @@ impl NoteToApNote for note::Model {
         let published = self.created_at.with_timezone(&Utc);
 
         // Build tags from mentions
-        let mentions: Vec<String> = serde_json::from_value(self.mentions.clone()).unwrap_or_default();
+        let mentions: Vec<String> =
+            serde_json::from_value(self.mentions.clone()).unwrap_or_default();
         let tags: Vec<ApTag> = mentions
             .iter()
             .filter_map(|user_id| {
@@ -82,7 +83,10 @@ impl NoteToApNote for note::Model {
         let (to, cc) = visibility_to_addressing(&self.visibility, config, author_username);
 
         // Reply handling
-        let in_reply_to = self.reply_id.as_ref().map(|reply_id| note_url(config, reply_id));
+        let in_reply_to = self
+            .reply_id
+            .as_ref()
+            .map(|reply_id| note_url(config, reply_id));
 
         // Quote (renote) handling
         let misskey_quote = self.renote_id.as_ref().and_then(|renote_id| {

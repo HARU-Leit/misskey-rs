@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{muting, Muting};
+use crate::entities::{Muting, muting};
 use chrono::Utc;
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
@@ -18,7 +18,7 @@ pub struct MutingRepository {
 
 impl MutingRepository {
     /// Create a new muting repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }

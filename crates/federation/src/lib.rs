@@ -40,7 +40,7 @@ pub use processor::{
     RejectProcessor, UndoProcessor, UndoResult, UpdateProcessor, UpdateResult,
 };
 pub use security::{
-    ActivitySecurityChecker, FederationRateLimiter, RateLimitError, RateLimitStatus,
-    ReplayError, ReplayProtection, SecurityCheckResult, SecurityError,
+    ActivitySecurityChecker, FederationRateLimiter, RateLimitError, RateLimitStatus, ReplayError,
+    ReplayProtection, SecurityCheckResult, SecurityError,
 };
 pub use signature::{HttpSigner, HttpVerifier, SignatureComponents, SignatureError};

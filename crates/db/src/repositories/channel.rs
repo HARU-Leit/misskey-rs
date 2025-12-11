@@ -9,7 +9,7 @@ use sea_orm::{
     QueryFilter, QueryOrder, QuerySelect, Set,
 };
 
-use crate::entities::{channel, channel_following, Channel, ChannelFollowing};
+use crate::entities::{Channel, ChannelFollowing, channel, channel_following};
 
 /// Repository for channel operations.
 #[derive(Clone)]
