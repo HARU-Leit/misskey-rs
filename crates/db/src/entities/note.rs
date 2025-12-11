@@ -98,6 +98,10 @@ pub struct Model {
     #[sea_orm(nullable)]
     pub url: Option<String>,
 
+    /// Channel ID (if posted to a channel)
+    #[sea_orm(nullable, indexed)]
+    pub channel_id: Option<String>,
+
     pub created_at: DateTimeWithTimeZone,
 
     #[sea_orm(nullable)]
@@ -126,6 +130,13 @@ pub enum Relation {
         to = "Column::Id"
     )]
     Renote,
+
+    #[sea_orm(
+        belongs_to = "super::channel::Entity",
+        from = "Column::ChannelId",
+        to = "super::channel::Column::Id"
+    )]
+    Channel,
 }
 
 impl Related<super::user::Entity> for Entity {

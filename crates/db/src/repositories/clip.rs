@@ -349,6 +349,58 @@ impl ClipRepository {
             .map_err(|e| AppError::Database(e.to_string()))
     }
 
+    // ==================== Search ====================
+
+    /// Search notes within a clip by text content.
+    pub async fn search_notes_in_clip(
+        &self,
+        clip_id: &str,
+        query: &str,
+        limit: u64,
+        offset: u64,
+    ) -> AppResult<Vec<String>> {
+        use crate::entities::{note, Note};
+        use sea_orm::JoinType;
+
+        // Search notes in clip by text content using LIKE
+        // Returns note IDs that match
+        let search_pattern = format!("%{}%", query.replace('%', "\\%").replace('_', "\\_"));
+
+        let results = ClipNote::find()
+            .filter(clip_note::Column::ClipId.eq(clip_id))
+            .join(JoinType::InnerJoin, clip_note::Relation::Note.def())
+            .filter(note::Column::Text.like(&search_pattern))
+            .order_by(clip_note::Column::DisplayOrder, Order::Asc)
+            .offset(offset)
+            .limit(limit)
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        Ok(results.into_iter().map(|cn| cn.note_id).collect())
+    }
+
+    /// Search notes within a clip by comment content.
+    pub async fn search_notes_by_comment(
+        &self,
+        clip_id: &str,
+        query: &str,
+        limit: u64,
+        offset: u64,
+    ) -> AppResult<Vec<clip_note::Model>> {
+        let search_pattern = format!("%{}%", query.replace('%', "\\%").replace('_', "\\_"));
+
+        ClipNote::find()
+            .filter(clip_note::Column::ClipId.eq(clip_id))
+            .filter(clip_note::Column::Comment.like(&search_pattern))
+            .order_by(clip_note::Column::DisplayOrder, Order::Asc)
+            .offset(offset)
+            .limit(limit)
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
     // ==================== Helper Methods ====================
 
     /// Increment notes count atomically.

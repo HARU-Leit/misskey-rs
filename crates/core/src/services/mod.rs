@@ -37,6 +37,7 @@ pub mod email;
 pub mod media;
 pub mod account;
 pub mod group;
+pub mod jobs;
 
 pub use announcement::AnnouncementService;
 pub use account::{
@@ -107,3 +108,4 @@ pub use group::{
     CreateGroupInput, GroupResponse, GroupService, InviteUserInput, JoinRequestInput,
     UpdateGroupInput, UpdateMemberRoleInput,
 };
+pub use jobs::{CleanupTask, Job, JobSender, JobService, JobWorkerContext};

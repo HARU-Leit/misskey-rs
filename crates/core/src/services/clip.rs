@@ -351,6 +351,73 @@ impl ClipService {
         let clips = self.find_clips_with_note(note_id, user_id).await?;
         Ok(!clips.is_empty())
     }
+
+    // ==================== Search ====================
+
+    /// Search notes within a clip by text content.
+    /// Returns note IDs that match the query.
+    pub async fn search_notes(
+        &self,
+        clip_id: &str,
+        viewer_id: Option<&str>,
+        query: &str,
+        limit: u64,
+        offset: u64,
+    ) -> AppResult<Vec<String>> {
+        // Verify access
+        let clip = self
+            .clip_repo
+            .find_by_id(clip_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Clip not found".to_string()))?;
+
+        if !clip.is_public && viewer_id != Some(&clip.user_id) {
+            return Err(AppError::Forbidden("Cannot access this clip".to_string()));
+        }
+
+        // Validate query
+        if query.trim().is_empty() {
+            return Err(AppError::BadRequest(
+                "Search query cannot be empty".to_string(),
+            ));
+        }
+
+        self.clip_repo
+            .search_notes_in_clip(clip_id, query, limit, offset)
+            .await
+    }
+
+    /// Search notes within a clip by comment content.
+    pub async fn search_by_comment(
+        &self,
+        clip_id: &str,
+        viewer_id: Option<&str>,
+        query: &str,
+        limit: u64,
+        offset: u64,
+    ) -> AppResult<Vec<clip_note::Model>> {
+        // Verify access
+        let clip = self
+            .clip_repo
+            .find_by_id(clip_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Clip not found".to_string()))?;
+
+        if !clip.is_public && viewer_id != Some(&clip.user_id) {
+            return Err(AppError::Forbidden("Cannot access this clip".to_string()));
+        }
+
+        // Validate query
+        if query.trim().is_empty() {
+            return Err(AppError::BadRequest(
+                "Search query cannot be empty".to_string(),
+            ));
+        }
+
+        self.clip_repo
+            .search_notes_by_comment(clip_id, query, limit, offset)
+            .await
+    }
 }
 
 #[cfg(test)]

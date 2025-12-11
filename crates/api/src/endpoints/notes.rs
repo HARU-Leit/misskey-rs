@@ -7,10 +7,10 @@ use misskey_db::entities::{note, note_edit};
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
-use crate::{extractors::AuthUser, middleware::AppState, response::ApiResponse};
+use crate::{extractors::{AuthUser, MaybeAuthUser}, middleware::AppState, response::ApiResponse};
 
 /// Note response.
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct NoteResponse {
     pub id: String,
@@ -22,11 +22,21 @@ pub struct NoteResponse {
     pub visibility: String,
     pub reply_id: Option<String>,
     pub renote_id: Option<String>,
+    pub channel_id: Option<String>,
     pub replies_count: i32,
     pub renote_count: i32,
     pub reaction_count: i32,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub is_edited: bool,
+    /// Whether the note matches a word filter.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub filtered: bool,
+    /// The filter action to take (if filtered).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filter_action: Option<String>,
+    /// The matched phrases (if filtered).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filter_matches: Option<Vec<String>>,
 }
 
 impl From<note::Model> for NoteResponse {
@@ -42,10 +52,14 @@ impl From<note::Model> for NoteResponse {
             visibility: format!("{:?}", note.visibility).to_lowercase(),
             reply_id: note.reply_id,
             renote_id: note.renote_id,
+            channel_id: note.channel_id,
             replies_count: note.replies_count,
             renote_count: note.renote_count,
             reaction_count: note.reaction_count,
             is_edited,
+            filtered: false,
+            filter_action: None,
+            filter_matches: None,
         }
     }
 }
@@ -161,6 +175,48 @@ const fn max_limit() -> u64 {
     100
 }
 
+use misskey_db::entities::word_filter::FilterContext;
+
+/// Apply word filters to notes for a user.
+async fn apply_word_filters(
+    state: &AppState,
+    user_id: &str,
+    notes: Vec<note::Model>,
+    context: FilterContext,
+) -> AppResult<Vec<NoteResponse>> {
+    let mut responses = Vec::new();
+
+    for note in notes {
+        let mut response: NoteResponse = note.clone().into();
+
+        // Apply filter to note text
+        if let Some(ref text) = note.text {
+            let filter_result = state
+                .word_filter_service
+                .apply_filters(user_id, text, context.clone())
+                .await?;
+
+            if filter_result.matched {
+                response.filtered = true;
+                response.filter_action = filter_result.action.map(|a| format!("{:?}", a).to_lowercase());
+                response.filter_matches = Some(filter_result.matched_phrases);
+            }
+        }
+
+        responses.push(response);
+    }
+
+    Ok(responses)
+}
+
+/// Filter notes based on filter action (hide filtered notes if action is Hide).
+fn filter_hidden_notes(notes: Vec<NoteResponse>) -> Vec<NoteResponse> {
+    notes
+        .into_iter()
+        .filter(|n| n.filter_action.as_deref() != Some("hide"))
+        .collect()
+}
+
 /// Get home timeline (notes from followed users + own notes).
 async fn timeline(
     AuthUser(user): AuthUser,
@@ -172,11 +228,17 @@ async fn timeline(
         .note_service
         .home_timeline(&user.id, limit, req.until_id.as_deref())
         .await?;
-    Ok(ApiResponse::ok(notes.into_iter().map(Into::into).collect()))
+
+    // Apply word filters
+    let filtered_notes = apply_word_filters(&state, &user.id, notes, FilterContext::Home).await?;
+    let result = filter_hidden_notes(filtered_notes);
+
+    Ok(ApiResponse::ok(result))
 }
 
 /// Get local timeline.
 async fn local_timeline(
+    MaybeAuthUser(user): MaybeAuthUser,
     State(state): State<AppState>,
     Json(req): Json<TimelineRequest>,
 ) -> AppResult<ApiResponse<Vec<NoteResponse>>> {
@@ -185,11 +247,21 @@ async fn local_timeline(
         .note_service
         .local_timeline(limit, req.until_id.as_deref())
         .await?;
-    Ok(ApiResponse::ok(notes.into_iter().map(Into::into).collect()))
+
+    // Apply word filters if user is authenticated
+    let result = if let Some(ref user) = user {
+        let filtered_notes = apply_word_filters(&state, &user.id, notes, FilterContext::Public).await?;
+        filter_hidden_notes(filtered_notes)
+    } else {
+        notes.into_iter().map(Into::into).collect()
+    };
+
+    Ok(ApiResponse::ok(result))
 }
 
 /// Get global timeline.
 async fn global_timeline(
+    MaybeAuthUser(user): MaybeAuthUser,
     State(state): State<AppState>,
     Json(req): Json<TimelineRequest>,
 ) -> AppResult<ApiResponse<Vec<NoteResponse>>> {
@@ -198,7 +270,16 @@ async fn global_timeline(
         .note_service
         .global_timeline(limit, req.until_id.as_deref())
         .await?;
-    Ok(ApiResponse::ok(notes.into_iter().map(Into::into).collect()))
+
+    // Apply word filters if user is authenticated
+    let result = if let Some(ref user) = user {
+        let filtered_notes = apply_word_filters(&state, &user.id, notes, FilterContext::Public).await?;
+        filter_hidden_notes(filtered_notes)
+    } else {
+        notes.into_iter().map(Into::into).collect()
+    };
+
+    Ok(ApiResponse::ok(result))
 }
 
 /// Show note request.
