@@ -426,6 +426,82 @@ impl NoteService {
         Ok(())
     }
 
+    /// Queue ActivityPub Update delivery for an edited note.
+    async fn queue_update_delivery(
+        &self,
+        note: &note::Model,
+        user_id: &str,
+        delivery: &DeliveryService,
+    ) -> AppResult<()> {
+        // Only deliver updates of public/home notes
+        if !matches!(note.visibility, Visibility::Public | Visibility::Home) {
+            return Ok(());
+        }
+
+        // Build ActivityPub Note object
+        let note_url = format!("{}/notes/{}", self.server_url, note.id);
+        let actor_url = format!("{}/users/{}", self.server_url, user_id);
+        let activity_id = format!(
+            "{}/activities/update/{}/{}",
+            self.server_url,
+            note.id,
+            chrono::Utc::now().timestamp_millis()
+        );
+
+        let followers_url = format!("{}/followers", actor_url);
+        let public_url = "https://www.w3.org/ns/activitystreams#Public".to_string();
+
+        let (to_field, cc_field): (Vec<String>, Vec<String>) =
+            if note.visibility == Visibility::Public {
+                (vec![public_url.clone()], vec![followers_url.clone()])
+            } else {
+                (vec![followers_url.clone()], vec![])
+            };
+
+        // Get the updated_at timestamp or use current time
+        let updated_at = note
+            .updated_at
+            .map(|dt| dt.to_rfc3339())
+            .unwrap_or_else(|| chrono::Utc::now().to_rfc3339());
+
+        let ap_note = json!({
+            "type": "Note",
+            "id": note_url,
+            "attributedTo": actor_url,
+            "content": note.text.clone().unwrap_or_default(),
+            "published": note.created_at.to_rfc3339(),
+            "updated": updated_at,
+            "to": to_field,
+            "cc": cc_field,
+            "inReplyTo": note.reply_id.as_ref().map(|id| format!("{}/notes/{}", self.server_url, id)),
+            "summary": note.cw.clone(),
+            "sensitive": note.cw.is_some(),
+        });
+
+        let activity = json!({
+            "@context": "https://www.w3.org/ns/activitystreams",
+            "type": "Update",
+            "id": activity_id,
+            "actor": actor_url,
+            "object": ap_note,
+            "published": updated_at,
+            "to": to_field,
+            "cc": cc_field,
+        });
+
+        // Get follower inboxes
+        let inboxes = self.get_follower_inboxes(user_id).await?;
+
+        if !inboxes.is_empty() {
+            delivery
+                .queue_update_note(user_id, &note.id, activity, inboxes)
+                .await?;
+            tracing::debug!(note_id = %note.id, "Queued ActivityPub Update delivery");
+        }
+
+        Ok(())
+    }
+
     /// Get local public timeline.
     pub async fn local_timeline(
         &self,
@@ -648,6 +724,16 @@ impl NoteService {
         active_note.updated_at = Set(Some(chrono::Utc::now().into()));
 
         let updated_note = self.note_repo.update(active_note).await?;
+
+        // Queue ActivityPub Update delivery
+        if let Some(ref delivery) = self.delivery {
+            if let Err(e) = self
+                .queue_update_delivery(&updated_note, user_id, delivery)
+                .await
+            {
+                tracing::warn!(error = %e, note_id = %updated_note.id, "Failed to queue ActivityPub Update delivery");
+            }
+        }
 
         // Publish real-time event
         if let Some(ref event_publisher) = self.event_publisher {
