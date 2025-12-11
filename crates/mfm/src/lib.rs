@@ -2,6 +2,25 @@
 //!
 //! This crate provides parsing and rendering for MFM, the custom markdown-like
 //! syntax used in Misskey.
+//!
+//! # Features
+//!
+//! - **Parsing**: Convert MFM text to an AST via [`parse`]
+//! - **Rendering**: Convert AST to HTML via [`to_html`] or plain text via [`to_plain_text`]
+//! - **Extraction**: Extract mentions via [`extract_mentions`] and hashtags via [`extract_hashtags`]
+//! - **HTML conversion**: Convert HTML back to MFM via [`from_html`]
+//!
+//! # Example
+//!
+//! ```
+//! use misskey_mfm::{parse, to_html, extract_mentions, extract_hashtags};
+//!
+//! let text = "Hello **world** @user #rust";
+//! let nodes = parse(text);
+//! let html = to_html(text);
+//! let mentions = extract_mentions(text);
+//! let hashtags = extract_hashtags(text);
+//! ```
 
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::missing_const_for_fn)]

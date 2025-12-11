@@ -1,4 +1,14 @@
 //! Background job queue for misskey-rs.
+//!
+//! This crate provides asynchronous job processing using Redis:
+//!
+//! - **Jobs**: ActivityPub delivery, inbox processing
+//! - **Workers**: Concurrent job execution with Apalis
+//! - **Pub/Sub**: Real-time event broadcasting
+//! - **Rate limiting**: Per-instance federation rate limits
+//! - **Retry**: Exponential backoff with dead letter queue
+//! - **Scheduler**: Periodic tasks (cleanup, aggregation)
+//! - **Shared Inbox**: Optimized batch delivery
 
 pub mod delivery_impl;
 pub mod jobs;
