@@ -20,6 +20,21 @@ use sea_orm::{ConnectionTrait, Database, DbBackend, Statement};
 
 const DATABASE_URL: &str = "postgres://misskey_test:misskey_test@localhost:5433/misskey_test";
 
+/// Check if query analysis tests should be skipped (e.g., in CI).
+fn should_skip() -> bool {
+    std::env::var("SKIP_QUERY_ANALYSIS").is_ok()
+}
+
+/// Macro to skip test if SKIP_QUERY_ANALYSIS is set.
+macro_rules! skip_if_ci {
+    () => {
+        if should_skip() {
+            eprintln!("Skipping query analysis test (SKIP_QUERY_ANALYSIS is set)");
+            return;
+        }
+    };
+}
+
 /// Query analysis result
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -316,6 +331,7 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
 
 #[tokio::test]
 async fn analyze_note_by_id_query() {
+    skip_if_ci!();
     let db = Database::connect(DATABASE_URL)
         .await
         .expect("Failed to connect to database");
@@ -336,6 +352,7 @@ async fn analyze_note_by_id_query() {
 
 #[tokio::test]
 async fn analyze_notes_by_user_query() {
+    skip_if_ci!();
     let db = Database::connect(DATABASE_URL)
         .await
         .expect("Failed to connect to database");
@@ -356,6 +373,7 @@ async fn analyze_notes_by_user_query() {
 
 #[tokio::test]
 async fn analyze_local_timeline_query() {
+    skip_if_ci!();
     let db = Database::connect(DATABASE_URL)
         .await
         .expect("Failed to connect to database");
@@ -375,6 +393,7 @@ async fn analyze_local_timeline_query() {
 
 #[tokio::test]
 async fn analyze_global_timeline_query() {
+    skip_if_ci!();
     let db = Database::connect(DATABASE_URL)
         .await
         .expect("Failed to connect to database");
@@ -395,6 +414,7 @@ async fn analyze_global_timeline_query() {
 
 #[tokio::test]
 async fn analyze_home_timeline_query() {
+    skip_if_ci!();
     let db = Database::connect(DATABASE_URL)
         .await
         .expect("Failed to connect to database");
@@ -425,6 +445,7 @@ async fn analyze_home_timeline_query() {
 
 #[tokio::test]
 async fn analyze_user_by_username_query() {
+    skip_if_ci!();
     let db = Database::connect(DATABASE_URL)
         .await
         .expect("Failed to connect to database");
@@ -445,6 +466,7 @@ async fn analyze_user_by_username_query() {
 
 #[tokio::test]
 async fn analyze_followers_query() {
+    skip_if_ci!();
     let db = Database::connect(DATABASE_URL)
         .await
         .expect("Failed to connect to database");
@@ -471,6 +493,7 @@ async fn analyze_followers_query() {
 
 #[tokio::test]
 async fn analyze_note_replies_query() {
+    skip_if_ci!();
     let db = Database::connect(DATABASE_URL)
         .await
         .expect("Failed to connect to database");
@@ -491,6 +514,7 @@ async fn analyze_note_replies_query() {
 
 #[tokio::test]
 async fn analyze_note_reactions_query() {
+    skip_if_ci!();
     let db = Database::connect(DATABASE_URL)
         .await
         .expect("Failed to connect to database");
@@ -511,6 +535,7 @@ async fn analyze_note_reactions_query() {
 
 #[tokio::test]
 async fn analyze_text_search_query() {
+    skip_if_ci!();
     let db = Database::connect(DATABASE_URL)
         .await
         .expect("Failed to connect to database");
@@ -536,6 +561,7 @@ async fn analyze_text_search_query() {
 /// Summary test that runs all queries and generates a report
 #[tokio::test]
 async fn generate_query_performance_report() {
+    skip_if_ci!();
     let db = Database::connect(DATABASE_URL)
         .await
         .expect("Failed to connect to database");
