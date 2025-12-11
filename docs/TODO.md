@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (ActivityPub Update activity対応)
+*Last Updated: 2025-12-11* (バブルタイムライン実装)
 
 ---
 
@@ -25,7 +25,7 @@
 | タスク | 状況 | 参照 |
 |--------|------|------|
 | ActivityPub Update activity対応（ノート編集連合） | ✅ 完了 | update.rs |
-| いいね/リアクションの適切な連合（Mastodon/Pleroma向け） | 未実装 | FORK_FEATURES.md |
+| いいね/リアクションの適切な連合（Mastodon/Pleroma向け） | ✅ 完了 | emoji_react.rs, like.rs |
 | 引用リノートのMastodon連合（FEP-e232対応） | 未実装 | COMMUNITY_FEATURES.md |
 | チャンネルのフェデレーション（Group actor） | 未実装 | COMMUNITY_FEATURES.md |
 | ActivityPub Move activity対応（アカウント移行） | 未実装 | MISSING_FEATURES.md |
@@ -59,7 +59,7 @@
 
 | タスク | 状況 | 参照 |
 |--------|------|------|
-| URLプレビューキャッシュ | 未実装 | FORK_FEATURES.md |
+| URLプレビューキャッシュ | ✅ 完了 | url_preview_cache.rs |
 | Redis分散カウンター（レート制限） | 未実装 | MISSING_FEATURES.md |
 | 読み取りレプリカ対応 | 未実装 | COMMUNITY_FEATURES.md |
 
@@ -67,7 +67,7 @@
 
 | タスク | 状況 | 参照 |
 |--------|------|------|
-| バブルタイムライン | 未実装 | FORK_FEATURES.md |
+| バブルタイムライン | ✅ 完了 | timelines.rs, meta_settings |
 | チャンネルタイムラインのストリーミング | 未実装 | MISSING_FEATURES.md |
 | Bot非表示オプション | 未実装 | FORK_FEATURES.md |
 
@@ -203,14 +203,21 @@
 
 ### ActivityPub拡張 (2025-12-11)
 - **ActivityPub Update activity対応** - ローカルノート編集時にUpdate activityを配信、リモートからのUpdate activity受信でノート更新
+- **EmojiReact Activity対応** - Pleroma/Akkoma形式のエモジリアクション受信に対応。Like Activityに`content`フィールドを追加してPleroma互換性向上
+
+### パフォーマンス最適化 (2025-12-11)
+- **URLプレビューキャッシュ** - Redis-backed caching for URL previews. 24時間TTLでキャッシュ、失敗したURLは1時間ネガティブキャッシュ。`get_or_fetch()`メソッドで自動的にキャッシュ/フェッチを管理
+
+### タイムライン拡張 (2025-12-11)
+- **バブルタイムライン** - ローカルユーザー＋ホワイトリストに登録されたリモートインスタンスからの公開ノートを表示。`meta_settings.bubble_instances`で信頼インスタンスを設定可能。Mastodon API `/api/v1/timelines/bubble` エンドポイントを追加
 
 ---
 
 ## 次のアクション推奨
 
-1. **フェデレーション**: いいね/リアクションの適切な連合（Mastodon/Pleroma向け）
-2. **パフォーマンス**: URLプレビューキャッシュ → 外部リンク表示高速化
-3. **タイムライン**: バブルタイムライン → 信頼インスタンス間の連携強化
+1. **フェデレーション**: 引用リノートのMastodon連合（FEP-e232対応）
+2. **パフォーマンス**: Redis分散カウンター（レート制限）
+3. **タイムライン**: Bot非表示オプション
 
 ---
 

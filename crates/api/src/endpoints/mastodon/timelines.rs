@@ -1,6 +1,6 @@
 //! Mastodon timelines API.
 //!
-//! Provides GET /api/v1/timelines/home and /api/v1/timelines/public.
+//! Provides GET /api/v1/timelines/home, /api/v1/timelines/public, and /api/v1/timelines/bubble.
 
 use axum::{
     Json, Router,
@@ -148,9 +148,38 @@ async fn public_timeline(
     Ok(Json(statuses))
 }
 
+/// GET /api/v1/timelines/bubble - Get bubble timeline.
+///
+/// Shows public notes from local users and whitelisted remote instances.
+/// The list of whitelisted instances is configured in meta_settings.bubble_instances.
+async fn bubble_timeline(
+    State(state): State<AppState>,
+    Query(params): Query<TimelineQuery>,
+) -> AppResult<Json<Vec<Status>>> {
+    let limit = params.limit.min(40).max(1) as u64;
+
+    // Get bubble instances from meta settings
+    let bubble_hosts = state.meta_settings_service.get_bubble_instances().await?;
+
+    let notes = state
+        .note_service
+        .bubble_timeline(&bubble_hosts, limit, params.max_id.as_deref())
+        .await?;
+
+    // TODO: Get base_url from config
+    let base_url = "https://example.com";
+    let statuses: Vec<Status> = notes
+        .into_iter()
+        .map(|n| note_to_status(n, base_url))
+        .collect();
+
+    Ok(Json(statuses))
+}
+
 /// Create the timelines router.
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/home", get(home_timeline))
         .route("/public", get(public_timeline))
+        .route("/bubble", get(bubble_timeline))
 }

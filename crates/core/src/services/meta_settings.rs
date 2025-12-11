@@ -30,6 +30,7 @@ pub struct UpdateMetaSettingsInput {
     pub max_pages_per_user: Option<i32>,
     pub default_drive_capacity_mb: Option<i32>,
     pub max_file_size_mb: Option<i32>,
+    pub bubble_instances: Option<Vec<String>>,
 }
 
 /// Meta settings service for managing instance configuration.
@@ -79,6 +80,7 @@ impl MetaSettingsService {
                     max_pages_per_user: Set(100),
                     default_drive_capacity_mb: Set(1024),
                     max_file_size_mb: Set(256),
+                    bubble_instances: Set(Some(serde_json::json!([]))),
                     created_at: Set(now.into()),
                     updated_at: Set(None),
                 };
@@ -168,6 +170,9 @@ impl MetaSettingsService {
         if let Some(max_file_size_mb) = input.max_file_size_mb {
             model.max_file_size_mb = Set(max_file_size_mb);
         }
+        if let Some(bubble_instances) = input.bubble_instances {
+            model.bubble_instances = Set(Some(serde_json::json!(bubble_instances)));
+        }
 
         let result = model
             .update(self.db.as_ref())
@@ -199,5 +204,15 @@ impl MetaSettingsService {
     pub async fn is_force_nsfw_media(&self) -> AppResult<bool> {
         let settings = self.get().await?;
         Ok(settings.force_nsfw_media)
+    }
+
+    /// Get bubble instances for bubble timeline.
+    pub async fn get_bubble_instances(&self) -> AppResult<Vec<String>> {
+        let settings = self.get().await?;
+        let instances = settings
+            .bubble_instances
+            .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
+            .unwrap_or_default();
+        Ok(instances)
     }
 }

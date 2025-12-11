@@ -216,6 +216,48 @@ impl NoteRepository {
             .map_err(|e| AppError::Database(e.to_string()))
     }
 
+    /// Get bubble timeline (local + whitelisted instances).
+    ///
+    /// Shows public notes from:
+    /// - Local users (user_host IS NULL / is_local = true)
+    /// - Users from whitelisted remote instances (user_host IN bubble_hosts)
+    ///
+    /// This is useful for creating a "trusted network" timeline between
+    /// friendly instances.
+    pub async fn find_bubble_timeline(
+        &self,
+        bubble_hosts: &[String],
+        limit: u64,
+        until_id: Option<&str>,
+    ) -> AppResult<Vec<note::Model>> {
+        use sea_orm::Condition;
+
+        // Build condition: Public AND (local OR from whitelisted hosts)
+        let mut host_condition = Condition::any().add(note::Column::IsLocal.eq(true));
+
+        // Add whitelisted hosts to the condition
+        if !bubble_hosts.is_empty() {
+            host_condition =
+                host_condition.add(note::Column::UserHost.is_in(bubble_hosts.to_vec()));
+        }
+
+        let mut condition = Condition::all()
+            .add(note::Column::Visibility.eq(note::Visibility::Public))
+            .add(host_condition);
+
+        if let Some(until) = until_id {
+            condition = condition.add(note::Column::Id.lt(until));
+        }
+
+        Note::find()
+            .filter(condition)
+            .order_by_desc(note::Column::Id)
+            .limit(limit)
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
     /// Get replies to a note.
     pub async fn find_replies(&self, note_id: &str, limit: u64) -> AppResult<Vec<note::Model>> {
         Note::find()

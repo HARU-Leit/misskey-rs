@@ -520,6 +520,27 @@ impl NoteService {
         self.note_repo.find_global_public(limit, until_id).await
     }
 
+    /// Get bubble timeline (local + whitelisted instances).
+    ///
+    /// Shows public notes from local users and users from
+    /// whitelisted remote instances (bubble instances).
+    ///
+    /// # Arguments
+    ///
+    /// * `bubble_hosts` - List of whitelisted instance hostnames
+    /// * `limit` - Maximum number of notes to return
+    /// * `until_id` - Return notes older than this ID (for pagination)
+    pub async fn bubble_timeline(
+        &self,
+        bubble_hosts: &[String],
+        limit: u64,
+        until_id: Option<&str>,
+    ) -> AppResult<Vec<note::Model>> {
+        self.note_repo
+            .find_bubble_timeline(bubble_hosts, limit, until_id)
+            .await
+    }
+
     /// Get home timeline (notes from followed users + own notes).
     pub async fn home_timeline(
         &self,

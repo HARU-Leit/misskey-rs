@@ -239,6 +239,10 @@ impl ReactionService {
     // ==================== ActivityPub Delivery Helpers ====================
 
     /// Queue a Like activity.
+    ///
+    /// This sends a Like activity with both `_misskey_reaction` (for Misskey instances)
+    /// and `content` (for Pleroma/Akkoma instances) fields for maximum compatibility.
+    /// Mastodon will interpret this as a simple favorite (ignoring the emoji content).
     async fn queue_like_activity(
         &self,
         user_id: &str,
@@ -258,6 +262,7 @@ impl ReactionService {
         );
 
         // Use Misskey's EmojiReact extension for custom reactions
+        // Include both `_misskey_reaction` (Misskey) and `content` (Pleroma/Akkoma) for compatibility
         let activity = json!({
             "@context": [
                 "https://www.w3.org/ns/activitystreams",
@@ -270,6 +275,7 @@ impl ReactionService {
             "actor": actor_url,
             "object": note_url,
             "_misskey_reaction": reaction,
+            "content": reaction,
         });
 
         delivery.queue_like(user_id, inbox, activity).await?;
