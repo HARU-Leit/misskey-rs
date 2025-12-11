@@ -31,6 +31,9 @@ validator.workspace = true
 futures.workspace = true
 tokio-stream.workspace = true
 
+# Redis (for distributed rate limiting)
+fred.workspace = true
+
 [dev-dependencies]
 sea-orm = { workspace = true, features = ["mock"] }
 tower = { workspace = true, features = ["util"] }

@@ -2987,6 +2987,7 @@ dependencies = [
  "async-trait",
  "axum 0.8.7",
  "chrono",
+ "fred",
  "futures",
  "misskey-common",
  "misskey-core",
