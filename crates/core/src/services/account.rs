@@ -469,6 +469,7 @@ impl AccountService {
                     moved_to_uri: Set(Some(input.target_uri.clone())),
                     hide_bots: Set(false),
                     default_reaction: Set(None),
+                    receive_dm_from_followers_only: Set(false),
                     created_at: Set(Utc::now().into()),
                     updated_at: Set(None),
                 };

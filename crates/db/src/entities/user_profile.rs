@@ -98,6 +98,10 @@ pub struct Model {
     #[sea_orm(nullable)]
     pub default_reaction: Option<String>,
 
+    /// Only allow DMs from followers (when true, non-followers cannot send DMs)
+    #[sea_orm(default_value = false)]
+    pub receive_dm_from_followers_only: bool,
+
     pub created_at: DateTimeWithTimeZone,
 
     #[sea_orm(nullable)]

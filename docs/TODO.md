@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (ワンボタンいいね実装)
+*Last Updated: 2025-12-11* (DM制限機能実装)
 
 ---
 
@@ -167,7 +167,7 @@
 | NodeInfo実統計取得 | ✅ 完了 | nodeinfo.rs |
 | Mastodon API base_url設定 | ✅ TODO残 | timelines.rs |
 | フォルダ循環参照チェック | 未実装 | drive.rs:475 |
-| 非フォロワーからのメッセージ制限 | 未実装 | messaging.rs:98 |
+| 非フォロワーからのメッセージ制限 | ✅ 完了 | messaging.rs, user_profile |
 
 ---
 
@@ -240,6 +240,9 @@
 - **ノートエクスポート（JSON/CSV）** - `/api/i/account/export/notes`エンドポイントでユーザーのノートをエクスポート可能。JSON形式（デフォルト）とCSV形式をサポート。各ノートはID、テキスト、CW、公開範囲、返信先、リノート先、ファイルID、タグ、URI、URL、作成日時、更新日時を含む。`limit`パラメータで最大件数指定（デフォルト10000）、`format`パラメータで形式選択（`json`または`csv`）。
 - **ブロック/ミュートエクスポート** - `/api/i/account/export/blocking`および`/api/i/account/export/muting`エンドポイントでブロック・ミュートしているユーザーをエクスポート可能。`ExportedFollow`形式（acct、uri）で最大10000件まで出力。
 - **Mastodon形式インポート** - `/api/i/account/import/blocking`および`/api/i/account/import/muting`エンドポイントでMastodon形式CSVからブロック・ミュートリストをインポート可能。ヘッダー行付きCSV（`Account address`列）またはシンプルな1行1acct形式に対応。インポート結果としてtotal/imported/skipped/failedカウントとエラー詳細を返却。
+
+### メッセージング拡張 (2025-12-11)
+- **非フォロワーからのDM制限** - `user_profile.receive_dm_from_followers_only`設定でフォロワー以外からのダイレクトメッセージを拒否可能。有効にすると送信者がフォロワーでない場合は403エラーを返却。既存のブロックチェックに加えて追加のプライバシー保護を提供。
 
 ---
 

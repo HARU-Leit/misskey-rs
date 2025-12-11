@@ -223,6 +223,7 @@ impl MoveProcessor {
                     moved_to_uri: Set(Some(target_uri.to_string())),
                     hide_bots: Set(false),
                     default_reaction: Set(None),
+                    receive_dm_from_followers_only: Set(false),
                     created_at: Set(chrono::Utc::now().into()),
                     updated_at: Set(None),
                 };

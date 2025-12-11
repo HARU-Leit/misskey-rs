@@ -5,7 +5,10 @@ use chrono::Utc;
 use misskey_common::{AppError, AppResult, IdGenerator};
 use misskey_db::{
     entities::messaging_message,
-    repositories::{BlockingRepository, MessagingRepository, UserRepository},
+    repositories::{
+        BlockingRepository, FollowingRepository, MessagingRepository, UserProfileRepository,
+        UserRepository,
+    },
 };
 use sea_orm::Set;
 
@@ -29,6 +32,8 @@ pub struct ConversationSummary {
 pub struct MessagingService {
     messaging_repo: MessagingRepository,
     user_repo: UserRepository,
+    user_profile_repo: UserProfileRepository,
+    following_repo: FollowingRepository,
     blocking_repo: BlockingRepository,
     event_publisher: Option<EventPublisherService>,
     id_gen: IdGenerator,
@@ -40,11 +45,15 @@ impl MessagingService {
     pub const fn new(
         messaging_repo: MessagingRepository,
         user_repo: UserRepository,
+        user_profile_repo: UserProfileRepository,
+        following_repo: FollowingRepository,
         blocking_repo: BlockingRepository,
     ) -> Self {
         Self {
             messaging_repo,
             user_repo,
+            user_profile_repo,
+            following_repo,
             blocking_repo,
             event_publisher: None,
             id_gen: IdGenerator::new(),
@@ -95,7 +104,19 @@ impl MessagingService {
             ));
         }
 
-        // TODO: Check if recipient allows messages from non-followers
+        // Check if recipient only allows DMs from followers
+        if let Some(profile) = self.user_profile_repo.find_by_user_id(recipient_id).await? {
+            if profile.receive_dm_from_followers_only
+                && !self
+                    .following_repo
+                    .is_following(sender_id, recipient_id)
+                    .await?
+            {
+                return Err(AppError::Forbidden(
+                    "This user only accepts messages from followers".to_string(),
+                ));
+            }
+        }
 
         let message_id = self.id_gen.generate();
 
