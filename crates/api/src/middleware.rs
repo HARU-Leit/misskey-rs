@@ -7,7 +7,7 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use misskey_core::{AccountService, AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DriveService, EmojiService, FollowingService, GalleryService, GroupService, HashtagService, InstanceService, MessagingService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService, PageService, PollService, PushNotificationService, ReactionService, ScheduledNoteService, TranslationService, TwoFactorService, UserListService, UserService, WebAuthnService, WebhookService, WordFilterService};
+use misskey_core::{AccountService, AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DriveService, EmojiService, FollowingService, GalleryService, GroupService, HashtagService, InstanceService, MessagingService, MetaSettingsService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService, PageService, PollService, PushNotificationService, ReactionService, RegistrationApprovalService, ScheduledNoteService, TranslationService, TwoFactorService, UserListService, UserService, WebAuthnService, WebhookService, WordFilterService};
 
 use crate::sse::SseBroadcaster;
 use crate::streaming::StreamingState;
@@ -47,6 +47,8 @@ pub struct AppState {
     pub push_notification_service: Option<PushNotificationService>,
     pub account_service: Option<AccountService>,
     pub group_service: GroupService,
+    pub meta_settings_service: MetaSettingsService,
+    pub registration_approval_service: RegistrationApprovalService,
     pub streaming: StreamingState,
     pub sse_broadcaster: SseBroadcaster,
 }
