@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (ActivityPub Update activity対応)
+*Last Updated: 2025-12-11* (EmojiReact Activity対応)
 
 ---
 
@@ -25,7 +25,7 @@
 | タスク | 状況 | 参照 |
 |--------|------|------|
 | ActivityPub Update activity対応（ノート編集連合） | ✅ 完了 | update.rs |
-| いいね/リアクションの適切な連合（Mastodon/Pleroma向け） | 未実装 | FORK_FEATURES.md |
+| いいね/リアクションの適切な連合（Mastodon/Pleroma向け） | ✅ 完了 | emoji_react.rs, like.rs |
 | 引用リノートのMastodon連合（FEP-e232対応） | 未実装 | COMMUNITY_FEATURES.md |
 | チャンネルのフェデレーション（Group actor） | 未実装 | COMMUNITY_FEATURES.md |
 | ActivityPub Move activity対応（アカウント移行） | 未実装 | MISSING_FEATURES.md |
@@ -203,14 +203,15 @@
 
 ### ActivityPub拡張 (2025-12-11)
 - **ActivityPub Update activity対応** - ローカルノート編集時にUpdate activityを配信、リモートからのUpdate activity受信でノート更新
+- **EmojiReact Activity対応** - Pleroma/Akkoma形式のエモジリアクション受信に対応。Like Activityに`content`フィールドを追加してPleroma互換性向上
 
 ---
 
 ## 次のアクション推奨
 
-1. **フェデレーション**: いいね/リアクションの適切な連合（Mastodon/Pleroma向け）
-2. **パフォーマンス**: URLプレビューキャッシュ → 外部リンク表示高速化
-3. **タイムライン**: バブルタイムライン → 信頼インスタンス間の連携強化
+1. **パフォーマンス**: URLプレビューキャッシュ → 外部リンク表示高速化
+2. **タイムライン**: バブルタイムライン → 信頼インスタンス間の連携強化
+3. **フェデレーション**: 引用リノートのMastodon連合（FEP-e232対応）
 
 ---
 

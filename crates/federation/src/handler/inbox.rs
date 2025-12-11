@@ -17,12 +17,12 @@ use std::collections::HashMap;
 use tracing::{debug, error, info, warn};
 
 use crate::{
-    AcceptActivity, AnnounceActivity, CreateActivity, DeleteActivity, FollowActivity, LikeActivity,
-    RejectActivity, UndoActivity, UpdateActivity,
+    AcceptActivity, AnnounceActivity, CreateActivity, DeleteActivity, EmojiReactActivity,
+    FollowActivity, LikeActivity, RejectActivity, UndoActivity, UpdateActivity,
     client::ApClient,
     processor::{
-        AcceptProcessor, AnnounceProcessor, CreateProcessor, FollowProcessor, LikeProcessor,
-        ParsedUndoActivity, UndoProcessor, UpdateProcessor,
+        AcceptProcessor, AnnounceProcessor, CreateProcessor, EmojiReactProcessor, FollowProcessor,
+        LikeProcessor, ParsedUndoActivity, UndoProcessor, UpdateProcessor,
     },
     signature::{HttpVerifier, verify_digest},
 };
@@ -37,6 +37,7 @@ pub enum InboxActivity {
     Accept(AcceptActivity),
     Reject(RejectActivity),
     Like(LikeActivity),
+    EmojiReact(EmojiReactActivity),
     Undo(UndoActivity),
     Update(UpdateActivity),
     Announce(AnnounceActivity),
@@ -54,6 +55,7 @@ impl InboxActivity {
             Self::Accept(_) => "Accept",
             Self::Reject(_) => "Reject",
             Self::Like(_) => "Like",
+            Self::EmojiReact(_) => "EmojiReact",
             Self::Undo(_) => "Undo",
             Self::Update(_) => "Update",
             Self::Announce(_) => "Announce",
@@ -71,6 +73,7 @@ impl InboxActivity {
             Self::Accept(a) => Some(&a.actor),
             Self::Reject(a) => Some(&a.actor),
             Self::Like(a) => Some(&a.actor),
+            Self::EmojiReact(a) => Some(&a.actor),
             Self::Undo(a) => Some(&a.actor),
             Self::Update(a) => Some(&a.actor),
             Self::Announce(a) => Some(&a.actor),
@@ -317,6 +320,20 @@ async fn process_activity(state: &InboxState, activity: &InboxActivity) -> AppRe
                 state.ap_client.clone(),
             );
             processor.process(like).await?;
+        }
+        InboxActivity::EmojiReact(emoji_react) => {
+            info!(
+                object = %emoji_react.object,
+                content = %emoji_react.content,
+                "Processing EmojiReact activity"
+            );
+            let processor = EmojiReactProcessor::new(
+                state.user_repo.clone(),
+                state.note_repo.clone(),
+                state.reaction_repo.clone(),
+                state.ap_client.clone(),
+            );
+            processor.process(emoji_react).await?;
         }
         InboxActivity::Undo(undo) => {
             info!(object = %undo.object, "Processing Undo activity");
