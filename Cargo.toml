@@ -62,7 +62,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # HTTP Client
-reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
 
 # Validation
 validator = { version = "0.19", features = ["derive"] }
@@ -107,8 +107,11 @@ once_cell = "1"
 totp-rs = { version = "5", features = ["gen_secret", "otpauth", "qr"] }
 
 # WebAuthn/Passkey
-webauthn-rs = { version = "0.5", features = ["danger-allow-state-serialisation"] }
+webauthn-rs = { version = "0.5", default-features = false, features = ["danger-allow-state-serialisation"] }
 webauthn-rs-proto = "0.5"
+
+# OpenSSL (vendored for cross-platform builds)
+openssl = { version = "0.10", features = ["vendored"] }
 
 # HMAC
 hmac = "0.12"
