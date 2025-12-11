@@ -690,6 +690,46 @@ impl NoteRepository {
             .await
             .map_err(|e| AppError::Database(e.to_string()))
     }
+
+    // ==================== Channel Timeline ====================
+
+    /// Get channel timeline (notes posted to a specific channel).
+    pub async fn find_by_channel(
+        &self,
+        channel_id: &str,
+        limit: u64,
+        until_id: Option<&str>,
+        since_id: Option<&str>,
+    ) -> AppResult<Vec<note::Model>> {
+        use sea_orm::Condition;
+
+        let mut condition = Condition::all().add(note::Column::ChannelId.eq(channel_id));
+
+        if let Some(until) = until_id {
+            condition = condition.add(note::Column::Id.lt(until));
+        }
+
+        if let Some(since) = since_id {
+            condition = condition.add(note::Column::Id.gt(since));
+        }
+
+        Note::find()
+            .filter(condition)
+            .order_by_desc(note::Column::Id)
+            .limit(limit)
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
+    /// Count notes in a channel.
+    pub async fn count_by_channel(&self, channel_id: &str) -> AppResult<u64> {
+        Note::find()
+            .filter(note::Column::ChannelId.eq(channel_id))
+            .count(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
 }
 
 #[cfg(test)]
@@ -722,6 +762,7 @@ mod tests {
             is_local: true,
             uri: None,
             url: None,
+            channel_id: None,
             created_at: Utc::now().into(),
             updated_at: None,
         }

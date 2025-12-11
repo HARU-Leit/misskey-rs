@@ -1,6 +1,8 @@
 //! Notification service.
 
 use crate::services::event_publisher::EventPublisherService;
+use crate::services::jobs::JobSender;
+use crate::services::push_notification::{PushNotificationType, PushPayload};
 use misskey_common::{AppResult, IdGenerator};
 use misskey_db::{
     entities::notification::{self, NotificationType},
@@ -13,6 +15,7 @@ use sea_orm::Set;
 pub struct NotificationService {
     notification_repo: NotificationRepository,
     event_publisher: Option<EventPublisherService>,
+    job_sender: Option<JobSender>,
     id_gen: IdGenerator,
 }
 
@@ -23,6 +26,7 @@ impl NotificationService {
         Self {
             notification_repo,
             event_publisher: None,
+            job_sender: None,
             id_gen: IdGenerator::new(),
         }
     }
@@ -30,6 +34,11 @@ impl NotificationService {
     /// Set the event publisher.
     pub fn set_event_publisher(&mut self, event_publisher: EventPublisherService) {
         self.event_publisher = Some(event_publisher);
+    }
+
+    /// Set the job sender for push notifications.
+    pub fn set_job_sender(&mut self, job_sender: JobSender) {
+        self.job_sender = Some(job_sender);
     }
 
     /// Create a follow notification.
@@ -258,24 +267,57 @@ impl NotificationService {
         let notification = self.notification_repo.create(model).await?;
 
         // Publish real-time event
+        let type_str = match notification_type.clone() {
+            NotificationType::Follow => "follow",
+            NotificationType::Mention => "mention",
+            NotificationType::Reply => "reply",
+            NotificationType::Renote => "renote",
+            NotificationType::Quote => "quote",
+            NotificationType::Reaction => "reaction",
+            NotificationType::PollEnded => "pollEnded",
+            NotificationType::ReceiveFollowRequest => "receiveFollowRequest",
+            NotificationType::FollowRequestAccepted => "followRequestAccepted",
+            NotificationType::App => "app",
+        };
+
         if let Some(ref event_publisher) = self.event_publisher {
-            let type_str = match notification_type {
-                NotificationType::Follow => "follow",
-                NotificationType::Mention => "mention",
-                NotificationType::Reply => "reply",
-                NotificationType::Renote => "renote",
-                NotificationType::Quote => "quote",
-                NotificationType::Reaction => "reaction",
-                NotificationType::PollEnded => "pollEnded",
-                NotificationType::ReceiveFollowRequest => "receiveFollowRequest",
-                NotificationType::FollowRequestAccepted => "followRequestAccepted",
-                NotificationType::App => "app",
-            };
             if let Err(e) = event_publisher
                 .publish_notification(&notification_id, notifiee_id, type_str, notifier_id, note_id)
                 .await
             {
                 tracing::warn!(error = %e, "Failed to publish notification event");
+            }
+        }
+
+        // Enqueue push notification job
+        if let Some(ref job_sender) = self.job_sender {
+            let push_type = match notification_type {
+                NotificationType::Follow => PushNotificationType::Follow,
+                NotificationType::Mention => PushNotificationType::Mention,
+                NotificationType::Reply => PushNotificationType::Reply,
+                NotificationType::Renote => PushNotificationType::Renote,
+                NotificationType::Quote => PushNotificationType::Quote,
+                NotificationType::Reaction => PushNotificationType::Reaction,
+                NotificationType::PollEnded => PushNotificationType::PollEnded,
+                NotificationType::ReceiveFollowRequest => PushNotificationType::FollowRequestReceived,
+                NotificationType::FollowRequestAccepted => PushNotificationType::FollowRequestAccepted,
+                NotificationType::App => PushNotificationType::App,
+            };
+
+            let payload = PushPayload {
+                notification_type: type_str.to_string(),
+                title: format!("New {}", type_str),
+                body: format!("You have a new {} notification", type_str),
+                icon: None,
+                url: None,
+                data: None,
+            };
+
+            if let Err(e) = job_sender
+                .push_notification(notifiee_id.to_string(), push_type, payload)
+                .await
+            {
+                tracing::warn!(error = %e, "Failed to enqueue push notification job");
             }
         }
 

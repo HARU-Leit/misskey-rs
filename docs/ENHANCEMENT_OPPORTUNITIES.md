@@ -19,6 +19,11 @@
 | 高度な検索フィルタ | `search.rs` | ✅ 完了 |
 | 通知タイプフィルタ | `notifications.rs` | ✅ 完了 |
 | トレンドノート取得 | `note.rs`, `search.rs` | ✅ 完了 |
+| クリップ内検索 | `clip.rs`, `clips.rs` | ✅ 完了 |
+| タイムラインワードフィルター | `notes.rs` | ✅ 完了 |
+| チャンネルタイムライン | `channels.rs`, `note.rs` | ✅ 完了 |
+| 2FA/WebAuthnログイン検証 | `auth.rs` | ✅ 完了 |
+| プッシュ通知ジョブサービス | `jobs.rs`, `notification.rs` | ✅ 完了 |
 
 ---
 

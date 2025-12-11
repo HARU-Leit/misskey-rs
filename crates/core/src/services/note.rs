@@ -47,6 +47,9 @@ pub struct CreateNoteInput {
 
     #[serde(default)]
     pub visible_user_ids: Vec<String>,
+
+    /// Channel ID to post to (optional).
+    pub channel_id: Option<String>,
 }
 
 const fn default_visibility() -> Visibility {
@@ -185,6 +188,7 @@ impl NoteService {
             tags: Set(json!(tags)),
             reactions: Set(json!({})),
             is_local: Set(user.host.is_none()),
+            channel_id: Set(input.channel_id.clone()),
             ..Default::default()
         };
 
@@ -649,6 +653,21 @@ impl NoteService {
         let count = self.note_repo.count_edit_history(note_id).await?;
         Ok(count > 0)
     }
+
+    // ==================== Channel Timeline ====================
+
+    /// Get channel timeline (notes posted to a specific channel).
+    pub async fn channel_timeline(
+        &self,
+        channel_id: &str,
+        limit: u64,
+        until_id: Option<&str>,
+        since_id: Option<&str>,
+    ) -> AppResult<Vec<note::Model>> {
+        self.note_repo
+            .find_by_channel(channel_id, limit, until_id, since_id)
+            .await
+    }
 }
 
 /// Extract @mentions from text.
@@ -735,6 +754,7 @@ mod tests {
             is_local: true,
             uri: None,
             url: None,
+            channel_id: None,
             created_at: Utc::now().into(),
             updated_at: None,
         }
@@ -827,6 +847,7 @@ mod tests {
             renote_id: None,
             file_ids: vec![],
             visible_user_ids: vec![],
+            channel_id: None,
         };
 
         let result = service.create("user1", input).await;

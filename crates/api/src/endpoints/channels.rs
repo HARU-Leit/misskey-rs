@@ -6,7 +6,10 @@ use misskey_core::services::channel::{CreateChannelInput, UpdateChannelInput};
 use misskey_db::entities::channel;
 use serde::{Deserialize, Serialize};
 
-use crate::{extractors::AuthUser, middleware::AppState, response::ApiResponse};
+use crate::{
+    endpoints::notes::NoteResponse, extractors::AuthUser, middleware::AppState,
+    response::ApiResponse,
+};
 
 // ==================== Request/Response Types ====================
 
@@ -92,6 +95,17 @@ pub struct SearchChannelsRequest {
 #[serde(rename_all = "camelCase")]
 pub struct FollowChannelRequest {
     pub channel_id: String,
+}
+
+/// Channel timeline request.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChannelTimelineRequest {
+    pub channel_id: String,
+    #[serde(default = "default_limit")]
+    pub limit: u64,
+    pub until_id: Option<String>,
+    pub since_id: Option<String>,
 }
 
 const fn default_limit() -> u64 {
@@ -253,6 +267,34 @@ async fn unfollow(
     Ok(ApiResponse::ok(()))
 }
 
+/// Get channel timeline.
+async fn timeline(
+    State(state): State<AppState>,
+    Json(req): Json<ChannelTimelineRequest>,
+) -> AppResult<ApiResponse<Vec<NoteResponse>>> {
+    let limit = req.limit.min(100);
+
+    // Verify channel exists
+    let _channel = state
+        .channel_service
+        .get_by_id(&req.channel_id)
+        .await?
+        .ok_or_else(|| misskey_common::AppError::NotFound("Channel not found".to_string()))?;
+
+    // Archived channels can still be viewed
+    let notes = state
+        .note_service
+        .channel_timeline(
+            &req.channel_id,
+            limit,
+            req.until_id.as_deref(),
+            req.since_id.as_deref(),
+        )
+        .await?;
+
+    Ok(ApiResponse::ok(notes.into_iter().map(Into::into).collect()))
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/create", post(create))
@@ -265,4 +307,5 @@ pub fn router() -> Router<AppState> {
         .route("/search", post(search))
         .route("/follow", post(follow))
         .route("/unfollow", post(unfollow))
+        .route("/timeline", post(timeline))
 }

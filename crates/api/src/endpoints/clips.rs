@@ -177,6 +177,18 @@ pub struct FindNoteInClipsRequest {
     pub note_id: String,
 }
 
+/// Search notes in clip request.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchNotesRequest {
+    pub clip_id: String,
+    pub query: String,
+    #[serde(default = "default_limit")]
+    pub limit: u64,
+    #[serde(default)]
+    pub offset: u64,
+}
+
 const fn default_limit() -> u64 {
     10
 }
@@ -384,6 +396,45 @@ async fn find_note_in_clips(
     Ok(ApiResponse::ok(clips))
 }
 
+/// Search notes within a clip by text content.
+async fn search_notes(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<SearchNotesRequest>,
+) -> AppResult<ApiResponse<Vec<ClipNoteResponse>>> {
+    let limit = req.limit.min(100);
+
+    // Search notes in clip
+    let note_ids = state
+        .clip_service
+        .search_notes(&req.clip_id, Some(&user.id), &req.query, limit, req.offset)
+        .await?;
+
+    // Get note details and build response
+    let mut results = Vec::new();
+    for note_id in note_ids {
+        if let Ok(note) = state.note_service.get(&note_id).await {
+            // Get clip note for this note
+            let clip_notes = state
+                .clip_service
+                .list_notes(&req.clip_id, Some(&user.id), 1000, 0)
+                .await?;
+
+            if let Some(cn) = clip_notes.iter().find(|cn| cn.note_id == note_id) {
+                results.push(ClipNoteResponse {
+                    id: cn.id.clone(),
+                    created_at: cn.created_at.to_rfc3339(),
+                    note_id: cn.note_id.clone(),
+                    comment: cn.comment.clone(),
+                    note: Some(note.into()),
+                });
+            }
+        }
+    }
+
+    Ok(ApiResponse::ok(results))
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/create", post(create))
@@ -398,4 +449,5 @@ pub fn router() -> Router<AppState> {
         .route("/reorder", post(reorder))
         .route("/reorder-notes", post(reorder_notes))
         .route("/find-note", post(find_note_in_clips))
+        .route("/search", post(search_notes))
 }
