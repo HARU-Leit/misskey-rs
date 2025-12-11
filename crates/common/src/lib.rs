@@ -1,4 +1,28 @@
 //! Common utilities and shared types for misskey-rs.
+//!
+//! This crate provides foundational components used across all misskey-rs crates:
+//!
+//! - **Configuration**: Application settings via [`Config`]
+//! - **Error handling**: Unified error types via [`AppError`] and [`AppResult`]
+//! - **Cryptography**: RSA key generation for ActivityPub signatures
+//! - **HTTP Signatures**: Implementation of HTTP Signatures for federation
+//! - **ID Generation**: ULID-based unique identifiers via [`IdGenerator`]
+//! - **Metrics**: Performance monitoring via [`Metrics`]
+//! - **Storage**: File storage backends (local, S3-compatible)
+//! - **URL Preview**: Link preview fetching for rich embeds
+//!
+//! # Example
+//!
+//! ```no_run
+//! use misskey_common::{Config, IdGenerator, AppResult};
+//!
+//! fn example() -> AppResult<()> {
+//!     let config = Config::from_env()?;
+//!     let id = IdGenerator::generate();
+//!     println!("Generated ID: {}", id);
+//!     Ok(())
+//! }
+//! ```
 
 pub mod config;
 pub mod crypto;

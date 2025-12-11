@@ -1,4 +1,25 @@
 //! Database layer for misskey-rs.
+//!
+//! This crate provides the persistence layer using SeaORM with PostgreSQL:
+//!
+//! - **Entities**: Database models in [`entities`]
+//! - **Migrations**: Schema migrations in [`migrations`]
+//! - **Repositories**: Data access patterns in [`repositories`]
+//! - **Test utilities**: Mock database support in [`test_utils`]
+//!
+//! # Example
+//!
+//! ```no_run
+//! use misskey_db::{init, migrate};
+//! use misskey_common::Config;
+//!
+//! async fn setup_database() -> Result<(), Box<dyn std::error::Error>> {
+//!     let config = Config::from_env()?;
+//!     let db = init(&config).await?;
+//!     migrate(&db).await?;
+//!     Ok(())
+//! }
+//! ```
 
 pub mod entities;
 pub mod migrations;
