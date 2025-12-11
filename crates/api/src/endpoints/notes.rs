@@ -1,13 +1,17 @@
 //! Notes endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
-use misskey_core::{note::CreateNoteInput, AntennaService, UpdateNoteInput};
+use misskey_core::{AntennaService, UpdateNoteInput, note::CreateNoteInput};
 use misskey_db::entities::{note, note_edit};
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
-use crate::{extractors::{AuthUser, MaybeAuthUser}, middleware::AppState, response::ApiResponse};
+use crate::{
+    extractors::{AuthUser, MaybeAuthUser},
+    middleware::AppState,
+    response::ApiResponse,
+};
 
 /// Note response.
 #[derive(Serialize, Clone)]
@@ -198,7 +202,9 @@ async fn apply_word_filters(
 
             if filter_result.matched {
                 response.filtered = true;
-                response.filter_action = filter_result.action.map(|a| format!("{:?}", a).to_lowercase());
+                response.filter_action = filter_result
+                    .action
+                    .map(|a| format!("{:?}", a).to_lowercase());
                 response.filter_matches = Some(filter_result.matched_phrases);
             }
         }
@@ -250,7 +256,8 @@ async fn local_timeline(
 
     // Apply word filters if user is authenticated
     let result = if let Some(ref user) = user {
-        let filtered_notes = apply_word_filters(&state, &user.id, notes, FilterContext::Public).await?;
+        let filtered_notes =
+            apply_word_filters(&state, &user.id, notes, FilterContext::Public).await?;
         filter_hidden_notes(filtered_notes)
     } else {
         notes.into_iter().map(Into::into).collect()
@@ -273,7 +280,8 @@ async fn global_timeline(
 
     // Apply word filters if user is authenticated
     let result = if let Some(ref user) = user {
-        let filtered_notes = apply_word_filters(&state, &user.id, notes, FilterContext::Public).await?;
+        let filtered_notes =
+            apply_word_filters(&state, &user.id, notes, FilterContext::Public).await?;
         filter_hidden_notes(filtered_notes)
     } else {
         notes.into_iter().map(Into::into).collect()
@@ -358,10 +366,7 @@ async fn replies(
     Json(req): Json<RepliesRequest>,
 ) -> AppResult<ApiResponse<Vec<NoteResponse>>> {
     let limit = req.limit.min(max_limit());
-    let notes = state
-        .note_service
-        .get_replies(&req.note_id, limit)
-        .await?;
+    let notes = state.note_service.get_replies(&req.note_id, limit).await?;
     Ok(ApiResponse::ok(notes.into_iter().map(Into::into).collect()))
 }
 
@@ -381,10 +386,7 @@ async fn renotes(
     Json(req): Json<RenotesRequest>,
 ) -> AppResult<ApiResponse<Vec<NoteResponse>>> {
     let limit = req.limit.min(max_limit());
-    let notes = state
-        .note_service
-        .get_renotes(&req.note_id, limit)
-        .await?;
+    let notes = state.note_service.get_renotes(&req.note_id, limit).await?;
     Ok(ApiResponse::ok(notes.into_iter().map(Into::into).collect()))
 }
 
@@ -429,10 +431,7 @@ async fn children(
     Json(req): Json<ChildrenRequest>,
 ) -> AppResult<ApiResponse<Vec<NoteResponse>>> {
     let limit = req.limit.min(max_limit());
-    let notes = state
-        .note_service
-        .get_children(&req.note_id, limit)
-        .await?;
+    let notes = state.note_service.get_children(&req.note_id, limit).await?;
     Ok(ApiResponse::ok(notes.into_iter().map(Into::into).collect()))
 }
 
@@ -494,5 +493,7 @@ async fn get_history(
         .note_service
         .get_edit_history(&req.note_id, limit, req.offset)
         .await?;
-    Ok(ApiResponse::ok(history.into_iter().map(Into::into).collect()))
+    Ok(ApiResponse::ok(
+        history.into_iter().map(Into::into).collect(),
+    ))
 }

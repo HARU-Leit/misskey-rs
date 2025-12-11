@@ -1,6 +1,6 @@
 //! Clip service.
 
-use misskey_common::{id::IdGenerator, AppError, AppResult};
+use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::{clip, clip_note};
 use misskey_db::repositories::ClipRepository;
 
@@ -145,7 +145,9 @@ impl ClipService {
             }
         }
 
-        self.clip_repo.update(id, name, description, is_public).await
+        self.clip_repo
+            .update(id, name, description, is_public)
+            .await
     }
 
     /// Delete a clip.
@@ -203,7 +205,9 @@ impl ClipService {
             return Err(AppError::Forbidden("Cannot access this clip".to_string()));
         }
 
-        self.clip_repo.find_notes_in_clip(clip_id, limit, offset).await
+        self.clip_repo
+            .find_notes_in_clip(clip_id, limit, offset)
+            .await
     }
 
     /// Add a note to a clip.
@@ -249,12 +253,7 @@ impl ClipService {
     }
 
     /// Remove a note from a clip.
-    pub async fn remove_note(
-        &self,
-        clip_id: &str,
-        note_id: &str,
-        user_id: &str,
-    ) -> AppResult<()> {
+    pub async fn remove_note(&self, clip_id: &str, note_id: &str, user_id: &str) -> AppResult<()> {
         // Verify ownership
         let clip = self
             .clip_repo

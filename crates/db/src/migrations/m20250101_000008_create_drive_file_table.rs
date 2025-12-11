@@ -22,7 +22,11 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(DriveFile::UserId).string_len(32).not_null())
                     .col(ColumnDef::new(DriveFile::UserHost).string_len(256))
                     .col(ColumnDef::new(DriveFile::Name).string_len(256).not_null())
-                    .col(ColumnDef::new(DriveFile::ContentType).string_len(128).not_null())
+                    .col(
+                        ColumnDef::new(DriveFile::ContentType)
+                            .string_len(128)
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(DriveFile::Size).big_integer().not_null())
                     .col(ColumnDef::new(DriveFile::Url).string_len(1024).not_null())
                     .col(ColumnDef::new(DriveFile::ThumbnailUrl).string_len(1024))

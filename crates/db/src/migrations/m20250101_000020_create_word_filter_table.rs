@@ -19,11 +19,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(
-                        ColumnDef::new(WordFilter::UserId)
-                            .string_len(32)
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(WordFilter::UserId).string_len(32).not_null())
                     .col(
                         ColumnDef::new(WordFilter::Phrase)
                             .string_len(512)

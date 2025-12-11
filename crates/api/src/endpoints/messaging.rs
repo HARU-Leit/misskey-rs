@@ -1,20 +1,16 @@
 //! Messaging endpoints for direct messages.
 
 use axum::{
+    Json, Router,
     extract::{Path, Query, State},
     routing::{delete, get, post},
-    Json, Router,
 };
 use chrono::{DateTime, Utc};
 use misskey_common::AppResult;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::{
-    extractors::AuthUser,
-    middleware::AppState,
-    response::ApiResponse,
-};
+use crate::{extractors::AuthUser, middleware::AppState, response::ApiResponse};
 
 /// Create messaging router.
 pub fn router() -> Router<AppState> {
@@ -134,7 +130,12 @@ async fn get_conversation(
 ) -> AppResult<ApiResponse<MessageListResponse>> {
     let messages = state
         .messaging_service
-        .get_conversation(&user.id, &partner_id, query.limit, query.until_id.as_deref())
+        .get_conversation(
+            &user.id,
+            &partner_id,
+            query.limit,
+            query.until_id.as_deref(),
+        )
         .await?;
 
     let messages: Vec<MessageResponse> = messages.into_iter().map(MessageResponse::from).collect();

@@ -3,13 +3,13 @@
 //! Implements HTTP Signatures as used by `ActivityPub` for request authentication.
 //! See: <https://datatracker.ietf.org/doc/html/draft-cavage-http-signatures>
 
-use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use rsa::{
+    RsaPrivateKey, RsaPublicKey,
     pkcs1v15::{Signature, SigningKey, VerifyingKey},
     pkcs8::DecodePublicKey,
     sha2::Sha256,
     signature::{SignatureEncoding, Signer, Verifier},
-    RsaPrivateKey, RsaPublicKey,
 };
 use sha2::{Digest, Sha256 as Sha256Hasher};
 use std::collections::HashMap;
@@ -86,9 +86,7 @@ pub fn build_signature_string(
             headers
                 .get(&header_name.to_lowercase())
                 .cloned()
-                .ok_or_else(|| {
-                    AppError::BadRequest(format!("Missing header: {header_name}"))
-                })?
+                .ok_or_else(|| AppError::BadRequest(format!("Missing header: {header_name}")))?
         };
 
         parts.push(format!("{header_name}: {value}"));
@@ -151,7 +149,10 @@ pub fn sign_request(
     signed_header_names: &[&str],
 ) -> AppResult<String> {
     // Build signature string
-    let header_names: Vec<String> = signed_header_names.iter().map(|s| (*s).to_string()).collect();
+    let header_names: Vec<String> = signed_header_names
+        .iter()
+        .map(|s| (*s).to_string())
+        .collect();
     let sig_string = build_signature_string(method, path, headers, &header_names)?;
 
     // Sign
@@ -169,7 +170,7 @@ pub fn sign_request(
 }
 
 /// Calculate SHA-256 digest of a body.
-#[must_use] 
+#[must_use]
 pub fn calculate_digest(body: &[u8]) -> String {
     let mut hasher = Sha256Hasher::new();
     hasher.update(body);
@@ -201,7 +202,10 @@ mod tests {
     fn test_build_signature_string() {
         let mut headers = HashMap::new();
         headers.insert("host".to_string(), "example.com".to_string());
-        headers.insert("date".to_string(), "Sun, 06 Nov 1994 08:49:37 GMT".to_string());
+        headers.insert(
+            "date".to_string(),
+            "Sun, 06 Nov 1994 08:49:37 GMT".to_string(),
+        );
 
         let signed_headers = vec![
             "(request-target)".to_string(),

@@ -1,11 +1,15 @@
 //! Page endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_core::{CreatePageInput, PageResponse, UpdatePageInput};
 use serde::Deserialize;
 
-use crate::{extractors::{AuthUser, MaybeAuthUser}, middleware::AppState, response::ApiResponse};
+use crate::{
+    extractors::{AuthUser, MaybeAuthUser},
+    middleware::AppState,
+    response::ApiResponse,
+};
 
 /// Request to get a page by ID.
 #[derive(Debug, Deserialize)]

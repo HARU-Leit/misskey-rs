@@ -2,8 +2,8 @@
 //!
 //! Implements OAuth 2.0 Authorization Code Flow with PKCE support.
 
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
-use misskey_common::{id::IdGenerator, AppError, AppResult};
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::{oauth_app, oauth_token};
 use misskey_db::repositories::OAuthRepository;
 use sea_orm::Set;
@@ -32,13 +32,20 @@ pub mod scopes {
     #[must_use]
     pub fn all() -> Vec<&'static str> {
         vec![
-            READ, WRITE,
-            READ_ACCOUNT, WRITE_ACCOUNT,
-            READ_NOTES, WRITE_NOTES,
-            READ_NOTIFICATIONS, WRITE_NOTIFICATIONS,
-            READ_FOLLOWING, WRITE_FOLLOWING,
-            READ_DRIVE, WRITE_DRIVE,
-            READ_FAVORITES, WRITE_FAVORITES,
+            READ,
+            WRITE,
+            READ_ACCOUNT,
+            WRITE_ACCOUNT,
+            READ_NOTES,
+            WRITE_NOTES,
+            READ_NOTIFICATIONS,
+            WRITE_NOTIFICATIONS,
+            READ_FOLLOWING,
+            WRITE_FOLLOWING,
+            READ_DRIVE,
+            WRITE_DRIVE,
+            READ_FAVORITES,
+            WRITE_FAVORITES,
         ]
     }
 
@@ -218,19 +225,18 @@ impl OAuthService {
 
         // Validate redirect URIs
         for uri in &input.redirect_uris {
-            if !uri.starts_with("http://") && !uri.starts_with("https://") && !uri.starts_with("urn:") {
-                return Err(AppError::Validation(format!(
-                    "Invalid redirect URI: {uri}"
-                )));
+            if !uri.starts_with("http://")
+                && !uri.starts_with("https://")
+                && !uri.starts_with("urn:")
+            {
+                return Err(AppError::Validation(format!("Invalid redirect URI: {uri}")));
             }
         }
 
         // Validate scopes
         for scope in &input.scopes {
             if !scopes::is_valid(scope) {
-                return Err(AppError::Validation(format!(
-                    "Invalid scope: {scope}"
-                )));
+                return Err(AppError::Validation(format!("Invalid scope: {scope}")));
             }
         }
 
@@ -305,10 +311,11 @@ impl OAuthService {
                 ));
             }
             for uri in &redirect_uris {
-                if !uri.starts_with("http://") && !uri.starts_with("https://") && !uri.starts_with("urn:") {
-                    return Err(AppError::Validation(format!(
-                        "Invalid redirect URI: {uri}"
-                    )));
+                if !uri.starts_with("http://")
+                    && !uri.starts_with("https://")
+                    && !uri.starts_with("urn:")
+                {
+                    return Err(AppError::Validation(format!("Invalid redirect URI: {uri}")));
                 }
             }
             active.redirect_uris = Set(json!(redirect_uris));
@@ -317,9 +324,7 @@ impl OAuthService {
         if let Some(requested_scopes) = input.scopes {
             for scope in &requested_scopes {
                 if !scopes::is_valid(scope) {
-                    return Err(AppError::Validation(format!(
-                        "Invalid scope: {scope}"
-                    )));
+                    return Err(AppError::Validation(format!("Invalid scope: {scope}")));
                 }
             }
             active.scopes = Set(json!(requested_scopes));
@@ -358,7 +363,9 @@ impl OAuthService {
         let app = self.oauth_repo.get_app_by_client_id(client_id).await?;
 
         if !app.is_active {
-            return Err(AppError::NotFound("Application not found or inactive".to_string()));
+            return Err(AppError::NotFound(
+                "Application not found or inactive".to_string(),
+            ));
         }
 
         Ok(app.into())
@@ -386,22 +393,28 @@ impl OAuthService {
         }
 
         // Get the application
-        let app = self.oauth_repo.get_app_by_client_id(&input.client_id).await?;
+        let app = self
+            .oauth_repo
+            .get_app_by_client_id(&input.client_id)
+            .await?;
 
         if !app.is_active {
-            return Err(AppError::Validation("Application is not active".to_string()));
+            return Err(AppError::Validation(
+                "Application is not active".to_string(),
+            ));
         }
 
         // Validate redirect URI
-        let allowed_uris: Vec<String> = serde_json::from_value(app.redirect_uris.clone())
-            .unwrap_or_default();
+        let allowed_uris: Vec<String> =
+            serde_json::from_value(app.redirect_uris.clone()).unwrap_or_default();
         if !allowed_uris.contains(&input.redirect_uri) {
             return Err(AppError::Validation("Invalid redirect_uri".to_string()));
         }
 
         // Validate scopes
         let requested_scopes: Vec<&str> = input.scope.split_whitespace().collect();
-        let app_scopes: Vec<String> = serde_json::from_value(app.scopes.clone()).unwrap_or_default();
+        let app_scopes: Vec<String> =
+            serde_json::from_value(app.scopes.clone()).unwrap_or_default();
         for scope in &requested_scopes {
             if !app_scopes.iter().any(|s| s == *scope) {
                 return Err(AppError::Validation(format!(
@@ -456,10 +469,7 @@ impl OAuthService {
     }
 
     /// Exchange an authorization code for access and refresh tokens.
-    pub async fn exchange_token(
-        &self,
-        input: TokenExchangeInput,
-    ) -> AppResult<TokenResponse> {
+    pub async fn exchange_token(&self, input: TokenExchangeInput) -> AppResult<TokenResponse> {
         match input.grant_type.as_str() {
             "authorization_code" => self.exchange_authorization_code(input).await,
             "refresh_token" => self.exchange_refresh_token(input).await,
@@ -474,19 +484,23 @@ impl OAuthService {
         &self,
         input: TokenExchangeInput,
     ) -> AppResult<TokenResponse> {
-        let code = input.code.ok_or_else(|| {
-            AppError::Validation("code is required".to_string())
-        })?;
+        let code = input
+            .code
+            .ok_or_else(|| AppError::Validation("code is required".to_string()))?;
 
-        let redirect_uri = input.redirect_uri.ok_or_else(|| {
-            AppError::Validation("redirect_uri is required".to_string())
-        })?;
+        let redirect_uri = input
+            .redirect_uri
+            .ok_or_else(|| AppError::Validation("redirect_uri is required".to_string()))?;
 
         // Find the authorization code
         let code_hash = self.hash_token(&code);
-        let token = self.oauth_repo.find_token_by_hash(&code_hash).await?.ok_or_else(|| {
-            AppError::Validation("Invalid or expired authorization code".to_string())
-        })?;
+        let token = self
+            .oauth_repo
+            .find_token_by_hash(&code_hash)
+            .await?
+            .ok_or_else(|| {
+                AppError::Validation("Invalid or expired authorization code".to_string())
+            })?;
 
         // Verify it's an authorization code
         if token.token_type != oauth_token::TokenType::AuthorizationCode {
@@ -495,12 +509,16 @@ impl OAuthService {
 
         // Verify not revoked and not expired
         if token.is_revoked {
-            return Err(AppError::Validation("Authorization code has been revoked".to_string()));
+            return Err(AppError::Validation(
+                "Authorization code has been revoked".to_string(),
+            ));
         }
 
         let now = chrono::Utc::now().fixed_offset();
         if token.expires_at < now {
-            return Err(AppError::Validation("Authorization code has expired".to_string()));
+            return Err(AppError::Validation(
+                "Authorization code has expired".to_string(),
+            ));
         }
 
         // Verify redirect_uri matches
@@ -518,9 +536,9 @@ impl OAuthService {
 
         // Verify PKCE if it was used
         if let Some(ref challenge) = token.code_challenge {
-            let verifier = input.code_verifier.ok_or_else(|| {
-                AppError::Validation("code_verifier is required".to_string())
-            })?;
+            let verifier = input
+                .code_verifier
+                .ok_or_else(|| AppError::Validation("code_verifier is required".to_string()))?;
 
             let method = token.code_challenge_method.as_deref().unwrap_or("plain");
             let computed_challenge = if method == "S256" {
@@ -551,7 +569,8 @@ impl OAuthService {
         // Generate access token
         let access_token = self.generate_token();
         let access_token_hash = self.hash_token(&access_token);
-        let access_expires_at = chrono::Utc::now() + chrono::Duration::seconds(expiry::ACCESS_TOKEN);
+        let access_expires_at =
+            chrono::Utc::now() + chrono::Duration::seconds(expiry::ACCESS_TOKEN);
 
         let access_token_model = oauth_token::ActiveModel {
             id: Set(self.id_gen.generate()),
@@ -574,7 +593,8 @@ impl OAuthService {
         // Generate refresh token
         let refresh_token = self.generate_token();
         let refresh_token_hash = self.hash_token(&refresh_token);
-        let refresh_expires_at = chrono::Utc::now() + chrono::Duration::seconds(expiry::REFRESH_TOKEN);
+        let refresh_expires_at =
+            chrono::Utc::now() + chrono::Duration::seconds(expiry::REFRESH_TOKEN);
 
         let refresh_token_model = oauth_token::ActiveModel {
             id: Set(self.id_gen.generate()),
@@ -605,19 +625,18 @@ impl OAuthService {
         })
     }
 
-    async fn exchange_refresh_token(
-        &self,
-        input: TokenExchangeInput,
-    ) -> AppResult<TokenResponse> {
-        let refresh_token_str = input.refresh_token.ok_or_else(|| {
-            AppError::Validation("refresh_token is required".to_string())
-        })?;
+    async fn exchange_refresh_token(&self, input: TokenExchangeInput) -> AppResult<TokenResponse> {
+        let refresh_token_str = input
+            .refresh_token
+            .ok_or_else(|| AppError::Validation("refresh_token is required".to_string()))?;
 
         // Find the refresh token
         let refresh_hash = self.hash_token(&refresh_token_str);
-        let refresh_token = self.oauth_repo.find_token_by_hash(&refresh_hash).await?.ok_or_else(|| {
-            AppError::Validation("Invalid refresh token".to_string())
-        })?;
+        let refresh_token = self
+            .oauth_repo
+            .find_token_by_hash(&refresh_hash)
+            .await?
+            .ok_or_else(|| AppError::Validation("Invalid refresh token".to_string()))?;
 
         // Verify it's a refresh token
         if refresh_token.token_type != oauth_token::TokenType::RefreshToken {
@@ -626,12 +645,16 @@ impl OAuthService {
 
         // Verify not revoked and not expired
         if refresh_token.is_revoked {
-            return Err(AppError::Validation("Refresh token has been revoked".to_string()));
+            return Err(AppError::Validation(
+                "Refresh token has been revoked".to_string(),
+            ));
         }
 
         let now = chrono::Utc::now().fixed_offset();
         if refresh_token.expires_at < now {
-            return Err(AppError::Validation("Refresh token has expired".to_string()));
+            return Err(AppError::Validation(
+                "Refresh token has expired".to_string(),
+            ));
         }
 
         // Get the application
@@ -645,7 +668,8 @@ impl OAuthService {
         // Generate new access token
         let access_token = self.generate_token();
         let access_token_hash = self.hash_token(&access_token);
-        let access_expires_at = chrono::Utc::now() + chrono::Duration::seconds(expiry::ACCESS_TOKEN);
+        let access_expires_at =
+            chrono::Utc::now() + chrono::Duration::seconds(expiry::ACCESS_TOKEN);
 
         let access_token_model = oauth_token::ActiveModel {
             id: Set(self.id_gen.generate()),
@@ -679,9 +703,11 @@ impl OAuthService {
     /// Validate an access token and return the user ID if valid.
     pub async fn validate_access_token(&self, token: &str) -> AppResult<(String, Vec<String>)> {
         let token_hash = self.hash_token(token);
-        let token_record = self.oauth_repo.find_token_by_hash(&token_hash).await?.ok_or(
-            AppError::Unauthorized
-        )?;
+        let token_record = self
+            .oauth_repo
+            .find_token_by_hash(&token_hash)
+            .await?
+            .ok_or(AppError::Unauthorized)?;
 
         // Verify it's an access token
         if token_record.token_type != oauth_token::TokenType::AccessToken {
@@ -717,12 +743,17 @@ impl OAuthService {
 
     /// Revoke all tokens for a user and application.
     pub async fn revoke_app_authorization(&self, user_id: &str, app_id: &str) -> AppResult<()> {
-        self.oauth_repo.revoke_tokens_for_user_app(user_id, app_id).await?;
+        self.oauth_repo
+            .revoke_tokens_for_user_app(user_id, app_id)
+            .await?;
         Ok(())
     }
 
     /// List authorized applications for a user.
-    pub async fn list_authorized_apps(&self, user_id: &str) -> AppResult<Vec<AuthorizedAppResponse>> {
+    pub async fn list_authorized_apps(
+        &self,
+        user_id: &str,
+    ) -> AppResult<Vec<AuthorizedAppResponse>> {
         let tokens = self.oauth_repo.find_tokens_by_user_id(user_id).await?;
 
         // Group by app_id and get latest

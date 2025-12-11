@@ -1,19 +1,15 @@
 //! Custom emoji endpoints.
 
 use axum::{
+    Json, Router,
     extract::{Path, Query, State},
     routing::{delete, get, post, put},
-    Json, Router,
 };
 use misskey_common::AppResult;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::{
-    extractors::AuthUser,
-    middleware::AppState,
-    response::ApiResponse,
-};
+use crate::{extractors::AuthUser, middleware::AppState, response::ApiResponse};
 
 /// Create emoji router.
 pub fn router() -> Router<AppState> {

@@ -3,21 +3,29 @@
 //! These tests verify the API endpoints work correctly together.
 
 use axum::{
+    Router,
     body::Body,
     http::{Request, StatusCode},
-    Router,
 };
-use misskey_api::{middleware::AppState, router as api_router, SseBroadcaster, StreamingState};
+use misskey_api::{SseBroadcaster, StreamingState, middleware::AppState, router as api_router};
 use misskey_common::config::{Config, DatabaseConfig, FederationConfig, RedisConfig, ServerConfig};
-use misskey_core::{AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DriveService, EmojiService, FollowingService, GalleryService, GroupService, InstanceService, MessagingService, MetaSettingsService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService, PageService, PollService, ReactionService, RegistrationApprovalService, ScheduledNoteService, TwoFactorService, UserListService, UserService, WebAuthnConfig, WebAuthnService, WebhookService, WordFilterService};
+use misskey_core::{
+    AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService,
+    DriveService, EmojiService, FollowingService, GalleryService, GroupService, InstanceService,
+    MessagingService, MetaSettingsService, ModerationService, MutingService, NoteFavoriteService,
+    NoteService, NotificationService, OAuthService, PageService, PollService, ReactionService,
+    RegistrationApprovalService, ScheduledNoteService, TwoFactorService, UserListService,
+    UserService, WebAuthnConfig, WebAuthnService, WebhookService, WordFilterService,
+};
 use misskey_db::repositories::{
-    AnnouncementRepository, AntennaRepository, BlockingRepository, ChannelRepository, ClipRepository,
-    DriveFileRepository, DriveFolderRepository, EmojiRepository, FollowRequestRepository,
-    FollowingRepository, GalleryRepository, GroupRepository, InstanceRepository, MessagingRepository, MutingRepository,
-    NoteFavoriteRepository, NoteRepository, NotificationRepository, OAuthRepository, PageRepository, PollRepository,
-    PollVoteRepository, ReactionRepository, ScheduledNoteRepository, SecurityKeyRepository, UserKeypairRepository,
-    UserListRepository, UserProfileRepository, UserRepository, ModerationRepository,
-    WebhookRepository, WordFilterRepository,
+    AnnouncementRepository, AntennaRepository, BlockingRepository, ChannelRepository,
+    ClipRepository, DriveFileRepository, DriveFolderRepository, EmojiRepository,
+    FollowRequestRepository, FollowingRepository, GalleryRepository, GroupRepository,
+    InstanceRepository, MessagingRepository, ModerationRepository, MutingRepository,
+    NoteFavoriteRepository, NoteRepository, NotificationRepository, OAuthRepository,
+    PageRepository, PollRepository, PollVoteRepository, ReactionRepository,
+    ScheduledNoteRepository, SecurityKeyRepository, UserKeypairRepository, UserListRepository,
+    UserProfileRepository, UserRepository, WebhookRepository, WordFilterRepository,
 };
 use sea_orm::{DatabaseBackend, DatabaseConnection, MockDatabase, MockExecResult};
 use std::sync::Arc;
@@ -106,13 +114,19 @@ fn create_test_state() -> AppState {
         note_repo.clone(),
         &config,
     );
-    let note_service = NoteService::new(note_repo.clone(), user_repo.clone(), following_repo.clone());
+    let note_service =
+        NoteService::new(note_repo.clone(), user_repo.clone(), following_repo.clone());
     let blocking_service = BlockingService::new(blocking_repo.clone(), following_repo.clone());
-    let following_service = FollowingService::new(following_repo, follow_request_repo, user_repo.clone());
+    let following_service =
+        FollowingService::new(following_repo, follow_request_repo, user_repo.clone());
     let reaction_service = ReactionService::new(reaction_repo, note_repo.clone());
     let notification_service = NotificationService::new(notification_repo);
     let muting_service = MutingService::new(muting_repo);
-    let drive_service = DriveService::new(drive_file_repo, drive_folder_repo, "https://example.com".to_string());
+    let drive_service = DriveService::new(
+        drive_file_repo,
+        drive_folder_repo,
+        "https://example.com".to_string(),
+    );
     let poll_service = PollService::new(poll_repo, poll_vote_repo, note_repo.clone());
     let hashtag_service = misskey_core::HashtagService::new(hashtag_repo);
     let note_favorite_service = NoteFavoriteService::new(note_favorite_repo, note_repo);
@@ -130,16 +144,16 @@ fn create_test_state() -> AppState {
     let two_factor_service = TwoFactorService::new(user_profile_repo.clone());
 
     // Initialize WebAuthn service
-    let webauthn_config = WebAuthnConfig::from_server_url(
-        &config.server.url,
-        &config.federation.instance_name,
-    ).expect("Failed to create WebAuthn config");
+    let webauthn_config =
+        WebAuthnConfig::from_server_url(&config.server.url, &config.federation.instance_name)
+            .expect("Failed to create WebAuthn config");
     let webauthn_service = WebAuthnService::new(
         &webauthn_config,
         security_key_repo,
         user_repo.clone(),
         user_profile_repo.clone(),
-    ).expect("Failed to create WebAuthn service");
+    )
+    .expect("Failed to create WebAuthn service");
 
     let oauth_service = OAuthService::new(oauth_repo);
     let webhook_service = WebhookService::new(webhook_repo);
@@ -228,7 +242,9 @@ async fn test_signin_without_credentials_returns_error() {
                 .uri("/signin")
                 .method("POST")
                 .header("Content-Type", "application/json")
-                .body(Body::from(r#"{"username":"nonexistent","password":"wrongpassword"}"#))
+                .body(Body::from(
+                    r#"{"username":"nonexistent","password":"wrongpassword"}"#,
+                ))
                 .unwrap(),
         )
         .await
@@ -290,8 +306,7 @@ async fn test_users_endpoint_without_id_returns_error() {
 
     // Empty user ID should return not found or bad request
     assert!(
-        response.status() == StatusCode::NOT_FOUND
-            || response.status() == StatusCode::BAD_REQUEST
+        response.status() == StatusCode::NOT_FOUND || response.status() == StatusCode::BAD_REQUEST
     );
 }
 

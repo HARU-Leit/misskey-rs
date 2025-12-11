@@ -17,9 +17,9 @@
 //! ```
 
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde_json::json;
 use thiserror::Error;
@@ -35,7 +35,6 @@ pub type AppResult<T> = Result<T, AppError>;
 #[derive(Debug, Error)]
 pub enum AppError {
     // === Client Errors (4xx) ===
-
     /// Generic not found error.
     #[error("Not found: {0}")]
     NotFound(String),
@@ -77,7 +76,6 @@ pub enum AppError {
     RateLimited,
 
     // === Server Errors (5xx) ===
-
     /// Database operation failed.
     #[error("Database error: {0}")]
     Database(String),
@@ -118,7 +116,9 @@ impl AppError {
             }
             Self::Unauthorized => StatusCode::UNAUTHORIZED,
             Self::Forbidden(_) => StatusCode::FORBIDDEN,
-            Self::BadRequest(_) | Self::ValidationErrors(_) | Self::Validation(_) => StatusCode::BAD_REQUEST,
+            Self::BadRequest(_) | Self::ValidationErrors(_) | Self::Validation(_) => {
+                StatusCode::BAD_REQUEST
+            }
             Self::Conflict(_) => StatusCode::CONFLICT,
             Self::RateLimited => StatusCode::TOO_MANY_REQUESTS,
 

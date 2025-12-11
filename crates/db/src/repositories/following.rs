@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{following, Following};
+use crate::entities::{Following, following};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, PaginatorTrait,
@@ -17,7 +17,7 @@ pub struct FollowingRepository {
 
 impl FollowingRepository {
     /// Create a new following repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }

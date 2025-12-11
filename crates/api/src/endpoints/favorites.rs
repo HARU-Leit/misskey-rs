@@ -1,7 +1,7 @@
 //! Note favorites (bookmarks) endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
-use misskey_common::{AppResult};
+use axum::{Json, Router, extract::State, routing::post};
+use misskey_common::AppResult;
 use misskey_db::entities::note;
 use serde::{Deserialize, Serialize};
 

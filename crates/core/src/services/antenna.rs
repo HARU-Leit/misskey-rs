@@ -2,7 +2,7 @@
 
 use aho_corasick::AhoCorasick;
 use chrono::Utc;
-use misskey_common::{id::IdGenerator, AppError, AppResult};
+use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::antenna::{self, AntennaSource};
 use misskey_db::entities::antenna_note;
 use misskey_db::repositories::AntennaRepository;
@@ -109,11 +109,7 @@ impl AntennaService {
     }
 
     /// Get an antenna by ID with ownership check.
-    pub async fn get_by_id_for_user(
-        &self,
-        id: &str,
-        user_id: &str,
-    ) -> AppResult<antenna::Model> {
+    pub async fn get_by_id_for_user(&self, id: &str, user_id: &str) -> AppResult<antenna::Model> {
         let antenna = self.antenna_repo.get_by_id(id).await?;
 
         if antenna.user_id != user_id {
@@ -145,7 +141,9 @@ impl AntennaService {
         input: CreateAntennaInput,
     ) -> AppResult<antenna::Model> {
         // Validate input
-        input.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+        input
+            .validate()
+            .map_err(|e| AppError::Validation(e.to_string()))?;
 
         // Check antenna limit
         let count = self.antenna_repo.count_by_user(user_id).await?;
@@ -222,7 +220,9 @@ impl AntennaService {
         input: UpdateAntennaInput,
     ) -> AppResult<antenna::Model> {
         // Validate input
-        input.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+        input
+            .validate()
+            .map_err(|e| AppError::Validation(e.to_string()))?;
 
         // Get antenna and verify ownership
         let antenna = self.get_by_id_for_user(&input.antenna_id, user_id).await?;
@@ -352,7 +352,11 @@ impl AntennaService {
         }
 
         // Check if already added
-        if self.antenna_repo.is_note_in_antenna(&antenna.id, note_id).await? {
+        if self
+            .antenna_repo
+            .is_note_in_antenna(&antenna.id, note_id)
+            .await?
+        {
             return Ok(false);
         }
 
@@ -394,8 +398,8 @@ impl AntennaService {
         // Check source
         match antenna.src {
             AntennaSource::Users => {
-                let users: Vec<String> = serde_json::from_value(antenna.users.clone())
-                    .unwrap_or_default();
+                let users: Vec<String> =
+                    serde_json::from_value(antenna.users.clone()).unwrap_or_default();
                 if !users.contains(&context.user_id) {
                     return Ok(false);
                 }
@@ -410,8 +414,8 @@ impl AntennaService {
                 }
             }
             AntennaSource::Instances => {
-                let instances: Vec<String> = serde_json::from_value(antenna.instances.clone())
-                    .unwrap_or_default();
+                let instances: Vec<String> =
+                    serde_json::from_value(antenna.instances.clone()).unwrap_or_default();
                 match &context.user_host {
                     Some(host) => {
                         if !instances.iter().any(|i| i.eq_ignore_ascii_case(host)) {
@@ -428,8 +432,8 @@ impl AntennaService {
         }
 
         // Check keywords
-        let keywords: Vec<Vec<String>> = serde_json::from_value(antenna.keywords.clone())
-            .unwrap_or_default();
+        let keywords: Vec<Vec<String>> =
+            serde_json::from_value(antenna.keywords.clone()).unwrap_or_default();
         let exclude_keywords: Vec<Vec<String>> =
             serde_json::from_value(antenna.exclude_keywords.clone()).unwrap_or_default();
 
@@ -636,7 +640,11 @@ mod tests {
 
         // Simple keyword match
         assert!(service.matches_keywords("hello world", &vec![vec!["hello".to_string()]], false));
-        assert!(!service.matches_keywords("goodbye world", &vec![vec!["hello".to_string()]], false));
+        assert!(!service.matches_keywords(
+            "goodbye world",
+            &vec![vec!["hello".to_string()]],
+            false
+        ));
     }
 
     #[test]
@@ -658,10 +666,7 @@ mod tests {
         )));
 
         // OR groups - any group must match
-        let keywords = vec![
-            vec!["hello".to_string()],
-            vec!["goodbye".to_string()],
-        ];
+        let keywords = vec![vec!["hello".to_string()], vec!["goodbye".to_string()]];
         assert!(service.matches_keywords("hello world", &keywords, false));
         assert!(service.matches_keywords("goodbye world", &keywords, false));
         assert!(!service.matches_keywords("hi world", &keywords, false));
@@ -743,7 +748,11 @@ mod tests {
             has_files: true,
             list_memberships: vec![],
         };
-        assert!(service.matches_antenna(&antenna, &context_with_file).unwrap());
+        assert!(
+            service
+                .matches_antenna(&antenna, &context_with_file)
+                .unwrap()
+        );
 
         let context_without_file = NoteMatchContext {
             text: "test".to_string(),
@@ -753,6 +762,10 @@ mod tests {
             has_files: false,
             list_memberships: vec![],
         };
-        assert!(!service.matches_antenna(&antenna, &context_without_file).unwrap());
+        assert!(
+            !service
+                .matches_antenna(&antenna, &context_without_file)
+                .unwrap()
+        );
     }
 }

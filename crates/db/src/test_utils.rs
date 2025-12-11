@@ -2,7 +2,7 @@
 //!
 //! Provides helpers for setting up and tearing down test databases.
 
-use sea_orm::{Database, DatabaseConnection, DbErr, ConnectionTrait, Statement, DatabaseBackend};
+use sea_orm::{ConnectionTrait, Database, DatabaseBackend, DatabaseConnection, DbErr, Statement};
 use tracing::info;
 
 /// Test database configuration.
@@ -29,7 +29,8 @@ impl Default for TestDbConfig {
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(5433),
             username: std::env::var("TEST_DB_USER").unwrap_or_else(|_| "misskey_test".to_string()),
-            password: std::env::var("TEST_DB_PASSWORD").unwrap_or_else(|_| "misskey_test".to_string()),
+            password: std::env::var("TEST_DB_PASSWORD")
+                .unwrap_or_else(|_| "misskey_test".to_string()),
             database: std::env::var("TEST_DB_NAME").unwrap_or_else(|_| "misskey_test".to_string()),
         }
     }
@@ -37,7 +38,7 @@ impl Default for TestDbConfig {
 
 impl TestDbConfig {
     /// Get the database URL.
-    #[must_use] 
+    #[must_use]
     pub fn database_url(&self) -> String {
         format!(
             "postgres://{}:{}@{}:{}/{}",
@@ -46,7 +47,7 @@ impl TestDbConfig {
     }
 
     /// Get URL for connecting to postgres database (for creating test DB).
-    #[must_use] 
+    #[must_use]
     pub fn postgres_url(&self) -> String {
         format!(
             "postgres://{}:{}@{}:{}/postgres",
@@ -98,10 +99,7 @@ impl TestDatabase {
 
         let create_db = format!("CREATE DATABASE \"{}\"", config.database);
         postgres_conn
-            .execute(Statement::from_string(
-                DatabaseBackend::Postgres,
-                create_db,
-            ))
+            .execute(Statement::from_string(DatabaseBackend::Postgres, create_db))
             .await?;
 
         postgres_conn.close().await?;
@@ -119,7 +117,7 @@ impl TestDatabase {
     }
 
     /// Get the database connection.
-    #[must_use] 
+    #[must_use]
     pub const fn connection(&self) -> &DatabaseConnection {
         &self.conn
     }
@@ -127,7 +125,8 @@ impl TestDatabase {
     /// Clean up all data in the test database (truncate all tables).
     pub async fn cleanup(&self) -> Result<(), DbErr> {
         // Get all table names
-        let tables = self.conn
+        let tables = self
+            .conn
             .query_all(Statement::from_string(
                 DatabaseBackend::Postgres,
                 "SELECT tablename FROM pg_tables WHERE schemaname = 'public'".to_string(),
@@ -144,10 +143,7 @@ impl TestDatabase {
 
                 let truncate = format!("TRUNCATE TABLE \"{table_name}\" CASCADE");
                 self.conn
-                    .execute(Statement::from_string(
-                        DatabaseBackend::Postgres,
-                        truncate,
-                    ))
+                    .execute(Statement::from_string(DatabaseBackend::Postgres, truncate))
                     .await?;
             }
         }
@@ -171,19 +167,13 @@ impl TestDatabase {
             self.config.database
         );
         postgres_conn
-            .execute(Statement::from_string(
-                DatabaseBackend::Postgres,
-                terminate,
-            ))
+            .execute(Statement::from_string(DatabaseBackend::Postgres, terminate))
             .await
             .ok(); // Ignore errors
 
         let drop_db = format!("DROP DATABASE IF EXISTS \"{}\"", self.config.database);
         postgres_conn
-            .execute(Statement::from_string(
-                DatabaseBackend::Postgres,
-                drop_db,
-            ))
+            .execute(Statement::from_string(DatabaseBackend::Postgres, drop_db))
             .await?;
 
         postgres_conn.close().await?;
@@ -237,7 +227,7 @@ impl Default for TestRedisConfig {
 
 impl TestRedisConfig {
     /// Get the Redis URL.
-    #[must_use] 
+    #[must_use]
     pub fn redis_url(&self) -> String {
         format!("redis://{}:{}", self.host, self.port)
     }

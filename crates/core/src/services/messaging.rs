@@ -118,7 +118,12 @@ impl MessagingService {
         // Publish real-time event
         if let Some(ref event_publisher) = self.event_publisher {
             if let Err(e) = event_publisher
-                .publish_direct_message(&message.id, sender_id, recipient_id, message.text.as_deref())
+                .publish_direct_message(
+                    &message.id,
+                    sender_id,
+                    recipient_id,
+                    message.text.as_deref(),
+                )
                 .await
             {
                 tracing::warn!(error = %e, "Failed to publish direct message event");

@@ -3,9 +3,9 @@
 #![allow(missing_docs)]
 
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde::Serialize;
 
@@ -61,7 +61,7 @@ impl<T: Serialize> IntoResponse for ApiResponse<T> {
 }
 
 /// Empty success response.
-#[must_use] 
+#[must_use]
 pub fn ok() -> impl IntoResponse {
     StatusCode::NO_CONTENT
 }

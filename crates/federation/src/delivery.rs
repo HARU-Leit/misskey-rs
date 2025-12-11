@@ -9,10 +9,9 @@ use misskey_db::{
     entities::{note, user},
     repositories::{FollowingRepository, UserRepository},
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tracing::info;
 use url::Url;
-
 
 /// Delivery service for queueing `ActivityPub` activities.
 #[derive(Clone)]
@@ -32,8 +31,12 @@ pub struct DeliveryTarget {
 
 impl DeliveryService {
     /// Create a new delivery service.
-    #[must_use] 
-    pub const fn new(user_repo: UserRepository, following_repo: FollowingRepository, base_url: Url) -> Self {
+    #[must_use]
+    pub const fn new(
+        user_repo: UserRepository,
+        following_repo: FollowingRepository,
+        base_url: Url,
+    ) -> Self {
         Self {
             user_repo,
             following_repo,
@@ -43,7 +46,7 @@ impl DeliveryService {
     }
 
     /// Build a Create activity for a note.
-    #[must_use] 
+    #[must_use]
     pub fn build_create_activity(&self, note: &note::Model, author: &user::Model) -> Value {
         let actor_url = format!("{}/users/{}", self.base_url, author.id);
         let note_url = format!("{}/notes/{}", self.base_url, note.id);
@@ -83,7 +86,7 @@ impl DeliveryService {
     }
 
     /// Build a Delete activity for a note.
-    #[must_use] 
+    #[must_use]
     pub fn build_delete_activity(&self, note_id: &str, author: &user::Model) -> Value {
         let actor_url = format!("{}/users/{}", self.base_url, author.id);
         let note_url = format!("{}/notes/{}", self.base_url, note_id);
@@ -102,7 +105,7 @@ impl DeliveryService {
     }
 
     /// Build a Follow activity.
-    #[must_use] 
+    #[must_use]
     pub fn build_follow_activity(&self, follower: &user::Model, followee: &user::Model) -> Value {
         let actor_url = format!("{}/users/{}", self.base_url, follower.id);
         let target_url = followee
@@ -121,7 +124,7 @@ impl DeliveryService {
     }
 
     /// Build an Undo Follow activity.
-    #[must_use] 
+    #[must_use]
     pub fn build_unfollow_activity(
         &self,
         follower: &user::Model,
@@ -150,7 +153,7 @@ impl DeliveryService {
     }
 
     /// Build a Like activity (reaction).
-    #[must_use] 
+    #[must_use]
     pub fn build_like_activity(
         &self,
         user: &user::Model,
@@ -182,7 +185,7 @@ impl DeliveryService {
     }
 
     /// Build an Announce activity (renote/boost).
-    #[must_use] 
+    #[must_use]
     pub fn build_announce_activity(&self, user: &user::Model, note: &note::Model) -> Value {
         let actor_url = format!("{}/users/{}", self.base_url, user.id);
         let note_url = note
@@ -227,9 +230,10 @@ impl DeliveryService {
                             inboxes.push(shared_inbox.clone());
                         }
                     } else if let Some(ref inbox) = follower.inbox
-                        && !inboxes.contains(inbox) {
-                            inboxes.push(inbox.clone());
-                        }
+                        && !inboxes.contains(inbox)
+                    {
+                        inboxes.push(inbox.clone());
+                    }
                 }
             }
         }
@@ -249,15 +253,9 @@ impl DeliveryService {
         let followers = format!("{}/users/{}/followers", self.base_url, note.user_id);
 
         match note.visibility {
-            note::Visibility::Public => {
-                (vec![public], vec![followers])
-            }
-            note::Visibility::Home => {
-                (vec![followers], vec![public])
-            }
-            note::Visibility::Followers => {
-                (vec![followers], vec![])
-            }
+            note::Visibility::Public => (vec![public], vec![followers]),
+            note::Visibility::Home => (vec![followers], vec![public]),
+            note::Visibility::Followers => (vec![followers], vec![]),
             note::Visibility::Specified => {
                 // TODO: Extract visible_user_ids and convert to actor URLs
                 (vec![], vec![])

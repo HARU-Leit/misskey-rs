@@ -34,7 +34,7 @@ pub struct ApClient {
 
 impl ApClient {
     /// Create a new AP client.
-    #[must_use] 
+    #[must_use]
     pub fn new(instance_url: &str) -> Self {
         let client = Client::builder()
             .timeout(Duration::from_secs(30))
@@ -42,9 +42,7 @@ impl ApClient {
             .build()
             .expect("Failed to create HTTP client");
 
-        let user_agent = format!(
-            "misskey-rs/0.1.0 (+{instance_url})"
-        );
+        let user_agent = format!("misskey-rs/0.1.0 (+{instance_url})");
 
         Self { client, user_agent }
     }
@@ -57,8 +55,7 @@ impl ApClient {
         private_key_pem: &str,
         key_id: &str,
     ) -> Result<(), ApClientError> {
-        let url = Url::parse(inbox_url)
-            .map_err(|e| ApClientError::InvalidUrl(e.to_string()))?;
+        let url = Url::parse(inbox_url).map_err(|e| ApClientError::InvalidUrl(e.to_string()))?;
 
         let body = serde_json::to_vec(activity).unwrap();
 
@@ -175,9 +172,7 @@ impl ApClient {
 
     /// Perform `WebFinger` lookup for a user.
     pub async fn webfinger(&self, acct: &str, domain: &str) -> Result<Value, ApClientError> {
-        let url = format!(
-            "https://{domain}/.well-known/webfinger?resource=acct:{acct}"
-        );
+        let url = format!("https://{domain}/.well-known/webfinger?resource=acct:{acct}");
 
         debug!(acct = %acct, domain = %domain, "Performing WebFinger lookup");
 

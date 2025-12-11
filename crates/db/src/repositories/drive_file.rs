@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{drive_file, DriveFile};
+use crate::entities::{DriveFile, drive_file};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, QueryFilter,
@@ -17,7 +17,7 @@ pub struct DriveFileRepository {
 
 impl DriveFileRepository {
     /// Create a new drive file repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
@@ -220,7 +220,9 @@ impl DriveFileRepository {
                 storage_key: row.try_get("", "storage_key").ok(),
                 folder_id: row.try_get("", "folder_id").ok(),
                 uri: row.try_get("", "uri").ok(),
-                created_at: row.try_get("", "created_at").unwrap_or_else(|_| chrono::Utc::now().into()),
+                created_at: row
+                    .try_get("", "created_at")
+                    .unwrap_or_else(|_| chrono::Utc::now().into()),
             };
             files.push(file);
         }

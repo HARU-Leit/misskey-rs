@@ -80,9 +80,9 @@ impl PushSubscriptionRepository {
             .filter(|sub| {
                 // Check if notification type is enabled
                 if let Some(types) = sub.types.as_array() {
-                    let type_enabled = types
-                        .iter()
-                        .any(|t| t.as_str() == Some(notification_type) || t.as_str() == Some("all"));
+                    let type_enabled = types.iter().any(|t| {
+                        t.as_str() == Some(notification_type) || t.as_str() == Some("all")
+                    });
                     if !type_enabled {
                         return false;
                     }

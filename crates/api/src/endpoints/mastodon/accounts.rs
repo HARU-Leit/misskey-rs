@@ -17,16 +17,16 @@
 //! - GET /api/v1/accounts/relationships - Get relationships with accounts
 
 use axum::{
+    Json, Router,
     extract::{Path, Query, State},
     routing::{get, post},
-    Json, Router,
 };
 use misskey_common::AppResult;
 use serde::{Deserialize, Serialize};
 
 use crate::{extractors::AuthUser, middleware::AppState};
 
-use super::statuses::{note_to_status, user_to_account, Account, Field, Status};
+use super::statuses::{Account, Field, Status, note_to_status, user_to_account};
 
 /// Credential account (current user) response.
 #[derive(Debug, Serialize)]
@@ -362,9 +362,7 @@ async fn build_relationship(
         .get_pending_requests(user_id, 100, None)
         .await
         .unwrap_or_default();
-    let requested = pending_requests
-        .iter()
-        .any(|r| r.followee_id == target_id);
+    let requested = pending_requests.iter().any(|r| r.followee_id == target_id);
 
     Ok(Relationship {
         id: target_id.to_string(),

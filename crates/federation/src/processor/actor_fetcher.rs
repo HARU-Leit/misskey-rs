@@ -75,10 +75,7 @@ impl ActorFetcher {
             .and_then(Value::as_str)
             .map(String::from);
 
-        let inbox = actor
-            .get("inbox")
-            .and_then(Value::as_str)
-            .map(String::from);
+        let inbox = actor.get("inbox").and_then(Value::as_str).map(String::from);
 
         let shared_inbox = actor
             .get("endpoints")
@@ -129,10 +126,7 @@ impl ActorFetcher {
             .map(|t| t == "Service" || t == "Application")
             .unwrap_or(false);
 
-        let is_cat = actor
-            .get("isCat")
-            .and_then(Value::as_bool)
-            .unwrap_or(false);
+        let is_cat = actor.get("isCat").and_then(Value::as_bool).unwrap_or(false);
 
         let featured = actor
             .get("featured")

@@ -10,8 +10,8 @@ use tracing::info;
 use url::Url;
 
 use super::ActorFetcher;
-use crate::client::ApClient;
 use crate::FollowActivity;
+use crate::client::ApClient;
 
 /// Processor for Follow activities.
 #[derive(Clone)]
@@ -70,9 +70,11 @@ impl FollowProcessor {
         let local_user_id = self.extract_local_user_id(object_url)?;
 
         // Find the local user
-        let followee = self.user_repo.find_by_id(&local_user_id).await?.ok_or_else(|| {
-            AppError::NotFound(format!("Local user not found: {local_user_id}"))
-        })?;
+        let followee = self
+            .user_repo
+            .find_by_id(&local_user_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound(format!("Local user not found: {local_user_id}")))?;
 
         // Check if local user is suspended
         if followee.is_suspended {
@@ -185,8 +187,12 @@ impl FollowProcessor {
         let following = self.following_repo.create(model).await?;
 
         // Update counts
-        self.user_repo.increment_following_count(&follower.id).await?;
-        self.user_repo.increment_followers_count(&followee.id).await?;
+        self.user_repo
+            .increment_following_count(&follower.id)
+            .await?;
+        self.user_repo
+            .increment_followers_count(&followee.id)
+            .await?;
 
         Ok(following)
     }

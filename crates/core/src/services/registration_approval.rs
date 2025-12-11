@@ -2,7 +2,10 @@
 
 use misskey_common::{AppError, AppResult};
 use misskey_db::entities::{registration_approval, registration_approval::ApprovalStatus};
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, QuerySelect, Set,
+};
 use std::sync::Arc;
 
 /// Registration approval service for managing account approvals.

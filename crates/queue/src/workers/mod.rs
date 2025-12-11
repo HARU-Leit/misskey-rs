@@ -5,5 +5,5 @@
 mod deliver;
 mod inbox;
 
-pub use deliver::{deliver_worker, DeliverContext};
-pub use inbox::{inbox_worker, InboxWorkerContext};
+pub use deliver::{DeliverContext, deliver_worker};
+pub use inbox::{InboxWorkerContext, inbox_worker};

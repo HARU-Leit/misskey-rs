@@ -64,7 +64,10 @@ impl CachedRemoteActor {
         let actor_type = json.get("type")?.as_str()?.to_string();
         let preferred_username = json.get("preferredUsername")?.as_str()?.to_string();
         let name = json.get("name").and_then(|v| v.as_str()).map(String::from);
-        let summary = json.get("summary").and_then(|v| v.as_str()).map(String::from);
+        let summary = json
+            .get("summary")
+            .and_then(|v| v.as_str())
+            .map(String::from);
         let inbox = json.get("inbox")?.as_str()?.to_string();
 
         // Handle endpoints object for shared inbox
@@ -79,9 +82,18 @@ impl CachedRemoteActor {
                     .map(String::from)
             });
 
-        let outbox = json.get("outbox").and_then(|v| v.as_str()).map(String::from);
-        let followers = json.get("followers").and_then(|v| v.as_str()).map(String::from);
-        let following = json.get("following").and_then(|v| v.as_str()).map(String::from);
+        let outbox = json
+            .get("outbox")
+            .and_then(|v| v.as_str())
+            .map(String::from);
+        let followers = json
+            .get("followers")
+            .and_then(|v| v.as_str())
+            .map(String::from);
+        let following = json
+            .get("following")
+            .and_then(|v| v.as_str())
+            .map(String::from);
 
         // Public key
         let public_key = json.get("publicKey")?;
@@ -133,7 +145,7 @@ impl CachedRemoteActor {
     }
 
     /// Check if this cache entry is stale.
-    #[must_use] 
+    #[must_use]
     pub fn is_stale(&self, ttl_secs: i64) -> bool {
         let now = chrono::Utc::now();
         let age = now.signed_duration_since(self.cached_at);
@@ -150,7 +162,7 @@ pub struct RemoteActorCache {
 
 impl RemoteActorCache {
     /// Create a new remote actor cache.
-    #[must_use] 
+    #[must_use]
     pub const fn new(redis: Arc<RedisClient>) -> Self {
         Self {
             redis,
@@ -159,7 +171,7 @@ impl RemoteActorCache {
     }
 
     /// Create a new remote actor cache with custom TTL.
-    #[must_use] 
+    #[must_use]
     pub const fn with_ttl(redis: Arc<RedisClient>, ttl: Duration) -> Self {
         Self {
             redis,
@@ -359,7 +371,10 @@ mod tests {
         assert_eq!(actor.preferred_username, "test");
         assert_eq!(actor.name, Some("Test User".to_string()));
         assert_eq!(actor.inbox, "https://example.com/users/test/inbox");
-        assert_eq!(actor.shared_inbox, Some("https://example.com/inbox".to_string()));
+        assert_eq!(
+            actor.shared_inbox,
+            Some("https://example.com/inbox".to_string())
+        );
         assert_eq!(actor.host, "example.com");
         assert_eq!(
             actor.icon,

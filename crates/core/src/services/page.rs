@@ -1,6 +1,6 @@
 //! Page service for managing user pages.
 
-use misskey_common::{id::IdGenerator, AppError, AppResult};
+use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::{page, page_like};
 use misskey_db::repositories::PageRepository;
 use sea_orm::Set;
@@ -339,11 +339,7 @@ impl PageService {
     }
 
     /// Get a page by ID.
-    pub async fn get(
-        &self,
-        page_id: &str,
-        viewer_id: Option<&str>,
-    ) -> AppResult<PageResponse> {
+    pub async fn get(&self, page_id: &str, viewer_id: Option<&str>) -> AppResult<PageResponse> {
         let page = self.page_repo.get_by_id(page_id).await?;
 
         // Check visibility
@@ -413,7 +409,9 @@ impl PageService {
 
         // Can't like own page
         if page.user_id == user_id {
-            return Err(AppError::Validation("Cannot like your own page".to_string()));
+            return Err(AppError::Validation(
+                "Cannot like your own page".to_string(),
+            ));
         }
 
         // Check if already liked

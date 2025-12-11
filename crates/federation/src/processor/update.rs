@@ -1,10 +1,7 @@
 //! Update activity processor.
 
 use misskey_common::{AppError, AppResult};
-use misskey_db::{
-    entities::user,
-    repositories::UserRepository,
-};
+use misskey_db::{entities::user, repositories::UserRepository};
 use sea_orm::Set;
 use tracing::info;
 
@@ -30,7 +27,7 @@ pub struct UpdateProcessor {
 
 impl UpdateProcessor {
     /// Create a new update processor.
-    #[must_use] 
+    #[must_use]
     pub const fn new(user_repo: UserRepository) -> Self {
         Self { user_repo }
     }

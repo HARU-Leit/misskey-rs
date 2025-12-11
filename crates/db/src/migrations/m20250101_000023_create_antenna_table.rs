@@ -20,16 +20,8 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(
-                        ColumnDef::new(Antenna::UserId)
-                            .string_len(32)
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(Antenna::Name)
-                            .string_len(128)
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(Antenna::UserId).string_len(32).not_null())
+                    .col(ColumnDef::new(Antenna::Name).string_len(128).not_null())
                     .col(
                         ColumnDef::new(Antenna::Src)
                             .string_len(16)

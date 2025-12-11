@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{gallery_like, gallery_post, GalleryLike, GalleryPost};
+use crate::entities::{GalleryLike, GalleryPost, gallery_like, gallery_post};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
@@ -201,7 +201,11 @@ impl GalleryRepository {
             let post = self.get_by_id(post_id).await?;
             let mut active: gallery_post::ActiveModel = post.into();
             let current_count = active.liked_count.clone().unwrap();
-            active.liked_count = Set(if current_count > 0 { current_count - 1 } else { 0 });
+            active.liked_count = Set(if current_count > 0 {
+                current_count - 1
+            } else {
+                0
+            });
             active
                 .update(self.db.as_ref())
                 .await

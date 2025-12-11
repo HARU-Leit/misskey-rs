@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{reaction, Reaction};
+use crate::entities::{Reaction, reaction};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, PaginatorTrait,
@@ -17,7 +17,7 @@ pub struct ReactionRepository {
 
 impl ReactionRepository {
     /// Create a new reaction repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
@@ -46,7 +46,10 @@ impl ReactionRepository {
 
     /// Check if a user has reacted to a note.
     pub async fn has_reacted(&self, user_id: &str, note_id: &str) -> AppResult<bool> {
-        Ok(self.find_by_user_and_note(user_id, note_id).await?.is_some())
+        Ok(self
+            .find_by_user_and_note(user_id, note_id)
+            .await?
+            .is_some())
     }
 
     /// Create a new reaction.
@@ -139,7 +142,12 @@ mod tests {
     use chrono::Utc;
     use sea_orm::{DatabaseBackend, MockDatabase};
 
-    fn create_test_reaction(id: &str, user_id: &str, note_id: &str, reaction_str: &str) -> reaction::Model {
+    fn create_test_reaction(
+        id: &str,
+        user_id: &str,
+        note_id: &str,
+        reaction_str: &str,
+    ) -> reaction::Model {
         reaction::Model {
             id: id.to_string(),
             user_id: user_id.to_string(),

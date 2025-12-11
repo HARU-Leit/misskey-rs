@@ -5,11 +5,11 @@ use std::sync::Arc;
 use chrono::Utc;
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, EntityTrait, Order, PaginatorTrait,
-    QueryFilter, QueryOrder, QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, EntityTrait, Order,
+    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Set,
 };
 
-use crate::entities::{announcement, announcement_read, Announcement, AnnouncementRead};
+use crate::entities::{Announcement, AnnouncementRead, announcement, announcement_read};
 
 /// Repository for announcement operations.
 #[derive(Clone)]
@@ -19,7 +19,7 @@ pub struct AnnouncementRepository {
 
 impl AnnouncementRepository {
     /// Create a new announcement repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
@@ -75,10 +75,7 @@ impl AnnouncementRepository {
     }
 
     /// Find unread announcements for a user.
-    pub async fn find_unread_for_user(
-        &self,
-        user_id: &str,
-    ) -> AppResult<Vec<announcement::Model>> {
+    pub async fn find_unread_for_user(&self, user_id: &str) -> AppResult<Vec<announcement::Model>> {
         let now = Utc::now();
 
         // Get all read announcement IDs for this user

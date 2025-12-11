@@ -1,6 +1,6 @@
 //! Users endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::{AppError, AppResult};
 use misskey_core::UpdateUserInput;
 use misskey_db::entities::user;
@@ -102,7 +102,11 @@ pub struct UpdateUserRequest {
 
 impl UpdateUserRequest {
     /// Convert request to input, optionally resolving file IDs to URLs.
-    pub fn into_input(self, avatar_url: Option<String>, banner_url: Option<String>) -> UpdateUserInput {
+    pub fn into_input(
+        self,
+        avatar_url: Option<String>,
+        banner_url: Option<String>,
+    ) -> UpdateUserInput {
         UpdateUserInput {
             name: self.name,
             description: self.description,
@@ -129,7 +133,9 @@ async fn update(
         let file = state.drive_service.get_file(avatar_id).await?;
         // Verify the file belongs to the user
         if file.user_id != user.id {
-            return Err(AppError::Forbidden("Avatar file does not belong to you".to_string()));
+            return Err(AppError::Forbidden(
+                "Avatar file does not belong to you".to_string(),
+            ));
         }
         Some(file.url)
     } else {
@@ -141,14 +147,19 @@ async fn update(
         let file = state.drive_service.get_file(banner_id).await?;
         // Verify the file belongs to the user
         if file.user_id != user.id {
-            return Err(AppError::Forbidden("Banner file does not belong to you".to_string()));
+            return Err(AppError::Forbidden(
+                "Banner file does not belong to you".to_string(),
+            ));
         }
         Some(file.url)
     } else {
         None
     };
 
-    let updated_user = state.user_service.update(&user.id, req.into_input(avatar_url, banner_url)).await?;
+    let updated_user = state
+        .user_service
+        .update(&user.id, req.into_input(avatar_url, banner_url))
+        .await?;
     Ok(ApiResponse::ok(updated_user.into()))
 }
 
@@ -198,7 +209,10 @@ async fn unpin_note(
     State(state): State<AppState>,
     Json(req): Json<UnpinNoteRequest>,
 ) -> AppResult<ApiResponse<PinnedNotesResponse>> {
-    let pinned_note_ids = state.user_service.unpin_note(&user.id, &req.note_id).await?;
+    let pinned_note_ids = state
+        .user_service
+        .unpin_note(&user.id, &req.note_id)
+        .await?;
     Ok(ApiResponse::ok(PinnedNotesResponse { pinned_note_ids }))
 }
 
@@ -217,7 +231,10 @@ async fn reorder_pinned_notes(
     State(state): State<AppState>,
     Json(req): Json<ReorderPinnedNotesRequest>,
 ) -> AppResult<ApiResponse<()>> {
-    state.user_service.reorder_pinned_notes(&user.id, req.note_ids).await?;
+    state
+        .user_service
+        .reorder_pinned_notes(&user.id, req.note_ids)
+        .await?;
     Ok(ApiResponse::ok(()))
 }
 

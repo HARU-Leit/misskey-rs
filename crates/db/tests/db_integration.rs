@@ -13,7 +13,7 @@
 //!   `TEST_DB_PASSWORD` (default: `misskey_test`)
 //!   `TEST_DB_NAME` (default: `misskey_test`)
 
-use misskey_db::test_utils::{TestDbConfig, TestDatabase, TestRedisConfig};
+use misskey_db::test_utils::{TestDatabase, TestDbConfig, TestRedisConfig};
 
 #[tokio::test]
 #[ignore = "requires running PostgreSQL instance"]
@@ -38,7 +38,8 @@ async fn test_execute_query() {
 
     // Connection should be valid
     use sea_orm::ConnectionTrait;
-    let result = db.connection()
+    let result = db
+        .connection()
         .execute(sea_orm::Statement::from_string(
             sea_orm::DatabaseBackend::Postgres,
             "SELECT 1".to_string(),

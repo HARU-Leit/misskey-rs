@@ -14,19 +14,48 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Announcement::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Announcement::Id).string_len(32).not_null().primary_key())
-                    .col(ColumnDef::new(Announcement::Title).string_len(256).not_null())
+                    .col(
+                        ColumnDef::new(Announcement::Id)
+                            .string_len(32)
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(Announcement::Title)
+                            .string_len(256)
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Announcement::Text).text().not_null())
                     .col(ColumnDef::new(Announcement::ImageUrl).string_len(1024))
-                    .col(ColumnDef::new(Announcement::IsActive).boolean().not_null().default(true))
-                    .col(ColumnDef::new(Announcement::NeedsConfirmationToRead).boolean().not_null().default(false))
-                    .col(ColumnDef::new(Announcement::DisplayOrder).integer().not_null().default(0))
+                    .col(
+                        ColumnDef::new(Announcement::IsActive)
+                            .boolean()
+                            .not_null()
+                            .default(true),
+                    )
+                    .col(
+                        ColumnDef::new(Announcement::NeedsConfirmationToRead)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
+                    .col(
+                        ColumnDef::new(Announcement::DisplayOrder)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
                     .col(ColumnDef::new(Announcement::Icon).string_len(64))
                     .col(ColumnDef::new(Announcement::ForegroundColor).string_len(16))
                     .col(ColumnDef::new(Announcement::BackgroundColor).string_len(16))
                     .col(ColumnDef::new(Announcement::StartsAt).timestamp_with_time_zone())
                     .col(ColumnDef::new(Announcement::EndsAt).timestamp_with_time_zone())
-                    .col(ColumnDef::new(Announcement::ReadsCount).integer().not_null().default(0))
+                    .col(
+                        ColumnDef::new(Announcement::ReadsCount)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
                     .col(
                         ColumnDef::new(Announcement::CreatedAt)
                             .timestamp_with_time_zone()
@@ -77,9 +106,22 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(AnnouncementRead::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(AnnouncementRead::Id).string_len(32).not_null().primary_key())
-                    .col(ColumnDef::new(AnnouncementRead::AnnouncementId).string_len(32).not_null())
-                    .col(ColumnDef::new(AnnouncementRead::UserId).string_len(32).not_null())
+                    .col(
+                        ColumnDef::new(AnnouncementRead::Id)
+                            .string_len(32)
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(AnnouncementRead::AnnouncementId)
+                            .string_len(32)
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(AnnouncementRead::UserId)
+                            .string_len(32)
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(AnnouncementRead::CreatedAt)
                             .timestamp_with_time_zone()

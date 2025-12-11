@@ -11,8 +11,8 @@ use misskey_core::ActivityDelivery;
 use serde_json::Value;
 use std::sync::Arc;
 
-use crate::jobs::DeliverJob;
 use crate::RedisPubSub;
+use crate::jobs::DeliverJob;
 
 /// Redis-backed ActivityPub delivery service.
 ///
@@ -58,11 +58,9 @@ impl RedisDeliveryService {
         for inbox in inboxes {
             let job = DeliverJob::new(user_id.to_string(), inbox.clone(), activity.clone());
 
-            self.storage
-                .clone()
-                .push(job)
-                .await
-                .map_err(|e| misskey_common::AppError::Internal(format!("Failed to queue job: {e}")))?;
+            self.storage.clone().push(job).await.map_err(|e| {
+                misskey_common::AppError::Internal(format!("Failed to queue job: {e}"))
+            })?;
 
             tracing::debug!(inbox = %inbox, "Queued delivery job");
         }

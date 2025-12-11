@@ -11,7 +11,7 @@ pub struct HashtagService {
 
 impl HashtagService {
     /// Create a new hashtag service.
-    #[must_use] 
+    #[must_use]
     pub const fn new(hashtag_repo: HashtagRepository) -> Self {
         Self { hashtag_repo }
     }

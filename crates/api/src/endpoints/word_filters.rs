@@ -1,6 +1,6 @@
 //! Word filter endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_core::services::word_filter::{CreateFilterInput, UpdateFilterInput};
 use misskey_db::entities::word_filter::{self, FilterAction, FilterContext};

@@ -17,8 +17,11 @@ pub struct BlockingService {
 
 impl BlockingService {
     /// Create a new blocking service.
-    #[must_use] 
-    pub const fn new(blocking_repo: BlockingRepository, following_repo: FollowingRepository) -> Self {
+    #[must_use]
+    pub const fn new(
+        blocking_repo: BlockingRepository,
+        following_repo: FollowingRepository,
+    ) -> Self {
         Self {
             blocking_repo,
             following_repo,
@@ -34,18 +37,34 @@ impl BlockingService {
         }
 
         // Check if already blocking
-        if self.blocking_repo.is_blocking(blocker_id, blockee_id).await? {
+        if self
+            .blocking_repo
+            .is_blocking(blocker_id, blockee_id)
+            .await?
+        {
             return Err(AppError::Conflict("Already blocking this user".to_string()));
         }
 
         // When blocking, also unfollow if following
-        if self.following_repo.is_following(blocker_id, blockee_id).await? {
-            self.following_repo.delete_by_pair(blocker_id, blockee_id).await?;
+        if self
+            .following_repo
+            .is_following(blocker_id, blockee_id)
+            .await?
+        {
+            self.following_repo
+                .delete_by_pair(blocker_id, blockee_id)
+                .await?;
         }
 
         // Also remove follower relationship (they can no longer follow you)
-        if self.following_repo.is_following(blockee_id, blocker_id).await? {
-            self.following_repo.delete_by_pair(blockee_id, blocker_id).await?;
+        if self
+            .following_repo
+            .is_following(blockee_id, blocker_id)
+            .await?
+        {
+            self.following_repo
+                .delete_by_pair(blockee_id, blocker_id)
+                .await?;
         }
 
         let model = blocking::ActiveModel {
@@ -61,11 +80,17 @@ impl BlockingService {
     /// Unblock a user.
     pub async fn unblock(&self, blocker_id: &str, blockee_id: &str) -> AppResult<()> {
         // Check if blocking
-        if !self.blocking_repo.is_blocking(blocker_id, blockee_id).await? {
+        if !self
+            .blocking_repo
+            .is_blocking(blocker_id, blockee_id)
+            .await?
+        {
             return Err(AppError::NotFound("Not blocking this user".to_string()));
         }
 
-        self.blocking_repo.delete_by_pair(blocker_id, blockee_id).await
+        self.blocking_repo
+            .delete_by_pair(blocker_id, blockee_id)
+            .await
     }
 
     /// Check if a user is blocking another user.
@@ -85,7 +110,9 @@ impl BlockingService {
         limit: u64,
         until_id: Option<&str>,
     ) -> AppResult<Vec<blocking::Model>> {
-        self.blocking_repo.find_blocking(user_id, limit, until_id).await
+        self.blocking_repo
+            .find_blocking(user_id, limit, until_id)
+            .await
     }
 }
 

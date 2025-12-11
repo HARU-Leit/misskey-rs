@@ -1,6 +1,6 @@
 //! Gallery service for managing gallery posts.
 
-use misskey_common::{id::IdGenerator, AppError, AppResult};
+use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::{gallery_like, gallery_post};
 use misskey_db::repositories::GalleryRepository;
 use sea_orm::Set;
@@ -262,7 +262,11 @@ impl GalleryService {
     }
 
     /// Get a gallery post by ID.
-    pub async fn get(&self, post_id: &str, viewer_id: Option<&str>) -> AppResult<GalleryPostResponse> {
+    pub async fn get(
+        &self,
+        post_id: &str,
+        viewer_id: Option<&str>,
+    ) -> AppResult<GalleryPostResponse> {
         let post = self.gallery_repo.get_by_id(post_id).await?;
         let mut response: GalleryPostResponse = post.into();
 
@@ -281,13 +285,19 @@ impl GalleryService {
         limit: u64,
         offset: u64,
     ) -> AppResult<Vec<GalleryPostResponse>> {
-        let posts = self.gallery_repo.find_by_user_id(user_id, limit, offset).await?;
+        let posts = self
+            .gallery_repo
+            .find_by_user_id(user_id, limit, offset)
+            .await?;
         Ok(posts.into_iter().map(Into::into).collect())
     }
 
     /// List all gallery posts with pagination.
     pub async fn list(&self, limit: u64, offset: u64) -> AppResult<Vec<GalleryPostResponse>> {
-        let posts = self.gallery_repo.find_with_pagination(limit, offset).await?;
+        let posts = self
+            .gallery_repo
+            .find_with_pagination(limit, offset)
+            .await?;
         Ok(posts.into_iter().map(Into::into).collect())
     }
 
@@ -361,7 +371,10 @@ impl GalleryService {
         limit: u64,
         offset: u64,
     ) -> AppResult<Vec<GalleryPostResponse>> {
-        let likes = self.gallery_repo.find_liked_by_user(user_id, limit, offset).await?;
+        let likes = self
+            .gallery_repo
+            .find_liked_by_user(user_id, limit, offset)
+            .await?;
         let mut posts = Vec::new();
 
         for like in likes {

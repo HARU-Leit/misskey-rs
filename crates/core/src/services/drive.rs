@@ -102,7 +102,9 @@ impl DriveService {
             let folder = self.folder_repo.find_by_id(folder_id).await?;
             if let Some(f) = folder {
                 if f.user_id != user_id {
-                    return Err(AppError::Forbidden("Folder belongs to another user".to_string()));
+                    return Err(AppError::Forbidden(
+                        "Folder belongs to another user".to_string(),
+                    ));
                 }
             } else {
                 return Err(AppError::NotFound("Folder not found".to_string()));
@@ -211,7 +213,9 @@ impl DriveService {
             let folder = self.folder_repo.find_by_id(new_folder_id).await?;
             if let Some(f) = folder {
                 if f.user_id != user_id {
-                    return Err(AppError::Forbidden("Folder belongs to another user".to_string()));
+                    return Err(AppError::Forbidden(
+                        "Folder belongs to another user".to_string(),
+                    ));
                 }
             } else {
                 return Err(AppError::NotFound("Folder not found".to_string()));
@@ -417,7 +421,9 @@ impl DriveService {
         parent_id: Option<&str>,
         limit: u64,
     ) -> AppResult<Vec<drive_folder::Model>> {
-        self.folder_repo.find_by_user(user_id, parent_id, limit).await
+        self.folder_repo
+            .find_by_user(user_id, parent_id, limit)
+            .await
     }
 
     /// Update a folder.
@@ -556,7 +562,7 @@ mod tests {
         data.extend_from_slice(&[0, 0, 0, 13]); // IHDR length
         data.extend_from_slice(b"IHDR");
         data.extend_from_slice(&100u32.to_be_bytes()); // width
-        data.extend_from_slice(&50u32.to_be_bytes());  // height
+        data.extend_from_slice(&50u32.to_be_bytes()); // height
 
         let (width, height) = get_image_dimensions(&data);
         assert_eq!(width, Some(100));

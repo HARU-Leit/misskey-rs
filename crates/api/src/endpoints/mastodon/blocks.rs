@@ -6,16 +6,16 @@
 //! - GET /api/v1/blocks - Get blocked accounts
 
 use axum::{
+    Json, Router,
     extract::{Query, State},
     routing::get,
-    Json, Router,
 };
 use misskey_common::AppResult;
 use serde::Deserialize;
 
 use crate::{extractors::AuthUser, middleware::AppState};
 
-use super::statuses::{user_to_account, Account};
+use super::statuses::{Account, user_to_account};
 
 /// Pagination query parameters.
 #[derive(Debug, Deserialize)]

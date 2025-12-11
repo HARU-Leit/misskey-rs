@@ -1,10 +1,10 @@
 //! `ActivityPub` user (Person) endpoint handler.
 
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
-    Json,
 };
 use misskey_db::repositories::{UserKeypairRepository, UserRepository};
 use tracing::{error, info};
@@ -22,7 +22,7 @@ pub struct UserApState {
 
 impl UserApState {
     /// Create a new user AP state.
-    #[must_use] 
+    #[must_use]
     pub const fn new(
         user_repo: UserRepository,
         keypair_repo: UserKeypairRepository,
@@ -90,10 +90,7 @@ pub async fn user_handler(
 
     (
         StatusCode::OK,
-        [(
-            "Content-Type",
-            "application/activity+json; charset=utf-8",
-        )],
+        [("Content-Type", "application/activity+json; charset=utf-8")],
         Json(person),
     )
         .into_response()
@@ -146,10 +143,7 @@ pub async fn user_by_username_handler(
 
     (
         StatusCode::OK,
-        [(
-            "Content-Type",
-            "application/activity+json; charset=utf-8",
-        )],
+        [("Content-Type", "application/activity+json; charset=utf-8")],
         Json(person),
     )
         .into_response()

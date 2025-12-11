@@ -14,25 +14,53 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(OAuthApp::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(OAuthApp::Id).string().not_null().primary_key())
-                    .col(ColumnDef::new(OAuthApp::ClientId).string().not_null().unique_key())
+                    .col(
+                        ColumnDef::new(OAuthApp::Id)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(OAuthApp::ClientId)
+                            .string()
+                            .not_null()
+                            .unique_key(),
+                    )
                     .col(ColumnDef::new(OAuthApp::ClientSecret).string().not_null())
                     .col(ColumnDef::new(OAuthApp::Name).string().not_null())
                     .col(ColumnDef::new(OAuthApp::Description).text().null())
                     .col(ColumnDef::new(OAuthApp::IconUrl).string().null())
                     .col(ColumnDef::new(OAuthApp::WebsiteUrl).string().null())
-                    .col(ColumnDef::new(OAuthApp::RedirectUris).json_binary().not_null())
+                    .col(
+                        ColumnDef::new(OAuthApp::RedirectUris)
+                            .json_binary()
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(OAuthApp::Scopes).json_binary().not_null())
                     .col(ColumnDef::new(OAuthApp::UserId).string().not_null())
-                    .col(ColumnDef::new(OAuthApp::IsTrusted).boolean().not_null().default(false))
-                    .col(ColumnDef::new(OAuthApp::IsActive).boolean().not_null().default(true))
+                    .col(
+                        ColumnDef::new(OAuthApp::IsTrusted)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
+                    .col(
+                        ColumnDef::new(OAuthApp::IsActive)
+                            .boolean()
+                            .not_null()
+                            .default(true),
+                    )
                     .col(
                         ColumnDef::new(OAuthApp::CreatedAt)
                             .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::current_timestamp()),
                     )
-                    .col(ColumnDef::new(OAuthApp::UpdatedAt).timestamp_with_time_zone().null())
+                    .col(
+                        ColumnDef::new(OAuthApp::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .null(),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_oauth_app_user")
@@ -72,24 +100,51 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(OAuthToken::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(OAuthToken::Id).string().not_null().primary_key())
-                    .col(ColumnDef::new(OAuthToken::TokenHash).text().not_null().unique_key())
+                    .col(
+                        ColumnDef::new(OAuthToken::Id)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(OAuthToken::TokenHash)
+                            .text()
+                            .not_null()
+                            .unique_key(),
+                    )
                     .col(ColumnDef::new(OAuthToken::TokenType).string().not_null())
                     .col(ColumnDef::new(OAuthToken::AppId).string().not_null())
                     .col(ColumnDef::new(OAuthToken::UserId).string().not_null())
                     .col(ColumnDef::new(OAuthToken::Scopes).json_binary().not_null())
                     .col(ColumnDef::new(OAuthToken::CodeChallenge).string().null())
-                    .col(ColumnDef::new(OAuthToken::CodeChallengeMethod).string().null())
+                    .col(
+                        ColumnDef::new(OAuthToken::CodeChallengeMethod)
+                            .string()
+                            .null(),
+                    )
                     .col(ColumnDef::new(OAuthToken::RedirectUri).string().null())
-                    .col(ColumnDef::new(OAuthToken::ExpiresAt).timestamp_with_time_zone().not_null())
-                    .col(ColumnDef::new(OAuthToken::IsRevoked).boolean().not_null().default(false))
+                    .col(
+                        ColumnDef::new(OAuthToken::ExpiresAt)
+                            .timestamp_with_time_zone()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(OAuthToken::IsRevoked)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
                     .col(
                         ColumnDef::new(OAuthToken::CreatedAt)
                             .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::current_timestamp()),
                     )
-                    .col(ColumnDef::new(OAuthToken::LastUsedAt).timestamp_with_time_zone().null())
+                    .col(
+                        ColumnDef::new(OAuthToken::LastUsedAt)
+                            .timestamp_with_time_zone()
+                            .null(),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_oauth_token_app")

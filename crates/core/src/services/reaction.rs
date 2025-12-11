@@ -58,7 +58,12 @@ impl ReactionService {
     }
 
     /// Set the delivery service.
-    pub fn set_delivery(&mut self, user_repo: UserRepository, delivery: DeliveryService, server_url: String) {
+    pub fn set_delivery(
+        &mut self,
+        user_repo: UserRepository,
+        delivery: DeliveryService,
+        server_url: String,
+    ) {
         self.user_repo = Some(user_repo);
         self.delivery = Some(delivery);
         self.server_url = server_url;
@@ -81,7 +86,9 @@ impl ReactionService {
 
         // Check if user already reacted
         if self.reaction_repo.has_reacted(user_id, note_id).await? {
-            return Err(AppError::BadRequest("Already reacted to this note".to_string()));
+            return Err(AppError::BadRequest(
+                "Already reacted to this note".to_string(),
+            ));
         }
 
         // Validate and normalize reaction
@@ -107,7 +114,16 @@ impl ReactionService {
                 // Only send Like to remote users
                 if note_author.host.is_some() {
                     if let Some(ref inbox) = note_author.inbox {
-                        if let Err(e) = self.queue_like_activity(user_id, &note, &normalized_reaction, inbox, delivery).await {
+                        if let Err(e) = self
+                            .queue_like_activity(
+                                user_id,
+                                &note,
+                                &normalized_reaction,
+                                inbox,
+                                delivery,
+                            )
+                            .await
+                        {
                             tracing::warn!(error = %e, "Failed to queue Like activity");
                         }
                     }
@@ -150,7 +166,16 @@ impl ReactionService {
             if let Ok(note_author) = user_repo.get_by_id(&note.user_id).await {
                 if note_author.host.is_some() {
                     if let Some(ref inbox) = note_author.inbox {
-                        if let Err(e) = self.queue_undo_like_activity(user_id, &note, &reaction.reaction, inbox, delivery).await {
+                        if let Err(e) = self
+                            .queue_undo_like_activity(
+                                user_id,
+                                &note,
+                                &reaction.reaction,
+                                inbox,
+                                delivery,
+                            )
+                            .await
+                        {
                             tracing::warn!(error = %e, "Failed to queue Undo Like activity");
                         }
                     }
@@ -178,7 +203,9 @@ impl ReactionService {
         limit: u64,
         until_id: Option<&str>,
     ) -> AppResult<Vec<reaction::Model>> {
-        self.reaction_repo.find_by_note(note_id, limit, until_id).await
+        self.reaction_repo
+            .find_by_note(note_id, limit, until_id)
+            .await
     }
 
     /// Get reactions by a user.
@@ -188,7 +215,9 @@ impl ReactionService {
         limit: u64,
         until_id: Option<&str>,
     ) -> AppResult<Vec<reaction::Model>> {
-        self.reaction_repo.find_by_user(user_id, limit, until_id).await
+        self.reaction_repo
+            .find_by_user(user_id, limit, until_id)
+            .await
     }
 
     /// Normalize a reaction string.
@@ -219,8 +248,14 @@ impl ReactionService {
         delivery: &DeliveryService,
     ) -> AppResult<()> {
         let actor_url = format!("{}/users/{}", self.server_url, user_id);
-        let note_url = note.uri.clone().unwrap_or_else(|| format!("{}/notes/{}", self.server_url, note.id));
-        let like_id = format!("{}/activities/like/{}/{}", self.server_url, user_id, note.id);
+        let note_url = note
+            .uri
+            .clone()
+            .unwrap_or_else(|| format!("{}/notes/{}", self.server_url, note.id));
+        let like_id = format!(
+            "{}/activities/like/{}/{}",
+            self.server_url, user_id, note.id
+        );
 
         // Use Misskey's EmojiReact extension for custom reactions
         let activity = json!({
@@ -252,9 +287,18 @@ impl ReactionService {
         delivery: &DeliveryService,
     ) -> AppResult<()> {
         let actor_url = format!("{}/users/{}", self.server_url, user_id);
-        let note_url = note.uri.clone().unwrap_or_else(|| format!("{}/notes/{}", self.server_url, note.id));
-        let like_id = format!("{}/activities/like/{}/{}", self.server_url, user_id, note.id);
-        let undo_id = format!("{}/activities/undo/like/{}/{}", self.server_url, user_id, note.id);
+        let note_url = note
+            .uri
+            .clone()
+            .unwrap_or_else(|| format!("{}/notes/{}", self.server_url, note.id));
+        let like_id = format!(
+            "{}/activities/like/{}/{}",
+            self.server_url, user_id, note.id
+        );
+        let undo_id = format!(
+            "{}/activities/undo/like/{}/{}",
+            self.server_url, user_id, note.id
+        );
 
         let activity = json!({
             "@context": "https://www.w3.org/ns/activitystreams",
@@ -270,7 +314,9 @@ impl ReactionService {
             },
         });
 
-        delivery.queue_undo(user_id, vec![inbox.to_string()], activity).await?;
+        delivery
+            .queue_undo(user_id, vec![inbox.to_string()], activity)
+            .await?;
         tracing::debug!(user_id = %user_id, note_id = %note.id, "Queued Undo Like activity");
         Ok(())
     }
@@ -313,7 +359,12 @@ mod tests {
         }
     }
 
-    fn create_test_reaction(id: &str, user_id: &str, note_id: &str, reaction_str: &str) -> reaction::Model {
+    fn create_test_reaction(
+        id: &str,
+        user_id: &str,
+        note_id: &str,
+        reaction_str: &str,
+    ) -> reaction::Model {
         reaction::Model {
             id: id.to_string(),
             user_id: user_id.to_string(),

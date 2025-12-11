@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{instance, Instance};
+use crate::entities::{Instance, instance};
 use misskey_common::{AppError, AppResult, IdGenerator};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,

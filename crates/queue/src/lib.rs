@@ -21,7 +21,7 @@ pub mod workers;
 
 pub use delivery_impl::RedisDeliveryService;
 pub use jobs::*;
-pub use pubsub::{channels as pubsub_channels, PubSubEvent, PubSubSseBridge, RedisPubSub};
+pub use pubsub::{PubSubEvent, PubSubSseBridge, RedisPubSub, channels as pubsub_channels};
 pub use rate_limit::{InstanceRateLimiter, RateLimitConfig, RateLimitResult};
 pub use retry::{DeadLetterEntry, RetryConfig};
 pub use scheduler::{JobExecutor, ScheduledJob, SchedulerConfig, SchedulerState};

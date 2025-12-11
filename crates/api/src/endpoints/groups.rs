@@ -1,14 +1,14 @@
 //! Group endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_core::services::group::{
     CreateGroupInput, GroupResponse, InviteUserInput, JoinRequestInput, UpdateGroupInput,
     UpdateMemberRoleInput,
 };
-use misskey_db::entities::{group, group_invite, group_member};
 use misskey_db::entities::group::GroupJoinPolicy;
 use misskey_db::entities::group_member::GroupRole;
+use misskey_db::entities::{group, group_invite, group_member};
 use serde::{Deserialize, Serialize};
 
 use crate::{extractors::AuthUser, middleware::AppState, response::ApiResponse};
@@ -349,10 +349,7 @@ async fn featured(
     Json(req): Json<ListGroupsRequest>,
 ) -> AppResult<ApiResponse<Vec<GroupListResponse>>> {
     let limit = req.limit.min(100);
-    let groups = state
-        .group_service
-        .list_featured(limit, req.offset)
-        .await?;
+    let groups = state.group_service.list_featured(limit, req.offset).await?;
 
     Ok(ApiResponse::ok(
         groups.into_iter().map(Into::into).collect(),

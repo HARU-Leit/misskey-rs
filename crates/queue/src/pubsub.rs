@@ -130,9 +130,7 @@ impl RedisPubSub {
     /// Subscribe to standard channels and start event loop.
     pub async fn start(&self) -> Result<(), RedisError> {
         // Subscribe to all standard channels
-        self.subscriber
-            .subscribe(channels::GLOBAL_TIMELINE)
-            .await?;
+        self.subscriber.subscribe(channels::GLOBAL_TIMELINE).await?;
         self.subscriber.subscribe(channels::LOCAL_TIMELINE).await?;
         self.subscriber.subscribe(channels::NOTES).await?;
         self.subscriber.subscribe(channels::NOTIFICATIONS).await?;
@@ -186,7 +184,10 @@ impl RedisPubSub {
     /// Publish an event to a channel.
     pub async fn publish(&self, channel: &str, event: &PubSubEvent) -> Result<(), RedisError> {
         let payload = serde_json::to_string(event).map_err(|e| {
-            RedisError::new(RedisErrorKind::InvalidArgument, format!("Serialization error: {e}"))
+            RedisError::new(
+                RedisErrorKind::InvalidArgument,
+                format!("Serialization error: {e}"),
+            )
         })?;
         let _: () = self.publisher.publish(channel, payload).await?;
         debug!(channel, ?event, "Published Pub/Sub event");
@@ -472,9 +473,16 @@ impl EventPublisher for RedisPubSub {
         source_user_id: Option<&str>,
         note_id: Option<&str>,
     ) -> AppResult<()> {
-        RedisPubSub::publish_notification(self, id, user_id, notification_type, source_user_id, note_id)
-            .await
-            .map_err(|e| misskey_common::AppError::Internal(e.to_string()))
+        RedisPubSub::publish_notification(
+            self,
+            id,
+            user_id,
+            notification_type,
+            source_user_id,
+            note_id,
+        )
+        .await
+        .map_err(|e| misskey_common::AppError::Internal(e.to_string()))
     }
 
     async fn publish_direct_message(

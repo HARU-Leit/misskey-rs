@@ -5,7 +5,7 @@ use crate::services::event_publisher::EventPublisherService;
 use misskey_common::{AppError, AppResult, IdGenerator};
 use misskey_db::{
     entities::{following, user},
-    repositories::{FollowingRepository, FollowRequestRepository, UserRepository},
+    repositories::{FollowRequestRepository, FollowingRepository, UserRepository},
 };
 use sea_orm::Set;
 use serde_json::json;
@@ -102,7 +102,9 @@ impl FollowingService {
                 .exists(follower_id, followee_id)
                 .await?
             {
-                return Err(AppError::BadRequest("Follow request already pending".to_string()));
+                return Err(AppError::BadRequest(
+                    "Follow request already pending".to_string(),
+                ));
             }
 
             // Create follow request
@@ -123,7 +125,10 @@ impl FollowingService {
             if let Some(ref delivery) = self.delivery {
                 if followee.host.is_some() {
                     if let Some(ref inbox) = followee.inbox {
-                        if let Err(e) = self.queue_follow_activity(&follower, &followee, inbox, delivery).await {
+                        if let Err(e) = self
+                            .queue_follow_activity(&follower, &followee, inbox, delivery)
+                            .await
+                        {
                             tracing::warn!(error = %e, "Failed to queue Follow activity");
                         }
                     }
@@ -140,7 +145,10 @@ impl FollowingService {
         if let Some(ref delivery) = self.delivery {
             if followee.host.is_some() {
                 if let Some(ref inbox) = followee.inbox {
-                    if let Err(e) = self.queue_follow_activity(&follower, &followee, inbox, delivery).await {
+                    if let Err(e) = self
+                        .queue_follow_activity(&follower, &followee, inbox, delivery)
+                        .await
+                    {
                         tracing::warn!(error = %e, "Failed to queue Follow activity");
                     }
                 }
@@ -149,7 +157,10 @@ impl FollowingService {
 
         // Publish real-time event
         if let Some(ref event_publisher) = self.event_publisher {
-            if let Err(e) = event_publisher.publish_followed(follower_id, followee_id).await {
+            if let Err(e) = event_publisher
+                .publish_followed(follower_id, followee_id)
+                .await
+            {
                 tracing::warn!(error = %e, "Failed to publish followed event");
             }
         }
@@ -177,8 +188,12 @@ impl FollowingService {
         let following = self.following_repo.create(model).await?;
 
         // Update counts
-        self.user_repo.increment_following_count(&follower.id).await?;
-        self.user_repo.increment_followers_count(&followee.id).await?;
+        self.user_repo
+            .increment_following_count(&follower.id)
+            .await?;
+        self.user_repo
+            .increment_followers_count(&followee.id)
+            .await?;
 
         Ok(following)
     }
@@ -203,14 +218,21 @@ impl FollowingService {
             .await?;
 
         // Update counts
-        self.user_repo.decrement_following_count(follower_id).await?;
-        self.user_repo.decrement_followers_count(followee_id).await?;
+        self.user_repo
+            .decrement_following_count(follower_id)
+            .await?;
+        self.user_repo
+            .decrement_followers_count(followee_id)
+            .await?;
 
         // Queue ActivityPub Undo activity for remote users
         if let Some(ref delivery) = self.delivery {
             if followee.host.is_some() {
                 if let Some(ref inbox) = followee.inbox {
-                    if let Err(e) = self.queue_undo_follow_activity(&follower, &followee, inbox, delivery).await {
+                    if let Err(e) = self
+                        .queue_undo_follow_activity(&follower, &followee, inbox, delivery)
+                        .await
+                    {
                         tracing::warn!(error = %e, "Failed to queue Undo Follow activity");
                     }
                 }
@@ -219,7 +241,10 @@ impl FollowingService {
 
         // Publish real-time event
         if let Some(ref event_publisher) = self.event_publisher {
-            if let Err(e) = event_publisher.publish_unfollowed(follower_id, followee_id).await {
+            if let Err(e) = event_publisher
+                .publish_unfollowed(follower_id, followee_id)
+                .await
+            {
                 tracing::warn!(error = %e, "Failed to publish unfollowed event");
             }
         }
@@ -250,7 +275,10 @@ impl FollowingService {
         if let Some(ref delivery) = self.delivery {
             if follower.host.is_some() {
                 if let Some(ref inbox) = follower.inbox {
-                    if let Err(e) = self.queue_accept_activity(&followee, &follower, inbox, delivery).await {
+                    if let Err(e) = self
+                        .queue_accept_activity(&followee, &follower, inbox, delivery)
+                        .await
+                    {
                         tracing::warn!(error = %e, "Failed to queue Accept activity");
                     }
                 }
@@ -259,7 +287,10 @@ impl FollowingService {
 
         // Publish real-time event (follow relationship established)
         if let Some(ref event_publisher) = self.event_publisher {
-            if let Err(e) = event_publisher.publish_followed(follower_id, followee_id).await {
+            if let Err(e) = event_publisher
+                .publish_followed(follower_id, followee_id)
+                .await
+            {
                 tracing::warn!(error = %e, "Failed to publish followed event");
             }
         }
@@ -281,7 +312,10 @@ impl FollowingService {
         if let Some(ref delivery) = self.delivery {
             if follower.host.is_some() {
                 if let Some(ref inbox) = follower.inbox {
-                    if let Err(e) = self.queue_reject_activity(&followee, &follower, inbox, delivery).await {
+                    if let Err(e) = self
+                        .queue_reject_activity(&followee, &follower, inbox, delivery)
+                        .await
+                    {
                         tracing::warn!(error = %e, "Failed to queue Reject activity");
                     }
                 }
@@ -305,7 +339,10 @@ impl FollowingService {
         if let Some(ref delivery) = self.delivery {
             if followee.host.is_some() {
                 if let Some(ref inbox) = followee.inbox {
-                    if let Err(e) = self.queue_undo_follow_activity(&follower, &followee, inbox, delivery).await {
+                    if let Err(e) = self
+                        .queue_undo_follow_activity(&follower, &followee, inbox, delivery)
+                        .await
+                    {
                         tracing::warn!(error = %e, "Failed to queue Undo Follow activity");
                     }
                 }
@@ -322,7 +359,9 @@ impl FollowingService {
         limit: u64,
         until_id: Option<&str>,
     ) -> AppResult<Vec<following::Model>> {
-        self.following_repo.find_followers(user_id, limit, until_id).await
+        self.following_repo
+            .find_followers(user_id, limit, until_id)
+            .await
     }
 
     /// Get users that a user is following.
@@ -332,12 +371,16 @@ impl FollowingService {
         limit: u64,
         until_id: Option<&str>,
     ) -> AppResult<Vec<following::Model>> {
-        self.following_repo.find_following(user_id, limit, until_id).await
+        self.following_repo
+            .find_following(user_id, limit, until_id)
+            .await
     }
 
     /// Check if a user is following another.
     pub async fn is_following(&self, follower_id: &str, followee_id: &str) -> AppResult<bool> {
-        self.following_repo.is_following(follower_id, followee_id).await
+        self.following_repo
+            .is_following(follower_id, followee_id)
+            .await
     }
 
     /// Get pending follow requests received by a user.
@@ -347,7 +390,9 @@ impl FollowingService {
         limit: u64,
         until_id: Option<&str>,
     ) -> AppResult<Vec<misskey_db::entities::follow_request::Model>> {
-        self.follow_request_repo.find_received(user_id, limit, until_id).await
+        self.follow_request_repo
+            .find_received(user_id, limit, until_id)
+            .await
     }
 
     // ==================== ActivityPub Delivery Helpers ====================
@@ -361,8 +406,14 @@ impl FollowingService {
         delivery: &DeliveryService,
     ) -> AppResult<()> {
         let actor_url = format!("{}/users/{}", self.server_url, follower.id);
-        let object_url = followee.uri.clone().unwrap_or_else(|| format!("{}/users/{}", self.server_url, followee.id));
-        let activity_id = format!("{}/activities/follow/{}/{}", self.server_url, follower.id, followee.id);
+        let object_url = followee
+            .uri
+            .clone()
+            .unwrap_or_else(|| format!("{}/users/{}", self.server_url, followee.id));
+        let activity_id = format!(
+            "{}/activities/follow/{}/{}",
+            self.server_url, follower.id, followee.id
+        );
 
         let activity = json!({
             "@context": "https://www.w3.org/ns/activitystreams",
@@ -386,9 +437,18 @@ impl FollowingService {
         delivery: &DeliveryService,
     ) -> AppResult<()> {
         let actor_url = format!("{}/users/{}", self.server_url, follower.id);
-        let object_url = followee.uri.clone().unwrap_or_else(|| format!("{}/users/{}", self.server_url, followee.id));
-        let follow_id = format!("{}/activities/follow/{}/{}", self.server_url, follower.id, followee.id);
-        let undo_id = format!("{}/activities/undo/follow/{}/{}", self.server_url, follower.id, followee.id);
+        let object_url = followee
+            .uri
+            .clone()
+            .unwrap_or_else(|| format!("{}/users/{}", self.server_url, followee.id));
+        let follow_id = format!(
+            "{}/activities/follow/{}/{}",
+            self.server_url, follower.id, followee.id
+        );
+        let undo_id = format!(
+            "{}/activities/undo/follow/{}/{}",
+            self.server_url, follower.id, followee.id
+        );
 
         let activity = json!({
             "@context": "https://www.w3.org/ns/activitystreams",
@@ -403,7 +463,9 @@ impl FollowingService {
             },
         });
 
-        delivery.queue_undo(&follower.id, vec![inbox.to_string()], activity).await?;
+        delivery
+            .queue_undo(&follower.id, vec![inbox.to_string()], activity)
+            .await?;
         tracing::debug!(follower_id = %follower.id, followee_id = %followee.id, "Queued Undo Follow activity");
         Ok(())
     }
@@ -417,9 +479,18 @@ impl FollowingService {
         delivery: &DeliveryService,
     ) -> AppResult<()> {
         let actor_url = format!("{}/users/{}", self.server_url, accepter.id);
-        let follower_url = follower.uri.clone().unwrap_or_else(|| format!("{}/users/{}", self.server_url, follower.id));
-        let follow_id = format!("{}/activities/follow/{}/{}", self.server_url, follower.id, accepter.id);
-        let accept_id = format!("{}/activities/accept/{}/{}", self.server_url, accepter.id, follower.id);
+        let follower_url = follower
+            .uri
+            .clone()
+            .unwrap_or_else(|| format!("{}/users/{}", self.server_url, follower.id));
+        let follow_id = format!(
+            "{}/activities/follow/{}/{}",
+            self.server_url, follower.id, accepter.id
+        );
+        let accept_id = format!(
+            "{}/activities/accept/{}/{}",
+            self.server_url, accepter.id, follower.id
+        );
 
         let activity = json!({
             "@context": "https://www.w3.org/ns/activitystreams",
@@ -434,7 +505,9 @@ impl FollowingService {
             },
         });
 
-        delivery.queue_accept_follow(&accepter.id, inbox, activity).await?;
+        delivery
+            .queue_accept_follow(&accepter.id, inbox, activity)
+            .await?;
         tracing::debug!(accepter_id = %accepter.id, follower_id = %follower.id, "Queued Accept activity");
         Ok(())
     }
@@ -448,9 +521,18 @@ impl FollowingService {
         delivery: &DeliveryService,
     ) -> AppResult<()> {
         let actor_url = format!("{}/users/{}", self.server_url, rejecter.id);
-        let follower_url = follower.uri.clone().unwrap_or_else(|| format!("{}/users/{}", self.server_url, follower.id));
-        let follow_id = format!("{}/activities/follow/{}/{}", self.server_url, follower.id, rejecter.id);
-        let reject_id = format!("{}/activities/reject/{}/{}", self.server_url, rejecter.id, follower.id);
+        let follower_url = follower
+            .uri
+            .clone()
+            .unwrap_or_else(|| format!("{}/users/{}", self.server_url, follower.id));
+        let follow_id = format!(
+            "{}/activities/follow/{}/{}",
+            self.server_url, follower.id, rejecter.id
+        );
+        let reject_id = format!(
+            "{}/activities/reject/{}/{}",
+            self.server_url, rejecter.id, follower.id
+        );
 
         let activity = json!({
             "@context": "https://www.w3.org/ns/activitystreams",
@@ -465,7 +547,9 @@ impl FollowingService {
             },
         });
 
-        delivery.queue_reject_follow(&rejecter.id, inbox, activity).await?;
+        delivery
+            .queue_reject_follow(&rejecter.id, inbox, activity)
+            .await?;
         tracing::debug!(rejecter_id = %rejecter.id, follower_id = %follower.id, "Queued Reject activity");
         Ok(())
     }
@@ -482,10 +566,10 @@ pub enum FollowResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use chrono::Utc;
     use misskey_db::entities::user;
     use sea_orm::{DatabaseBackend, MockDatabase};
+    use std::sync::Arc;
 
     #[allow(dead_code)]
     fn create_test_user(id: &str, username: &str, is_locked: bool) -> user::Model {
@@ -558,9 +642,11 @@ mod tests {
     async fn test_follow_already_following_returns_error() {
         let following = create_test_following("f1", "user1", "user2");
 
-        let db1 = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([[following.clone()]])
-            .into_connection());
+        let db1 = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([[following.clone()]])
+                .into_connection(),
+        );
         let db2 = Arc::new(MockDatabase::new(DatabaseBackend::Postgres).into_connection());
         let db3 = Arc::new(MockDatabase::new(DatabaseBackend::Postgres).into_connection());
 
@@ -584,9 +670,11 @@ mod tests {
     async fn test_is_following() {
         let following = create_test_following("f1", "user1", "user2");
 
-        let db1 = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([[following.clone()]])
-            .into_connection());
+        let db1 = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([[following.clone()]])
+                .into_connection(),
+        );
         let db2 = Arc::new(MockDatabase::new(DatabaseBackend::Postgres).into_connection());
         let db3 = Arc::new(MockDatabase::new(DatabaseBackend::Postgres).into_connection());
 
@@ -602,9 +690,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_is_not_following() {
-        let db1 = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([Vec::<following::Model>::new()])
-            .into_connection());
+        let db1 = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([Vec::<following::Model>::new()])
+                .into_connection(),
+        );
         let db2 = Arc::new(MockDatabase::new(DatabaseBackend::Postgres).into_connection());
         let db3 = Arc::new(MockDatabase::new(DatabaseBackend::Postgres).into_connection());
 

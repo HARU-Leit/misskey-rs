@@ -13,17 +13,36 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Emoji::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Emoji::Id).string_len(32).not_null().primary_key())
+                    .col(
+                        ColumnDef::new(Emoji::Id)
+                            .string_len(32)
+                            .not_null()
+                            .primary_key(),
+                    )
                     .col(ColumnDef::new(Emoji::Name).string_len(128).not_null())
                     .col(ColumnDef::new(Emoji::Category).string_len(128))
-                    .col(ColumnDef::new(Emoji::OriginalUrl).string_len(1024).not_null())
+                    .col(
+                        ColumnDef::new(Emoji::OriginalUrl)
+                            .string_len(1024)
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Emoji::StaticUrl).string_len(1024))
                     .col(ColumnDef::new(Emoji::ContentType).string_len(64).not_null())
                     .col(ColumnDef::new(Emoji::Aliases).json().not_null())
                     .col(ColumnDef::new(Emoji::Host).string_len(256))
                     .col(ColumnDef::new(Emoji::License).string_len(256))
-                    .col(ColumnDef::new(Emoji::IsSensitive).boolean().not_null().default(false))
-                    .col(ColumnDef::new(Emoji::LocalOnly).boolean().not_null().default(false))
+                    .col(
+                        ColumnDef::new(Emoji::IsSensitive)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
+                    .col(
+                        ColumnDef::new(Emoji::LocalOnly)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
                     .col(ColumnDef::new(Emoji::Width).integer())
                     .col(ColumnDef::new(Emoji::Height).integer())
                     .col(ColumnDef::new(Emoji::Size).big_integer())

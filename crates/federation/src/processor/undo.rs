@@ -1,7 +1,9 @@
 //! Undo activity processor.
 
 use misskey_common::{AppError, AppResult};
-use misskey_db::repositories::{FollowingRepository, NoteRepository, ReactionRepository, UserRepository};
+use misskey_db::repositories::{
+    FollowingRepository, NoteRepository, ReactionRepository, UserRepository,
+};
 use tracing::info;
 use url::Url;
 
@@ -43,7 +45,7 @@ pub struct UndoProcessor {
 
 impl UndoProcessor {
     /// Create a new undo processor.
-    #[must_use] 
+    #[must_use]
     pub const fn new(
         user_repo: UserRepository,
         following_repo: FollowingRepository,
@@ -87,9 +89,10 @@ impl UndoProcessor {
             .ok_or_else(|| AppError::NotFound(format!("Actor not found: {}", activity.actor)))?;
 
         // Get the followee URL from object.object
-        let followee_url = activity.object_object.as_ref().ok_or_else(|| {
-            AppError::BadRequest("Undo Follow missing object.object".to_string())
-        })?;
+        let followee_url = activity
+            .object_object
+            .as_ref()
+            .ok_or_else(|| AppError::BadRequest("Undo Follow missing object.object".to_string()))?;
 
         // Extract local user ID from followee URL
         let followee_id = extract_local_user_id(followee_url)?;
@@ -110,11 +113,17 @@ impl UndoProcessor {
         }
 
         // Delete the following relationship
-        self.following_repo.delete_by_pair(&follower.id, &followee.id).await?;
+        self.following_repo
+            .delete_by_pair(&follower.id, &followee.id)
+            .await?;
 
         // Update counts
-        self.user_repo.decrement_following_count(&follower.id).await?;
-        self.user_repo.decrement_followers_count(&followee.id).await?;
+        self.user_repo
+            .decrement_following_count(&follower.id)
+            .await?;
+        self.user_repo
+            .decrement_followers_count(&followee.id)
+            .await?;
 
         info!(
             follower = %follower.id,
@@ -137,9 +146,10 @@ impl UndoProcessor {
         // The object_id is the Like activity ID, but we need to find the note
         // In practice, we should look up the Like by its activity ID
         // For now, we'll try to find by object.object if available
-        let note_url = activity.object_object.as_ref().ok_or_else(|| {
-            AppError::BadRequest("Undo Like missing note reference".to_string())
-        })?;
+        let note_url = activity
+            .object_object
+            .as_ref()
+            .ok_or_else(|| AppError::BadRequest("Undo Like missing note reference".to_string()))?;
 
         let note = self
             .note_repo
@@ -148,8 +158,15 @@ impl UndoProcessor {
             .ok_or_else(|| AppError::NotFound(format!("Note not found: {note_url}")))?;
 
         // Delete the reaction
-        if self.reaction_repo.find_by_user_and_note(&actor.id, &note.id).await?.is_some() {
-            self.reaction_repo.delete_by_user_and_note(&actor.id, &note.id).await?;
+        if self
+            .reaction_repo
+            .find_by_user_and_note(&actor.id, &note.id)
+            .await?
+            .is_some()
+        {
+            self.reaction_repo
+                .delete_by_user_and_note(&actor.id, &note.id)
+                .await?;
 
             info!(
                 actor = %actor.id,
@@ -164,7 +181,11 @@ impl UndoProcessor {
     /// Undo an Announce activity.
     async fn undo_announce(&self, activity: &ParsedUndoActivity) -> AppResult<UndoResult> {
         // Find the renote by its URI (activity ID)
-        if let Some(renote) = self.note_repo.find_by_uri(activity.object_id.as_str()).await? {
+        if let Some(renote) = self
+            .note_repo
+            .find_by_uri(activity.object_id.as_str())
+            .await?
+        {
             // Delete the renote
             self.note_repo.delete(&renote.id).await?;
 

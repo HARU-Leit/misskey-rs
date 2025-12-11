@@ -1,6 +1,6 @@
 //! Blocking endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_db::entities::blocking::Model as BlockingModel;
 use serde::{Deserialize, Serialize};
@@ -59,10 +59,7 @@ async fn block_user(
     State(state): State<AppState>,
     Json(req): Json<BlockUserRequest>,
 ) -> AppResult<ApiResponse<BlockingResponse>> {
-    let blocking = state
-        .blocking_service
-        .block(&user.id, &req.user_id)
-        .await?;
+    let blocking = state.blocking_service.block(&user.id, &req.user_id).await?;
     Ok(ApiResponse::ok(blocking.into()))
 }
 
@@ -90,7 +87,9 @@ async fn list_blocking(
         .blocking_service
         .get_blocking(&user.id, limit, req.until_id.as_deref())
         .await?;
-    Ok(ApiResponse::ok(blockings.into_iter().map(Into::into).collect()))
+    Ok(ApiResponse::ok(
+        blockings.into_iter().map(Into::into).collect(),
+    ))
 }
 
 pub fn router() -> Router<AppState> {

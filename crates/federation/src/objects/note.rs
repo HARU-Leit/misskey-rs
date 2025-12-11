@@ -109,7 +109,7 @@ pub struct ApPollReplies {
 
 impl ApPollOption {
     /// Create a new poll option.
-    #[must_use] 
+    #[must_use]
     pub fn new(name: String, votes: u32) -> Self {
         Self {
             kind: "Note".to_string(),
@@ -155,8 +155,13 @@ pub struct ApAttachment {
 
 impl ApNote {
     /// Create a new Note object.
-    #[must_use] 
-    pub const fn new(id: Url, attributed_to: Url, content: String, published: DateTime<Utc>) -> Self {
+    #[must_use]
+    pub const fn new(
+        id: Url,
+        attributed_to: Url,
+        content: String,
+        published: DateTime<Utc>,
+    ) -> Self {
         Self {
             kind: ApObjectType::Note,
             id,
@@ -185,7 +190,7 @@ impl ApNote {
     }
 
     /// Create a new Question (poll) object.
-    #[must_use] 
+    #[must_use]
     pub fn new_question(
         id: Url,
         attributed_to: Url,
@@ -213,8 +218,16 @@ impl ApNote {
             sensitive: None,
             tag: None,
             attachment: None,
-            one_of: if multiple_choice { None } else { Some(poll_options.clone()) },
-            any_of: if multiple_choice { Some(poll_options) } else { None },
+            one_of: if multiple_choice {
+                None
+            } else {
+                Some(poll_options.clone())
+            },
+            any_of: if multiple_choice {
+                Some(poll_options)
+            } else {
+                None
+            },
             end_time,
             closed: None,
             voters_count: Some(0),
@@ -229,7 +242,7 @@ impl ApNote {
 
     /// Set the quoted post URL (FEP-c16b compliant).
     /// Sets both standard `quoteUrl` and Misskey's `_misskey_quote` for compatibility.
-    #[must_use] 
+    #[must_use]
     pub fn with_quote(mut self, quote_url: Url) -> Self {
         self.quote_url = Some(quote_url.clone());
         self.misskey_quote = Some(quote_url);
@@ -237,7 +250,7 @@ impl ApNote {
     }
 
     /// Get the quote URL, checking multiple fields for compatibility.
-    #[must_use] 
+    #[must_use]
     pub fn get_quote_url(&self) -> Option<&Url> {
         self.quote_url
             .as_ref()
@@ -246,17 +259,19 @@ impl ApNote {
     }
 
     /// Check if this is a Question (poll).
-    #[must_use] 
+    #[must_use]
     pub fn is_question(&self) -> bool {
         self.kind == ApObjectType::Question
     }
 
     /// Set public addressing.
-    #[must_use] 
+    #[must_use]
     pub fn public(mut self) -> Self {
-        self.to = Some(vec!["https://www.w3.org/ns/activitystreams#Public"
-            .parse()
-            .unwrap()]);
+        self.to = Some(vec![
+            "https://www.w3.org/ns/activitystreams#Public"
+                .parse()
+                .unwrap(),
+        ]);
         self
     }
 }

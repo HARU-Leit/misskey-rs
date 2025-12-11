@@ -14,7 +14,7 @@ pub struct EmojiService {
 
 impl EmojiService {
     /// Create a new emoji service.
-    #[must_use] 
+    #[must_use]
     pub const fn new(emoji_repo: EmojiRepository) -> Self {
         Self {
             emoji_repo,
@@ -135,21 +135,22 @@ impl EmojiService {
 
         // Check if new name conflicts with existing emoji
         if let Some(ref new_name) = name
-            && new_name != &emoji.name {
-                if self.emoji_repo.find_by_name(new_name).await?.is_some() {
-                    return Err(AppError::BadRequest(format!(
-                        "Emoji with name '{new_name}' already exists"
-                    )));
-                }
-
-                // Validate name
-                if !new_name.chars().all(|c| c.is_alphanumeric() || c == '_') {
-                    return Err(AppError::BadRequest(
-                        "Emoji name can only contain alphanumeric characters and underscores"
-                            .to_string(),
-                    ));
-                }
+            && new_name != &emoji.name
+        {
+            if self.emoji_repo.find_by_name(new_name).await?.is_some() {
+                return Err(AppError::BadRequest(format!(
+                    "Emoji with name '{new_name}' already exists"
+                )));
             }
+
+            // Validate name
+            if !new_name.chars().all(|c| c.is_alphanumeric() || c == '_') {
+                return Err(AppError::BadRequest(
+                    "Emoji name can only contain alphanumeric characters and underscores"
+                        .to_string(),
+                ));
+            }
+        }
 
         let mut model: emoji::ActiveModel = emoji.into();
 

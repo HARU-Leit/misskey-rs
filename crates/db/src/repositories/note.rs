@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
-use crate::entities::{note, note_edit, Note, NoteEdit};
+use crate::entities::{Note, NoteEdit, note, note_edit};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
-    sea_query::Expr, ActiveModelTrait, ColumnTrait, DatabaseConnection, DbBackend, EntityTrait,
-    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Statement,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbBackend, EntityTrait, PaginatorTrait,
+    QueryFilter, QueryOrder, QuerySelect, Statement, sea_query::Expr,
 };
 
 /// Note repository for database operations.
@@ -17,7 +17,7 @@ pub struct NoteRepository {
 
 impl NoteRepository {
     /// Create a new note repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
@@ -154,13 +154,11 @@ impl NoteRepository {
     ) -> AppResult<Vec<note::Model>> {
         use sea_orm::Condition;
 
-        let mut condition = Condition::all()
-            .add(note::Column::UserId.eq(user_id))
-            .add(
-                Condition::any()
-                    .add(note::Column::Visibility.eq(note::Visibility::Public))
-                    .add(note::Column::Visibility.eq(note::Visibility::Home)),
-            );
+        let mut condition = Condition::all().add(note::Column::UserId.eq(user_id)).add(
+            Condition::any()
+                .add(note::Column::Visibility.eq(note::Visibility::Public))
+                .add(note::Column::Visibility.eq(note::Visibility::Home)),
+        );
 
         if let Some(until) = until_id {
             condition = condition.add(note::Column::Id.lt(until));
@@ -242,7 +240,11 @@ impl NoteRepository {
     }
 
     /// Find a renote by a specific user.
-    pub async fn find_renote(&self, user_id: &str, note_id: &str) -> AppResult<Option<note::Model>> {
+    pub async fn find_renote(
+        &self,
+        user_id: &str,
+        note_id: &str,
+    ) -> AppResult<Option<note::Model>> {
         Note::find()
             .filter(note::Column::UserId.eq(user_id))
             .filter(note::Column::RenoteId.eq(note_id))
@@ -531,11 +533,7 @@ impl NoteRepository {
             .from_raw_sql(Statement::from_sql_and_values(
                 DbBackend::Postgres,
                 sql,
-                [
-                    min_reactions.into(),
-                    since.into(),
-                    (limit as i64).into(),
-                ],
+                [min_reactions.into(), since.into(), (limit as i64).into()],
             ))
             .all(self.db.as_ref())
             .await
@@ -663,8 +661,8 @@ impl NoteRepository {
         let tag_lower = tag.to_lowercase();
         let tag_json = format!("[\"{tag_lower}\"]");
 
-        let mut condition = Condition::all()
-            .add(note::Column::Visibility.eq(note::Visibility::Public));
+        let mut condition =
+            Condition::all().add(note::Column::Visibility.eq(note::Visibility::Public));
 
         if let Some(until) = until_id {
             condition = condition.add(note::Column::Id.lt(until));
@@ -735,10 +733,10 @@ impl NoteRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use chrono::Utc;
     use sea_orm::{DatabaseBackend, MockDatabase};
     use serde_json::json;
+    use std::sync::Arc;
 
     fn create_test_note(id: &str, user_id: &str, text: Option<&str>) -> note::Model {
         note::Model {
@@ -772,9 +770,11 @@ mod tests {
     async fn test_find_by_id_found() {
         let note = create_test_note("note1", "user1", Some("Hello world"));
 
-        let db = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([[note.clone()]])
-            .into_connection());
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([[note.clone()]])
+                .into_connection(),
+        );
 
         let repo = NoteRepository::new(db);
         let result = repo.find_by_id("note1").await.unwrap();
@@ -787,9 +787,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_find_by_id_not_found() {
-        let db = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([Vec::<note::Model>::new()])
-            .into_connection());
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([Vec::<note::Model>::new()])
+                .into_connection(),
+        );
 
         let repo = NoteRepository::new(db);
         let result = repo.find_by_id("nonexistent").await.unwrap();
@@ -799,9 +801,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_by_id_not_found_returns_error() {
-        let db = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([Vec::<note::Model>::new()])
-            .into_connection());
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([Vec::<note::Model>::new()])
+                .into_connection(),
+        );
 
         let repo = NoteRepository::new(db);
         let result = repo.get_by_id("nonexistent").await;
@@ -818,9 +822,11 @@ mod tests {
         let note1 = create_test_note("note1", "user1", Some("First note"));
         let note2 = create_test_note("note2", "user1", Some("Second note"));
 
-        let db = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([[note1, note2]])
-            .into_connection());
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([[note1, note2]])
+                .into_connection(),
+        );
 
         let repo = NoteRepository::new(db);
         let result = repo.find_by_user("user1", 10, None).await.unwrap();
@@ -833,9 +839,11 @@ mod tests {
         let note1 = create_test_note("note1", "user1", Some("Public note"));
         let note2 = create_test_note("note2", "user2", Some("Another public note"));
 
-        let db = Arc::new(MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results([[note1, note2]])
-            .into_connection());
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results([[note1, note2]])
+                .into_connection(),
+        );
 
         let repo = NoteRepository::new(db);
         let result = repo.find_local_public(10, None).await.unwrap();

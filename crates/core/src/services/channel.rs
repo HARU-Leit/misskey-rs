@@ -1,7 +1,7 @@
 //! Channel service.
 
 use chrono::Utc;
-use misskey_common::{id::IdGenerator, AppError, AppResult};
+use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::channel;
 use misskey_db::repositories::ChannelRepository;
 use sea_orm::Set;
@@ -69,11 +69,7 @@ impl ChannelService {
     }
 
     /// Get a channel by ID with ownership check.
-    pub async fn get_by_id_for_owner(
-        &self,
-        id: &str,
-        user_id: &str,
-    ) -> AppResult<channel::Model> {
+    pub async fn get_by_id_for_owner(&self, id: &str, user_id: &str) -> AppResult<channel::Model> {
         let channel = self.channel_repo.get_by_id(id).await?;
 
         if channel.user_id != user_id {
@@ -131,7 +127,9 @@ impl ChannelService {
         input: CreateChannelInput,
     ) -> AppResult<channel::Model> {
         // Validate input
-        input.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+        input
+            .validate()
+            .map_err(|e| AppError::Validation(e.to_string()))?;
 
         // Check channel limit
         let count = self.channel_repo.count_by_user(user_id).await?;
@@ -179,7 +177,9 @@ impl ChannelService {
         input: UpdateChannelInput,
     ) -> AppResult<channel::Model> {
         // Validate input
-        input.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+        input
+            .validate()
+            .map_err(|e| AppError::Validation(e.to_string()))?;
 
         // Get channel and verify ownership
         let channel = self.get_by_id_for_owner(&input.channel_id, user_id).await?;

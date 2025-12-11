@@ -3,9 +3,9 @@
 //! Provides GET /api/v1/timelines/home and /api/v1/timelines/public.
 
 use axum::{
+    Json, Router,
     extract::{Query, State},
     routing::get,
-    Json, Router,
 };
 use misskey_common::AppResult;
 use misskey_db::entities::note;

@@ -1,17 +1,13 @@
 //! Service Worker / Push notification endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_core::{
     CreateSubscriptionInput, PushConfigResponse, PushSubscriptionResponse, UpdateSubscriptionInput,
 };
 use serde::Deserialize;
 
-use crate::{
-    extractors::AuthUser,
-    middleware::AppState,
-    response::ApiResponse,
-};
+use crate::{extractors::AuthUser, middleware::AppState, response::ApiResponse};
 
 /// Request to update a push subscription.
 #[derive(Debug, Deserialize)]
@@ -58,9 +54,7 @@ async fn register(
         .and_then(|v| v.to_str().ok())
         .map(String::from);
 
-    let subscription = push_service
-        .register(&user.id, input, user_agent)
-        .await?;
+    let subscription = push_service.register(&user.id, input, user_agent).await?;
 
     Ok(ApiResponse::ok(subscription))
 }
@@ -95,7 +89,9 @@ async fn unregister(
     if let Some(subscription_id) = req.subscription_id {
         push_service.unregister(&user.id, &subscription_id).await?;
     } else if let Some(endpoint) = req.endpoint {
-        push_service.unregister_by_endpoint(&user.id, &endpoint).await?;
+        push_service
+            .unregister_by_endpoint(&user.id, &endpoint)
+            .await?;
     } else {
         return Err(misskey_common::AppError::Validation(
             "Either subscription_id or endpoint must be provided".to_string(),
@@ -133,9 +129,7 @@ async fn get_subscription(
 }
 
 /// Get push notification configuration (public key, etc).
-async fn get_config(
-    State(state): State<AppState>,
-) -> AppResult<ApiResponse<PushConfigResponse>> {
+async fn get_config(State(state): State<AppState>) -> AppResult<ApiResponse<PushConfigResponse>> {
     let response = if let Some(push_service) = &state.push_notification_service {
         PushConfigResponse {
             available: push_service.is_enabled(),

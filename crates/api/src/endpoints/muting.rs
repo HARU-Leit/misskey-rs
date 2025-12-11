@@ -1,6 +1,6 @@
 //! Muting endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_db::entities::muting::Model as MutingModel;
 use serde::{Deserialize, Serialize};
@@ -77,10 +77,7 @@ async fn unmute_user(
     State(state): State<AppState>,
     Json(req): Json<UnmuteUserRequest>,
 ) -> AppResult<ApiResponse<()>> {
-    state
-        .muting_service
-        .unmute(&user.id, &req.user_id)
-        .await?;
+    state.muting_service.unmute(&user.id, &req.user_id).await?;
     Ok(ApiResponse::ok(()))
 }
 
@@ -95,7 +92,9 @@ async fn list_muting(
         .muting_service
         .get_muting(&user.id, limit, req.until_id.as_deref())
         .await?;
-    Ok(ApiResponse::ok(mutings.into_iter().map(Into::into).collect()))
+    Ok(ApiResponse::ok(
+        mutings.into_iter().map(Into::into).collect(),
+    ))
 }
 
 pub fn router() -> Router<AppState> {

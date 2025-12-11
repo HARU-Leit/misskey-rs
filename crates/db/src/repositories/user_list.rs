@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{user_list, user_list_member, UserList, UserListMember};
+use crate::entities::{UserList, UserListMember, user_list, user_list_member};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder,
@@ -16,7 +16,7 @@ pub struct UserListRepository {
 
 impl UserListRepository {
     /// Create a new user list repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }

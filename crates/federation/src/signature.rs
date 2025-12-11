@@ -5,13 +5,13 @@
 
 #![allow(missing_docs)]
 
-use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use chrono::Utc;
 use pkcs8::{DecodePrivateKey, DecodePublicKey};
 use reqwest::header::{HeaderMap, HeaderValue};
 use rsa::{
-    pkcs1v15::{SigningKey, VerifyingKey},
     RsaPrivateKey, RsaPublicKey,
+    pkcs1v15::{SigningKey, VerifyingKey},
 };
 use sha2::{Digest, Sha256};
 use signature::{SignatureEncoding, Signer, Verifier};
@@ -110,10 +110,7 @@ impl HttpSigner {
                 "host" => host.to_string(),
                 "date" => date.clone(),
                 "digest" => digest.clone().unwrap_or_default(),
-                h => additional_headers
-                    .get(h)
-                    .cloned()
-                    .unwrap_or_default(),
+                h => additional_headers.get(h).cloned().unwrap_or_default(),
             };
             signing_parts.push(format!("{header}: {value}"));
         }
@@ -142,14 +139,18 @@ impl HttpSigner {
         if let Some(ref d) = digest {
             headers.insert("Digest", HeaderValue::from_str(d).unwrap());
         }
-        headers.insert("Signature", HeaderValue::from_str(&signature_header).unwrap());
+        headers.insert(
+            "Signature",
+            HeaderValue::from_str(&signature_header).unwrap(),
+        );
 
         // Add additional headers
         for (key, value) in additional_headers {
             if let Ok(v) = HeaderValue::from_str(value)
-                && let Ok(name) = reqwest::header::HeaderName::from_bytes(key.as_bytes()) {
-                    headers.insert(name, v);
-                }
+                && let Ok(name) = reqwest::header::HeaderName::from_bytes(key.as_bytes())
+            {
+                headers.insert(name, v);
+            }
         }
 
         Ok(headers)
@@ -250,14 +251,14 @@ pub struct SignatureComponents {
 }
 
 /// Calculate SHA-256 digest of a body.
-#[must_use] 
+#[must_use]
 pub fn calculate_digest(body: &[u8]) -> String {
     let hash = Sha256::digest(body);
     format!("SHA-256={}", BASE64.encode(hash))
 }
 
 /// Verify that a digest header matches the body.
-#[must_use] 
+#[must_use]
 pub fn verify_digest(body: &[u8], digest_header: &str) -> bool {
     let expected = calculate_digest(body);
     expected == digest_header
@@ -284,7 +285,11 @@ mod tests {
     fn test_sign_and_verify() {
         let (private_pem, public_pem) = generate_test_keypair();
 
-        let signer = HttpSigner::new(&private_pem, "https://example.com/users/test#main-key".to_string()).unwrap();
+        let signer = HttpSigner::new(
+            &private_pem,
+            "https://example.com/users/test#main-key".to_string(),
+        )
+        .unwrap();
 
         let url = Url::parse("https://remote.example/inbox").unwrap();
         let body = b"{\"type\":\"Create\"}";
@@ -309,14 +314,9 @@ mod tests {
             headers.get("Digest").unwrap().to_str().unwrap().to_string(),
         );
 
-        let result = HttpVerifier::verify(
-            &public_pem,
-            &components,
-            "POST",
-            "/inbox",
-            &verify_headers,
-        )
-        .unwrap();
+        let result =
+            HttpVerifier::verify(&public_pem, &components, "POST", "/inbox", &verify_headers)
+                .unwrap();
 
         assert!(result);
     }
@@ -327,10 +327,7 @@ mod tests {
 
         let components = HttpVerifier::parse_signature_header(header).unwrap();
 
-        assert_eq!(
-            components.key_id,
-            "https://example.com/users/test#main-key"
-        );
+        assert_eq!(components.key_id, "https://example.com/users/test#main-key");
         assert_eq!(components.algorithm, "rsa-sha256");
         assert_eq!(
             components.headers,

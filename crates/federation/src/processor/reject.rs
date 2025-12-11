@@ -15,8 +15,11 @@ pub struct RejectProcessor {
 
 impl RejectProcessor {
     /// Create a new reject processor.
-    #[must_use] 
-    pub const fn new(user_repo: UserRepository, follow_request_repo: FollowRequestRepository) -> Self {
+    #[must_use]
+    pub const fn new(
+        user_repo: UserRepository,
+        follow_request_repo: FollowRequestRepository,
+    ) -> Self {
         Self {
             user_repo,
             follow_request_repo,

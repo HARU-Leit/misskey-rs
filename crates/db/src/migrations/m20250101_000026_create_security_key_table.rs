@@ -14,17 +14,49 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(SecurityKey::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(SecurityKey::Id).string().not_null().primary_key())
+                    .col(
+                        ColumnDef::new(SecurityKey::Id)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
                     .col(ColumnDef::new(SecurityKey::UserId).string().not_null())
                     .col(ColumnDef::new(SecurityKey::Name).string().not_null())
-                    .col(ColumnDef::new(SecurityKey::CredentialId).text().not_null().unique_key())
+                    .col(
+                        ColumnDef::new(SecurityKey::CredentialId)
+                            .text()
+                            .not_null()
+                            .unique_key(),
+                    )
                     .col(ColumnDef::new(SecurityKey::PublicKey).text().not_null())
-                    .col(ColumnDef::new(SecurityKey::Counter).big_integer().not_null().default(0))
-                    .col(ColumnDef::new(SecurityKey::CredentialType).string().not_null())
-                    .col(ColumnDef::new(SecurityKey::Transports).json_binary().not_null())
+                    .col(
+                        ColumnDef::new(SecurityKey::Counter)
+                            .big_integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(
+                        ColumnDef::new(SecurityKey::CredentialType)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(SecurityKey::Transports)
+                            .json_binary()
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(SecurityKey::Aaguid).string().null())
-                    .col(ColumnDef::new(SecurityKey::IsPasskey).boolean().not_null().default(false))
-                    .col(ColumnDef::new(SecurityKey::LastUsedAt).timestamp_with_time_zone().null())
+                    .col(
+                        ColumnDef::new(SecurityKey::IsPasskey)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
+                    .col(
+                        ColumnDef::new(SecurityKey::LastUsedAt)
+                            .timestamp_with_time_zone()
+                            .null(),
+                    )
                     .col(
                         ColumnDef::new(SecurityKey::CreatedAt)
                             .timestamp_with_time_zone()

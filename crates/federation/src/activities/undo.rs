@@ -25,7 +25,7 @@ pub struct UndoActivity {
 
 impl UndoActivity {
     /// Create a new Undo activity.
-    #[must_use] 
+    #[must_use]
     pub const fn new(id: Url, actor: Url, object: Url) -> Self {
         Self {
             kind: UndoType::Undo,

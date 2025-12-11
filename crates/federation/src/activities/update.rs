@@ -37,8 +37,13 @@ pub enum UpdateObject {
 
 impl UpdateActivity {
     /// Create a new Update activity for a Person.
-    #[must_use] 
-    pub const fn new_person(id: Url, actor: Url, person: ApPerson, published: DateTime<Utc>) -> Self {
+    #[must_use]
+    pub const fn new_person(
+        id: Url,
+        actor: Url,
+        person: ApPerson,
+        published: DateTime<Utc>,
+    ) -> Self {
         Self {
             kind: UpdateType::Update,
             id,
@@ -53,7 +58,9 @@ impl UpdateActivity {
     /// Set the public audience.
     #[must_use]
     pub fn public(mut self) -> Self {
-        self.to = Some(vec![Url::parse("https://www.w3.org/ns/activitystreams#Public").unwrap()]);
+        self.to = Some(vec![
+            Url::parse("https://www.w3.org/ns/activitystreams#Public").unwrap(),
+        ]);
         self
     }
 }

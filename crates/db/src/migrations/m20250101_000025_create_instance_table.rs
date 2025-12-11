@@ -14,12 +14,42 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Instance::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Instance::Id).string().not_null().primary_key())
-                    .col(ColumnDef::new(Instance::Host).string().not_null().unique_key())
-                    .col(ColumnDef::new(Instance::UsersCount).integer().not_null().default(0))
-                    .col(ColumnDef::new(Instance::NotesCount).integer().not_null().default(0))
-                    .col(ColumnDef::new(Instance::FollowingCount).integer().not_null().default(0))
-                    .col(ColumnDef::new(Instance::FollowersCount).integer().not_null().default(0))
+                    .col(
+                        ColumnDef::new(Instance::Id)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(Instance::Host)
+                            .string()
+                            .not_null()
+                            .unique_key(),
+                    )
+                    .col(
+                        ColumnDef::new(Instance::UsersCount)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(
+                        ColumnDef::new(Instance::NotesCount)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(
+                        ColumnDef::new(Instance::FollowingCount)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(
+                        ColumnDef::new(Instance::FollowersCount)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
                     .col(ColumnDef::new(Instance::SoftwareName).string().null())
                     .col(ColumnDef::new(Instance::SoftwareVersion).string().null())
                     .col(ColumnDef::new(Instance::Name).string().null())
@@ -29,20 +59,52 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Instance::IconUrl).string().null())
                     .col(ColumnDef::new(Instance::FaviconUrl).string().null())
                     .col(ColumnDef::new(Instance::ThemeColor).string().null())
-                    .col(ColumnDef::new(Instance::IsBlocked).boolean().not_null().default(false))
-                    .col(ColumnDef::new(Instance::IsSilenced).boolean().not_null().default(false))
-                    .col(ColumnDef::new(Instance::IsSuspended).boolean().not_null().default(false))
+                    .col(
+                        ColumnDef::new(Instance::IsBlocked)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
+                    .col(
+                        ColumnDef::new(Instance::IsSilenced)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
+                    .col(
+                        ColumnDef::new(Instance::IsSuspended)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
                     .col(ColumnDef::new(Instance::ModerationNote).text().null())
-                    .col(ColumnDef::new(Instance::LastCommunicatedAt).timestamp_with_time_zone().null())
-                    .col(ColumnDef::new(Instance::InfoUpdatedAt).timestamp_with_time_zone().null())
-                    .col(ColumnDef::new(Instance::IsNodeinfoFetched).boolean().not_null().default(false))
+                    .col(
+                        ColumnDef::new(Instance::LastCommunicatedAt)
+                            .timestamp_with_time_zone()
+                            .null(),
+                    )
+                    .col(
+                        ColumnDef::new(Instance::InfoUpdatedAt)
+                            .timestamp_with_time_zone()
+                            .null(),
+                    )
+                    .col(
+                        ColumnDef::new(Instance::IsNodeinfoFetched)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
                     .col(
                         ColumnDef::new(Instance::CreatedAt)
                             .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::current_timestamp()),
                     )
-                    .col(ColumnDef::new(Instance::UpdatedAt).timestamp_with_time_zone().null())
+                    .col(
+                        ColumnDef::new(Instance::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .null(),
+                    )
                     .to_owned(),
             )
             .await?;

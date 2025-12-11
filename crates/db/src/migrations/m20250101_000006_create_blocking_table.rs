@@ -19,8 +19,16 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Blocking::BlockerId).string_len(32).not_null())
-                    .col(ColumnDef::new(Blocking::BlockeeId).string_len(32).not_null())
+                    .col(
+                        ColumnDef::new(Blocking::BlockerId)
+                            .string_len(32)
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(Blocking::BlockeeId)
+                            .string_len(32)
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(Blocking::CreatedAt)
                             .timestamp_with_time_zone()

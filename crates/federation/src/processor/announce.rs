@@ -21,7 +21,7 @@ pub struct AnnounceProcessor {
 
 impl AnnounceProcessor {
     /// Create a new announce processor.
-    #[must_use] 
+    #[must_use]
     pub const fn new(user_repo: UserRepository, note_repo: NoteRepository) -> Self {
         Self {
             user_repo,
@@ -88,7 +88,9 @@ impl AnnounceProcessor {
         let renote = self.note_repo.create(model).await?;
 
         // Update renote count on original note
-        self.note_repo.increment_renote_count(&original_note.id).await?;
+        self.note_repo
+            .increment_renote_count(&original_note.id)
+            .await?;
 
         info!(
             renote_id = %renote.id,
@@ -107,8 +109,6 @@ impl AnnounceProcessor {
         }
 
         // TODO: Fetch actor from remote server
-        Err(AppError::NotFound(format!(
-            "Actor not found: {actor_url}"
-        )))
+        Err(AppError::NotFound(format!("Actor not found: {actor_url}")))
     }
 }

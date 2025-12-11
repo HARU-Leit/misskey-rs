@@ -5,11 +5,11 @@ use std::sync::Arc;
 use chrono::Utc;
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, JoinType, Order, PaginatorTrait,
-    QueryFilter, QueryOrder, QuerySelect, RelationTrait, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, JoinType, Order,
+    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, RelationTrait, Set,
 };
 
-use crate::entities::{clip, clip_note, note, Clip, ClipNote};
+use crate::entities::{Clip, ClipNote, clip, clip_note, note};
 
 /// Repository for clip operations.
 #[derive(Clone)]
@@ -359,7 +359,7 @@ impl ClipRepository {
         limit: u64,
         offset: u64,
     ) -> AppResult<Vec<String>> {
-        use crate::entities::{note, Note};
+        use crate::entities::{Note, note};
         use sea_orm::JoinType;
 
         // Search notes in clip by text content using LIKE

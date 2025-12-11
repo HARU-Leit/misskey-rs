@@ -1,7 +1,7 @@
 //! Announcement service.
 
 use chrono::{DateTime, Utc};
-use misskey_common::{id::IdGenerator, AppResult};
+use misskey_common::{AppResult, id::IdGenerator};
 use misskey_db::entities::announcement;
 use misskey_db::repositories::AnnouncementRepository;
 
@@ -14,7 +14,7 @@ pub struct AnnouncementService {
 
 impl AnnouncementService {
     /// Create a new announcement service.
-    #[must_use] 
+    #[must_use]
     pub const fn new(announcement_repo: AnnouncementRepository) -> Self {
         Self {
             announcement_repo,
@@ -49,13 +49,19 @@ impl AnnouncementService {
 
     /// Check if a user has read an announcement.
     pub async fn has_read(&self, user_id: &str, announcement_id: &str) -> AppResult<bool> {
-        self.announcement_repo.has_read(user_id, announcement_id).await
+        self.announcement_repo
+            .has_read(user_id, announcement_id)
+            .await
     }
 
     /// Mark an announcement as read.
     pub async fn mark_as_read(&self, user_id: &str, announcement_id: &str) -> AppResult<()> {
         // Check if already read
-        if self.announcement_repo.has_read(user_id, announcement_id).await? {
+        if self
+            .announcement_repo
+            .has_read(user_id, announcement_id)
+            .await?
+        {
             return Ok(());
         }
 

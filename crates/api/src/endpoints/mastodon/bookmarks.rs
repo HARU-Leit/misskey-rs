@@ -6,16 +6,16 @@
 //! - GET /api/v1/bookmarks - Get bookmarked statuses
 
 use axum::{
+    Json, Router,
     extract::{Query, State},
     routing::get,
-    Json, Router,
 };
 use misskey_common::AppResult;
 use serde::Deserialize;
 
 use crate::{extractors::AuthUser, middleware::AppState};
 
-use super::statuses::{note_to_status, Status};
+use super::statuses::{Status, note_to_status};
 
 /// Pagination query parameters.
 #[derive(Debug, Deserialize)]

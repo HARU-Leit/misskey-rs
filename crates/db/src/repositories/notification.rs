@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{notification, Notification};
+use crate::entities::{Notification, notification};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, PaginatorTrait,
@@ -17,7 +17,7 @@ pub struct NotificationRepository {
 
 impl NotificationRepository {
     /// Create a new notification repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
@@ -31,10 +31,7 @@ impl NotificationRepository {
     }
 
     /// Create a new notification.
-    pub async fn create(
-        &self,
-        model: notification::ActiveModel,
-    ) -> AppResult<notification::Model> {
+    pub async fn create(&self, model: notification::ActiveModel) -> AppResult<notification::Model> {
         model
             .insert(self.db.as_ref())
             .await

@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{webhook, Webhook};
+use crate::entities::{Webhook, webhook};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
@@ -69,7 +69,8 @@ impl WebhookRepository {
         Ok(webhooks
             .into_iter()
             .filter(|w| {
-                let events: Vec<String> = serde_json::from_value(w.events.clone()).unwrap_or_default();
+                let events: Vec<String> =
+                    serde_json::from_value(w.events.clone()).unwrap_or_default();
                 events.contains(&event.to_string())
             })
             .collect())

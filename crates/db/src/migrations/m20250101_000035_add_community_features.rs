@@ -16,11 +16,7 @@ impl MigrationTrait for Migration {
             .alter_table(
                 Table::alter()
                     .table(UserProfile::Table)
-                    .add_column(
-                        ColumnDef::new(UserProfile::Pronouns)
-                            .string_len(128)
-                            .null(),
-                    )
+                    .add_column(ColumnDef::new(UserProfile::Pronouns).string_len(128).null())
                     .to_owned(),
             )
             .await?;

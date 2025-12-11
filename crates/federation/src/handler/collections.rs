@@ -1,12 +1,14 @@
 //! `ActivityPub` Collection handlers (Outbox, Followers, Following).
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
-    Json,
 };
-use misskey_db::repositories::{ClipRepository, DriveFileRepository, FollowingRepository, NoteRepository, UserRepository};
+use misskey_db::repositories::{
+    ClipRepository, DriveFileRepository, FollowingRepository, NoteRepository, UserRepository,
+};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 use url::Url;
@@ -25,7 +27,7 @@ pub struct CollectionState {
 
 impl CollectionState {
     /// Create a new collection state.
-    #[must_use] 
+    #[must_use]
     pub const fn new(
         user_repo: UserRepository,
         note_repo: NoteRepository,
@@ -224,10 +226,7 @@ pub async fn outbox_handler(
 
         return (
             StatusCode::OK,
-            [(
-                "Content-Type",
-                "application/activity+json; charset=utf-8",
-            )],
+            [("Content-Type", "application/activity+json; charset=utf-8")],
             Json(page),
         )
             .into_response();
@@ -252,10 +251,7 @@ pub async fn outbox_handler(
 
     (
         StatusCode::OK,
-        [(
-            "Content-Type",
-            "application/activity+json; charset=utf-8",
-        )],
+        [("Content-Type", "application/activity+json; charset=utf-8")],
         Json(collection),
     )
         .into_response()
@@ -357,10 +353,7 @@ pub async fn followers_handler(
 
         return (
             StatusCode::OK,
-            [(
-                "Content-Type",
-                "application/activity+json; charset=utf-8",
-            )],
+            [("Content-Type", "application/activity+json; charset=utf-8")],
             Json(page),
         )
             .into_response();
@@ -385,10 +378,7 @@ pub async fn followers_handler(
 
     (
         StatusCode::OK,
-        [(
-            "Content-Type",
-            "application/activity+json; charset=utf-8",
-        )],
+        [("Content-Type", "application/activity+json; charset=utf-8")],
         Json(collection),
     )
         .into_response()
@@ -490,10 +480,7 @@ pub async fn following_handler(
 
         return (
             StatusCode::OK,
-            [(
-                "Content-Type",
-                "application/activity+json; charset=utf-8",
-            )],
+            [("Content-Type", "application/activity+json; charset=utf-8")],
             Json(page),
         )
             .into_response();
@@ -518,10 +505,7 @@ pub async fn following_handler(
 
     (
         StatusCode::OK,
-        [(
-            "Content-Type",
-            "application/activity+json; charset=utf-8",
-        )],
+        [("Content-Type", "application/activity+json; charset=utf-8")],
         Json(collection),
     )
         .into_response()
@@ -620,11 +604,7 @@ pub async fn clip_handler(
         let limit = 20u64;
 
         // Get notes in this clip
-        let clip_notes = match state
-            .clip_repo
-            .find_notes_in_clip(&clip_id, limit, 0)
-            .await
-        {
+        let clip_notes = match state.clip_repo.find_notes_in_clip(&clip_id, limit, 0).await {
             Ok(n) => n,
             Err(e) => {
                 error!(error = %e, "Failed to fetch clip notes");
@@ -693,10 +673,7 @@ pub async fn clip_handler(
 
         return (
             StatusCode::OK,
-            [(
-                "Content-Type",
-                "application/activity+json; charset=utf-8",
-            )],
+            [("Content-Type", "application/activity+json; charset=utf-8")],
             Json(page),
         )
             .into_response();
@@ -725,10 +702,7 @@ pub async fn clip_handler(
 
     (
         StatusCode::OK,
-        [(
-            "Content-Type",
-            "application/activity+json; charset=utf-8",
-        )],
+        [("Content-Type", "application/activity+json; charset=utf-8")],
         Json(collection),
     )
         .into_response()
@@ -830,10 +804,7 @@ pub async fn clips_list_handler(
 
         return (
             StatusCode::OK,
-            [(
-                "Content-Type",
-                "application/activity+json; charset=utf-8",
-            )],
+            [("Content-Type", "application/activity+json; charset=utf-8")],
             Json(page),
         )
             .into_response();
@@ -865,10 +836,7 @@ pub async fn clips_list_handler(
 
     (
         StatusCode::OK,
-        [(
-            "Content-Type",
-            "application/activity+json; charset=utf-8",
-        )],
+        [("Content-Type", "application/activity+json; charset=utf-8")],
         Json(collection),
     )
         .into_response()

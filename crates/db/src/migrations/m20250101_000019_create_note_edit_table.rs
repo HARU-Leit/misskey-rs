@@ -20,11 +20,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(
-                        ColumnDef::new(NoteEdit::NoteId)
-                            .string_len(32)
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(NoteEdit::NoteId).string_len(32).not_null())
                     .col(ColumnDef::new(NoteEdit::OldText).text())
                     .col(ColumnDef::new(NoteEdit::NewText).text())
                     .col(ColumnDef::new(NoteEdit::OldCw).string_len(512))

@@ -14,7 +14,7 @@ pub struct MutingService {
 
 impl MutingService {
     /// Create a new muting service.
-    #[must_use] 
+    #[must_use]
     pub const fn new(muting_repo: MutingRepository) -> Self {
         Self {
             muting_repo,
@@ -40,9 +40,8 @@ impl MutingService {
             return Err(AppError::Conflict("Already muting this user".to_string()));
         }
 
-        let expires_at = expires_in_seconds.map(|seconds| {
-            (Utc::now() + Duration::seconds(seconds)).fixed_offset()
-        });
+        let expires_at = expires_in_seconds
+            .map(|seconds| (Utc::now() + Duration::seconds(seconds)).fixed_offset());
 
         let model = muting::ActiveModel {
             id: Set(self.id_gen.generate()),

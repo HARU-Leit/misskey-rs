@@ -19,7 +19,7 @@ pub struct RejectActivity {
 
 impl RejectActivity {
     /// Create a new Reject activity.
-    #[must_use] 
+    #[must_use]
     pub const fn new(id: Url, actor: Url, object: Url) -> Self {
         Self {
             kind: RejectType::Reject,

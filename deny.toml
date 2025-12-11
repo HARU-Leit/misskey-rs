@@ -32,7 +32,6 @@ allow = [
     "BSL-1.0",
     "OpenSSL",
 ]
-copyleft = "warn"
 confidence-threshold = 0.8
 
 [bans]

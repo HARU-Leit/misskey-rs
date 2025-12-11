@@ -40,7 +40,10 @@ mod mastodon {
         // Required fields for Mastodon
         assert!(json["id"].is_string(), "Missing 'id' field");
         assert!(json["type"].is_string(), "Missing 'type' field");
-        assert!(json["attributedTo"].is_string(), "Missing 'attributedTo' field");
+        assert!(
+            json["attributedTo"].is_string(),
+            "Missing 'attributedTo' field"
+        );
         assert!(json["content"].is_string(), "Missing 'content' field");
         assert!(json["published"].is_string(), "Missing 'published' field");
         assert!(json["to"].is_array(), "Missing 'to' field");
@@ -60,8 +63,10 @@ mod mastodon {
         let content = json["content"].as_str().unwrap();
 
         // Mastodon expects HTML
-        assert!(content.contains("<p>") || content.contains("<strong>") || !content.contains('<'),
-            "Content should be HTML or plain text");
+        assert!(
+            content.contains("<p>") || content.contains("<strong>") || !content.contains('<'),
+            "Content should be HTML or plain text"
+        );
     }
 
     /// Mastodon visibility through addressing.
@@ -204,10 +209,12 @@ mod mastodon {
         let json = serde_json::to_value(&note).unwrap();
 
         assert!(json["inReplyTo"].is_string());
-        assert!(json["inReplyTo"]
-            .as_str()
-            .unwrap()
-            .contains("/notes/original"));
+        assert!(
+            json["inReplyTo"]
+                .as_str()
+                .unwrap()
+                .contains("/notes/original")
+        );
     }
 
     /// Mastodon poll format (Question type).
@@ -293,10 +300,9 @@ mod pleroma {
 
         // Should not have Public in addressing
         if let Some(to) = json["to"].as_array() {
-            let has_public = to.iter().any(|v| {
-                v.as_str()
-                    .is_some_and(|s| s.contains("Public"))
-            });
+            let has_public = to
+                .iter()
+                .any(|v| v.as_str().is_some_and(|s| s.contains("Public")));
             assert!(!has_public, "Direct messages should not be public");
         }
     }
@@ -467,7 +473,10 @@ mod activitypub_compliance {
 
         let json = serde_json::to_value(&note).unwrap();
         let author = json["attributedTo"].as_str().unwrap();
-        assert!(Url::parse(author).is_ok(), "attributedTo should be a valid URL");
+        assert!(
+            Url::parse(author).is_ok(),
+            "attributedTo should be a valid URL"
+        );
     }
 
     /// Test that published is ISO 8601 format.
@@ -506,7 +515,10 @@ mod activitypub_compliance {
         if let Some(to) = json["to"].as_array() {
             for addr in to {
                 if let Some(url_str) = addr.as_str() {
-                    assert!(Url::parse(url_str).is_ok(), "to entry should be valid URL: {url_str}");
+                    assert!(
+                        Url::parse(url_str).is_ok(),
+                        "to entry should be valid URL: {url_str}"
+                    );
                 }
             }
         }
@@ -514,7 +526,10 @@ mod activitypub_compliance {
         if let Some(cc) = json["cc"].as_array() {
             for addr in cc {
                 if let Some(url_str) = addr.as_str() {
-                    assert!(Url::parse(url_str).is_ok(), "cc entry should be valid URL: {url_str}");
+                    assert!(
+                        Url::parse(url_str).is_ok(),
+                        "cc entry should be valid URL: {url_str}"
+                    );
                 }
             }
         }

@@ -6,13 +6,13 @@
 //! - Performance statistics
 
 use axum::{
+    Json, Router,
     extract::State,
-    http::{header, StatusCode},
+    http::{StatusCode, header},
     response::{IntoResponse, Response},
     routing::get,
-    Json, Router,
 };
-use misskey_common::metrics::{get_metrics, MetricsSnapshot};
+use misskey_common::metrics::{MetricsSnapshot, get_metrics};
 use serde::Serialize;
 
 use crate::middleware::AppState;

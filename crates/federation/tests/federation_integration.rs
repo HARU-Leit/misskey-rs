@@ -3,7 +3,7 @@
 //! Tests for `ActivityPub` federation functionality.
 
 use chrono::Utc;
-use misskey_federation::objects::{ApNote, ApTag, ApAttachment};
+use misskey_federation::objects::{ApAttachment, ApNote, ApTag};
 use url::Url;
 
 fn test_url(path: &str) -> Url {
@@ -26,7 +26,12 @@ fn test_create_activity_structure() {
     // Verify structure
     assert_eq!(json["type"], "Note");
     assert!(json["id"].as_str().unwrap().contains("/notes/123"));
-    assert!(json["attributedTo"].as_str().unwrap().contains("/users/alice"));
+    assert!(
+        json["attributedTo"]
+            .as_str()
+            .unwrap()
+            .contains("/users/alice")
+    );
     assert_eq!(json["content"], "Hello, fediverse!");
     assert!(json["to"].is_array());
 }
@@ -231,10 +236,12 @@ fn test_visibility_addressing() {
     .public();
 
     let json = serde_json::to_value(&public_note).unwrap();
-    assert!(json["to"][0]
-        .as_str()
-        .unwrap()
-        .contains("activitystreams#Public"));
+    assert!(
+        json["to"][0]
+            .as_str()
+            .unwrap()
+            .contains("activitystreams#Public")
+    );
 }
 
 #[test]
@@ -250,10 +257,12 @@ fn test_reply_chain() {
     let json = serde_json::to_value(&reply).unwrap();
 
     assert!(json["inReplyTo"].is_string());
-    assert!(json["inReplyTo"]
-        .as_str()
-        .unwrap()
-        .contains("/notes/original"));
+    assert!(
+        json["inReplyTo"]
+            .as_str()
+            .unwrap()
+            .contains("/notes/original")
+    );
 }
 
 #[test]
@@ -313,10 +322,12 @@ fn test_webfinger_response_format() {
     assert!(json["subject"].as_str().unwrap().starts_with("acct:"));
     assert!(json["links"].is_array());
     assert_eq!(json["links"][0]["rel"], "self");
-    assert!(json["links"][0]["type"]
-        .as_str()
-        .unwrap()
-        .contains("activity+json"));
+    assert!(
+        json["links"][0]["type"]
+            .as_str()
+            .unwrap()
+            .contains("activity+json")
+    );
 }
 
 #[test]
@@ -350,11 +361,13 @@ fn test_nodeinfo_structure() {
 
     assert_eq!(json["version"], "2.1");
     assert_eq!(json["software"]["name"], "misskey-rs");
-    assert!(json["protocols"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .any(|p| p == "activitypub"));
+    assert!(
+        json["protocols"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p == "activitypub")
+    );
 }
 
 #[test]

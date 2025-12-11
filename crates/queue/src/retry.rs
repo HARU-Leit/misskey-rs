@@ -21,8 +21,8 @@ impl Default for RetryConfig {
     fn default() -> Self {
         Self {
             max_retries: 5,
-            initial_delay: Duration::from_secs(60),       // 1 minute
-            max_delay: Duration::from_secs(3600 * 24),    // 24 hours
+            initial_delay: Duration::from_secs(60), // 1 minute
+            max_delay: Duration::from_secs(3600 * 24), // 24 hours
             multiplier: 2.0,
         }
     }

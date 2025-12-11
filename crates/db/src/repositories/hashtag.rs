@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use crate::entities::{hashtag, Hashtag};
+use crate::entities::{Hashtag, hashtag};
 use chrono::Utc;
-use misskey_common::{AppResult, AppError, IdGenerator};
+use misskey_common::{AppError, AppResult, IdGenerator};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder,
     QuerySelect, Set,
@@ -19,7 +19,7 @@ pub struct HashtagRepository {
 
 impl HashtagRepository {
     /// Create a new hashtag repository.
-    #[must_use] 
+    #[must_use]
     pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self {
             db,
@@ -94,11 +94,7 @@ impl HashtagRepository {
     }
 
     /// Decrement note count for a hashtag.
-    pub async fn decrement_notes_count(
-        &self,
-        name: &str,
-        is_local: bool,
-    ) -> AppResult<()> {
+    pub async fn decrement_notes_count(&self, name: &str, is_local: bool) -> AppResult<()> {
         if let Some(tag) = self.find_by_name(name).await? {
             let mut active: hashtag::ActiveModel = tag.into();
             let count = active.notes_count.clone().unwrap();
@@ -109,7 +105,11 @@ impl HashtagRepository {
                 active.local_notes_count = Set(if local_count > 0 { local_count - 1 } else { 0 });
             } else {
                 let remote_count = active.remote_notes_count.clone().unwrap();
-                active.remote_notes_count = Set(if remote_count > 0 { remote_count - 1 } else { 0 });
+                active.remote_notes_count = Set(if remote_count > 0 {
+                    remote_count - 1
+                } else {
+                    0
+                });
             }
 
             active

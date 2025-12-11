@@ -174,8 +174,7 @@ fn test_pubsub_event_roundtrip() {
 
     for event in events {
         let json = serde_json::to_string(&event).expect("Serialization failed");
-        let parsed: PubSubEvent =
-            serde_json::from_str(&json).expect("Deserialization failed");
+        let parsed: PubSubEvent = serde_json::from_str(&json).expect("Deserialization failed");
 
         // Verify roundtrip preserves data
         let json2 = serde_json::to_string(&parsed).expect("Re-serialization failed");

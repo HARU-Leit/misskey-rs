@@ -1,6 +1,6 @@
 //! Security keys (WebAuthn/Passkey) endpoints.
 
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_core::{
     BeginAuthenticationResponse, BeginRegistrationResponse, CompleteAuthenticationInput,
@@ -38,10 +38,7 @@ async fn begin_registration(
     AuthUser(user): AuthUser,
     State(state): State<AppState>,
 ) -> AppResult<ApiResponse<BeginRegistrationResponse>> {
-    let response = state
-        .webauthn_service
-        .begin_registration(&user.id)
-        .await?;
+    let response = state.webauthn_service.begin_registration(&user.id).await?;
 
     Ok(ApiResponse::ok(response))
 }

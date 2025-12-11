@@ -20,4 +20,4 @@ pub mod streaming;
 pub use endpoints::router;
 pub use rate_limit::{ApiRateLimiter, RateLimitConfig, RateLimiterState};
 pub use sse::{SseBroadcaster, SseEvent};
-pub use streaming::{streaming_handler, StreamingState};
+pub use streaming::{StreamingState, streaming_handler};

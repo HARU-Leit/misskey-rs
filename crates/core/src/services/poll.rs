@@ -34,7 +34,7 @@ pub struct PollWithStatus {
 
 impl PollService {
     /// Create a new poll service.
-    #[must_use] 
+    #[must_use]
     pub const fn new(
         poll_repo: PollRepository,
         vote_repo: PollVoteRepository,
@@ -132,20 +132,16 @@ impl PollService {
     }
 
     /// Vote on a poll.
-    pub async fn vote(
-        &self,
-        user_id: &str,
-        note_id: &str,
-        choice: i32,
-    ) -> AppResult<poll::Model> {
+    pub async fn vote(&self, user_id: &str, note_id: &str, choice: i32) -> AppResult<poll::Model> {
         // Get poll
         let poll = self.poll_repo.get_by_note_id(note_id).await?;
 
         // Check if poll is expired
         if let Some(ref expires_at) = poll.expires_at
-            && *expires_at < Utc::now() {
-                return Err(AppError::BadRequest("Poll has expired".to_string()));
-            }
+            && *expires_at < Utc::now()
+        {
+            return Err(AppError::BadRequest("Poll has expired".to_string()));
+        }
 
         // Validate choice index
         let choices: Vec<String> = serde_json::from_value(poll.choices.clone())

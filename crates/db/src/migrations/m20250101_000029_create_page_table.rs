@@ -28,7 +28,11 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default("public"),
                     )
-                    .col(ColumnDef::new(Page::VisibleUserIds).json_binary().not_null())
+                    .col(
+                        ColumnDef::new(Page::VisibleUserIds)
+                            .json_binary()
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Page::EyecatchImageId).string().null())
                     .col(ColumnDef::new(Page::FileIds).json_binary().not_null())
                     .col(ColumnDef::new(Page::Font).string_len(32).null())
@@ -61,7 +65,11 @@ impl MigrationTrait for Migration {
                             .timestamp_with_time_zone()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(Page::UpdatedAt).timestamp_with_time_zone().null())
+                    .col(
+                        ColumnDef::new(Page::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .null(),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_page_user")
@@ -130,7 +138,12 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(PageLike::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(PageLike::Id).string().not_null().primary_key())
+                    .col(
+                        ColumnDef::new(PageLike::Id)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
                     .col(ColumnDef::new(PageLike::PageId).string().not_null())
                     .col(ColumnDef::new(PageLike::UserId).string().not_null())
                     .col(

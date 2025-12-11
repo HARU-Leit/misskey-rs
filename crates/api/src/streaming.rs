@@ -4,8 +4,8 @@
 
 use axum::{
     extract::{
-        ws::{Message, WebSocket, WebSocketUpgrade},
         Query, State,
+        ws::{Message, WebSocket, WebSocketUpgrade},
     },
     response::IntoResponse,
 };
@@ -345,18 +345,19 @@ fn find_channel_id(
 fn event_to_server_message(channel_id: &str, event: &StreamEvent) -> ServerMessage {
     let (event_type, body) = match event {
         StreamEvent::Note(note) => ("note", serde_json::to_value(note).unwrap_or_default()),
-        StreamEvent::NoteDeleted { id } => {
-            ("noteDeleted", serde_json::json!({ "id": id }))
-        }
-        StreamEvent::Notification(notif) => {
-            ("notification", serde_json::to_value(notif).unwrap_or_default())
-        }
-        StreamEvent::Followed { id, user_id } => {
-            ("followed", serde_json::json!({ "id": id, "userId": user_id }))
-        }
-        StreamEvent::Unfollowed { id, user_id } => {
-            ("unfollowed", serde_json::json!({ "id": id, "userId": user_id }))
-        }
+        StreamEvent::NoteDeleted { id } => ("noteDeleted", serde_json::json!({ "id": id })),
+        StreamEvent::Notification(notif) => (
+            "notification",
+            serde_json::to_value(notif).unwrap_or_default(),
+        ),
+        StreamEvent::Followed { id, user_id } => (
+            "followed",
+            serde_json::json!({ "id": id, "userId": user_id }),
+        ),
+        StreamEvent::Unfollowed { id, user_id } => (
+            "unfollowed",
+            serde_json::json!({ "id": id, "userId": user_id }),
+        ),
         StreamEvent::Mention(note) => ("mention", serde_json::to_value(note).unwrap_or_default()),
     };
 

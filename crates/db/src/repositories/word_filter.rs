@@ -2,13 +2,13 @@
 
 use std::sync::Arc;
 
-use crate::entities::{word_filter, WordFilter};
+use crate::entities::{WordFilter, word_filter};
+use chrono::Utc;
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait,
-    QueryFilter, QueryOrder, QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, QuerySelect, Set,
 };
-use chrono::Utc;
 
 /// Word filter repository for database operations.
 #[derive(Clone)]
@@ -111,7 +111,9 @@ impl WordFilterRepository {
         let filter = self.get_by_id(id).await?;
         let mut active: word_filter::ActiveModel = filter.into();
         active.match_count = Set(active.match_count.unwrap() + 1);
-        active.update(self.db.as_ref()).await
+        active
+            .update(self.db.as_ref())
+            .await
             .map_err(|e| AppError::Database(e.to_string()))?;
         Ok(())
     }

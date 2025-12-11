@@ -9,7 +9,7 @@ use axum::{
 use misskey_common::{AppError, AppResult};
 use misskey_db::repositories::{
     FollowRequestRepository, FollowingRepository, NoteRepository, ReactionRepository,
-    UserRepository, UserKeypairRepository,
+    UserKeypairRepository, UserRepository,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -17,14 +17,14 @@ use std::collections::HashMap;
 use tracing::{debug, error, info, warn};
 
 use crate::{
+    AcceptActivity, AnnounceActivity, CreateActivity, DeleteActivity, FollowActivity, LikeActivity,
+    RejectActivity, UndoActivity, UpdateActivity,
     client::ApClient,
     processor::{
         AcceptProcessor, AnnounceProcessor, CreateProcessor, FollowProcessor, LikeProcessor,
         ParsedUndoActivity, UndoProcessor,
     },
-    signature::{verify_digest, HttpVerifier},
-    AcceptActivity, AnnounceActivity, CreateActivity, DeleteActivity, FollowActivity,
-    LikeActivity, RejectActivity, UndoActivity, UpdateActivity,
+    signature::{HttpVerifier, verify_digest},
 };
 
 /// Wrapper for incoming activities that can be any type.
@@ -45,7 +45,7 @@ pub enum InboxActivity {
 
 impl InboxActivity {
     /// Get the activity type as a string.
-    #[must_use] 
+    #[must_use]
     pub const fn activity_type(&self) -> &str {
         match self {
             Self::Create(_) => "Create",
@@ -62,7 +62,7 @@ impl InboxActivity {
     }
 
     /// Get the actor URL.
-    #[must_use] 
+    #[must_use]
     pub const fn actor(&self) -> Option<&url::Url> {
         match self {
             Self::Create(a) => Some(&a.actor),
@@ -94,7 +94,7 @@ pub struct InboxState {
 
 impl InboxState {
     /// Create a new inbox state.
-    #[must_use] 
+    #[must_use]
     pub fn new(
         user_repo: UserRepository,
         user_keypair_repo: UserKeypairRepository,
@@ -180,9 +180,10 @@ async fn verify_incoming_signature(
 
     // Verify digest if present
     if let Some(digest_header) = headers.get("digest").and_then(|v| v.to_str().ok())
-        && !verify_digest(body, digest_header) {
-            return Err(AppError::BadRequest("Digest mismatch".to_string()));
-        }
+        && !verify_digest(body, digest_header)
+    {
+        return Err(AppError::BadRequest("Digest mismatch".to_string()));
+    }
 
     // Fetch the public key from the actor
     let public_key_pem = fetch_actor_public_key(state, &components.key_id).await?;
@@ -193,7 +194,10 @@ async fn verify_incoming_signature(
         if header_name == "(request-target)" {
             continue; // Handled separately
         }
-        if let Some(value) = headers.get(header_name.as_str()).and_then(|v| v.to_str().ok()) {
+        if let Some(value) = headers
+            .get(header_name.as_str())
+            .and_then(|v| v.to_str().ok())
+        {
             verify_headers.insert(header_name.clone(), value.to_string());
         }
     }
@@ -226,9 +230,10 @@ async fn fetch_actor_public_key(state: &InboxState, key_id: &str) -> AppResult<S
     if let Some(user) = state.user_repo.find_by_uri(actor_url).await? {
         // For local users, get the keypair
         if user.host.is_none()
-            && let Some(keypair) = state.user_keypair_repo.find_by_user_id(&user.id).await? {
-                return Ok(keypair.public_key);
-            }
+            && let Some(keypair) = state.user_keypair_repo.find_by_user_id(&user.id).await?
+        {
+            return Ok(keypair.public_key);
+        }
         // For remote users, we need to fetch from the actor document
     }
 
@@ -293,7 +298,10 @@ async fn process_activity(state: &InboxState, activity: &InboxActivity) -> AppRe
             // Find the follow request by the actor (remote user) and delete it
             if let Some(followee) = state.user_repo.find_by_uri(reject.actor.as_str()).await? {
                 // Delete any pending follow requests to this remote user
-                let requests = state.follow_request_repo.find_by_followee(&followee.id).await?;
+                let requests = state
+                    .follow_request_repo
+                    .find_by_followee(&followee.id)
+                    .await?;
                 if let Some(request) = requests {
                     state.follow_request_repo.delete(&request.id).await?;
                     info!(followee = %followee.id, "Follow request rejected and deleted");
@@ -331,10 +339,8 @@ async fn process_activity(state: &InboxState, activity: &InboxActivity) -> AppRe
         }
         InboxActivity::Announce(announce) => {
             info!(object = %announce.object, "Processing Announce activity");
-            let processor = AnnounceProcessor::new(
-                state.user_repo.clone(),
-                state.note_repo.clone(),
-            );
+            let processor =
+                AnnounceProcessor::new(state.user_repo.clone(), state.note_repo.clone());
             processor.process(announce).await?;
         }
         InboxActivity::Unknown(value) => {
@@ -346,7 +352,10 @@ async fn process_activity(state: &InboxState, activity: &InboxActivity) -> AppRe
 }
 
 /// Parse an Undo activity to determine what is being undone.
-async fn parse_undo_activity(state: &InboxState, undo: &UndoActivity) -> AppResult<ParsedUndoActivity> {
+async fn parse_undo_activity(
+    state: &InboxState,
+    undo: &UndoActivity,
+) -> AppResult<ParsedUndoActivity> {
     // Try to fetch the original activity from the object URL
     // In practice, the object might be embedded or just a URL
     // For now, we'll try to infer from what we know
@@ -364,19 +373,17 @@ async fn parse_undo_activity(state: &InboxState, undo: &UndoActivity) -> AppResu
         .unwrap_or("Unknown")
         .to_string();
 
-    let object_object = activity_json
-        .get("object")
-        .and_then(|o| {
-            if let Some(s) = o.as_str() {
-                url::Url::parse(s).ok()
-            } else if let Some(obj) = o.as_object() {
-                obj.get("id")
-                    .and_then(|id| id.as_str())
-                    .and_then(|s| url::Url::parse(s).ok())
-            } else {
-                None
-            }
-        });
+    let object_object = activity_json.get("object").and_then(|o| {
+        if let Some(s) = o.as_str() {
+            url::Url::parse(s).ok()
+        } else if let Some(obj) = o.as_object() {
+            obj.get("id")
+                .and_then(|id| id.as_str())
+                .and_then(|s| url::Url::parse(s).ok())
+        } else {
+            None
+        }
+    });
 
     Ok(ParsedUndoActivity {
         id: undo.id.clone(),

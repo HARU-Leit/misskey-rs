@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::entities::{page, page_like, Page, PageLike};
+use crate::entities::{Page, PageLike, page, page_like};
 use misskey_common::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
@@ -196,7 +196,11 @@ impl PageRepository {
             let page = self.get_by_id(page_id).await?;
             let mut active: page::ActiveModel = page.into();
             let current_count = active.liked_count.clone().unwrap();
-            active.liked_count = Set(if current_count > 0 { current_count - 1 } else { 0 });
+            active.liked_count = Set(if current_count > 0 {
+                current_count - 1
+            } else {
+                0
+            });
             active
                 .update(self.db.as_ref())
                 .await
