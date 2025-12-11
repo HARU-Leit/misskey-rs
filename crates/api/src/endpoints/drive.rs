@@ -165,6 +165,55 @@ const fn default_limit() -> u64 {
     10
 }
 
+/// Find/search files request.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FindFilesRequest {
+    /// Search query (matches file name and comment/description)
+    #[serde(default)]
+    pub name: String,
+    /// Filter by MIME type (e.g., "image", "image/png", "video")
+    #[serde(rename = "type")]
+    pub content_type: Option<String>,
+    /// Filter by folder ID (None = any folder, Some(None) = root only, Some(Some(id)) = specific folder)
+    pub folder_id: Option<String>,
+    #[serde(default = "default_limit")]
+    pub limit: u64,
+    pub until_id: Option<String>,
+}
+
+/// Search files by name and/or comment.
+async fn find_files(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<FindFilesRequest>,
+) -> AppResult<ApiResponse<Vec<DriveFileResponse>>> {
+    let limit = req.limit.min(100);
+
+    // Convert folder_id: Some("") or Some("null") means root (null folder_id)
+    let folder_filter = req.folder_id.map(|fid| {
+        if fid.is_empty() || fid == "null" {
+            None
+        } else {
+            Some(fid)
+        }
+    });
+
+    let files = state
+        .drive_service
+        .search_files(
+            &user.id,
+            &req.name,
+            req.content_type.as_deref(),
+            folder_filter.as_ref().map(|f| f.as_deref()),
+            limit,
+            req.until_id.as_deref(),
+        )
+        .await?;
+
+    Ok(ApiResponse::ok(files.into_iter().map(Into::into).collect()))
+}
+
 /// List user's files.
 async fn list_files(
     AuthUser(user): AuthUser,
@@ -489,6 +538,7 @@ pub fn router() -> Router<AppState> {
         // File routes
         .route("/files/create", post(upload_file))
         .route("/files", post(list_files))
+        .route("/files/find", post(find_files))
         .route("/files/show", post(show_file))
         .route("/files/update", post(update_file))
         .route("/files/delete", post(delete_file))
