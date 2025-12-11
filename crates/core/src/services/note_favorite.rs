@@ -114,6 +114,7 @@ mod tests {
             url: None,
             created_at: Utc::now().into(),
             updated_at: None,
+            channel_id: None,
         }
     }
 

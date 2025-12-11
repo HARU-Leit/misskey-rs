@@ -60,9 +60,13 @@ pub enum AppError {
     #[error("Bad request: {0}")]
     BadRequest(String),
 
-    /// Validation failed.
+    /// Validation failed with structured errors.
     #[error("Validation error: {0}")]
-    Validation(#[from] validator::ValidationErrors),
+    ValidationErrors(#[from] validator::ValidationErrors),
+
+    /// Validation failed with a message.
+    #[error("Validation error: {0}")]
+    Validation(String),
 
     /// Resource conflict.
     #[error("Conflict: {0}")]
@@ -114,7 +118,7 @@ impl AppError {
             }
             Self::Unauthorized => StatusCode::UNAUTHORIZED,
             Self::Forbidden(_) => StatusCode::FORBIDDEN,
-            Self::BadRequest(_) | Self::Validation(_) => StatusCode::BAD_REQUEST,
+            Self::BadRequest(_) | Self::ValidationErrors(_) | Self::Validation(_) => StatusCode::BAD_REQUEST,
             Self::Conflict(_) => StatusCode::CONFLICT,
             Self::RateLimited => StatusCode::TOO_MANY_REQUESTS,
 
@@ -139,7 +143,7 @@ impl AppError {
             Self::Unauthorized => "UNAUTHORIZED",
             Self::Forbidden(_) => "FORBIDDEN",
             Self::BadRequest(_) => "BAD_REQUEST",
-            Self::Validation(_) => "VALIDATION_ERROR",
+            Self::ValidationErrors(_) | Self::Validation(_) => "VALIDATION_ERROR",
             Self::Conflict(_) => "CONFLICT",
             Self::RateLimited => "RATE_LIMITED",
             Self::Database(_) => "DATABASE_ERROR",

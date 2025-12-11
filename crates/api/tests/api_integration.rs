@@ -9,15 +9,15 @@ use axum::{
 };
 use misskey_api::{middleware::AppState, router as api_router, SseBroadcaster, StreamingState};
 use misskey_common::config::{Config, DatabaseConfig, FederationConfig, RedisConfig, ServerConfig};
-use misskey_core::{AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DriveService, EmojiService, FollowingService, InstanceService, MessagingService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, PollService, ReactionService, ScheduledNoteService, TwoFactorService, UserListService, UserService, WordFilterService};
+use misskey_core::{AnnouncementService, AntennaService, BlockingService, ChannelService, ClipService, DriveService, EmojiService, FollowingService, GalleryService, GroupService, InstanceService, MessagingService, MetaSettingsService, ModerationService, MutingService, NoteFavoriteService, NoteService, NotificationService, OAuthService, PageService, PollService, ReactionService, RegistrationApprovalService, ScheduledNoteService, TwoFactorService, UserListService, UserService, WebAuthnConfig, WebAuthnService, WebhookService, WordFilterService};
 use misskey_db::repositories::{
     AnnouncementRepository, AntennaRepository, BlockingRepository, ChannelRepository, ClipRepository,
     DriveFileRepository, DriveFolderRepository, EmojiRepository, FollowRequestRepository,
-    FollowingRepository, InstanceRepository, MessagingRepository, MutingRepository,
-    NoteFavoriteRepository, NoteRepository, NotificationRepository, PollRepository,
-    PollVoteRepository, ReactionRepository, ScheduledNoteRepository, UserKeypairRepository,
+    FollowingRepository, GalleryRepository, GroupRepository, InstanceRepository, MessagingRepository, MutingRepository,
+    NoteFavoriteRepository, NoteRepository, NotificationRepository, OAuthRepository, PageRepository, PollRepository,
+    PollVoteRepository, ReactionRepository, ScheduledNoteRepository, SecurityKeyRepository, UserKeypairRepository,
     UserListRepository, UserProfileRepository, UserRepository, ModerationRepository,
-    WordFilterRepository,
+    WebhookRepository, WordFilterRepository,
 };
 use sea_orm::{DatabaseBackend, DatabaseConnection, MockDatabase, MockExecResult};
 use std::sync::Arc;
@@ -92,6 +92,12 @@ fn create_test_state() -> AppState {
     let clip_repo = ClipRepository::new(Arc::clone(&db));
     let word_filter_repo = WordFilterRepository::new(Arc::clone(&db));
     let scheduled_note_repo = ScheduledNoteRepository::new(Arc::clone(&db));
+    let security_key_repo = SecurityKeyRepository::new(Arc::clone(&db));
+    let oauth_repo = OAuthRepository::new(Arc::clone(&db));
+    let webhook_repo = WebhookRepository::new(Arc::clone(&db));
+    let page_repo = PageRepository::new(Arc::clone(&db));
+    let gallery_repo = GalleryRepository::new(Arc::clone(&db));
+    let group_repo = GroupRepository::new(Arc::clone(&db));
 
     let user_service = UserService::new(
         user_repo.clone(),
@@ -121,7 +127,27 @@ fn create_test_state() -> AppState {
     let clip_service = ClipService::new(clip_repo);
     let word_filter_service = WordFilterService::new(word_filter_repo);
     let scheduled_note_service = ScheduledNoteService::new(scheduled_note_repo);
-    let two_factor_service = TwoFactorService::new(user_profile_repo);
+    let two_factor_service = TwoFactorService::new(user_profile_repo.clone());
+
+    // Initialize WebAuthn service
+    let webauthn_config = WebAuthnConfig::from_server_url(
+        &config.server.url,
+        &config.federation.instance_name,
+    ).expect("Failed to create WebAuthn config");
+    let webauthn_service = WebAuthnService::new(
+        &webauthn_config,
+        security_key_repo,
+        user_repo.clone(),
+        user_profile_repo.clone(),
+    ).expect("Failed to create WebAuthn service");
+
+    let oauth_service = OAuthService::new(oauth_repo);
+    let webhook_service = WebhookService::new(webhook_repo);
+    let page_service = PageService::new(page_repo);
+    let gallery_service = GalleryService::new(gallery_repo);
+    let group_service = GroupService::new(group_repo);
+    let meta_settings_service = MetaSettingsService::new(db.clone());
+    let registration_approval_service = RegistrationApprovalService::new(db.clone());
 
     let streaming = StreamingState::new();
     let sse_broadcaster = SseBroadcaster::new();
@@ -150,6 +176,17 @@ fn create_test_state() -> AppState {
         word_filter_service,
         scheduled_note_service,
         two_factor_service,
+        webauthn_service,
+        oauth_service,
+        webhook_service,
+        page_service,
+        gallery_service,
+        translation_service: None,
+        push_notification_service: None,
+        account_service: None,
+        group_service,
+        meta_settings_service,
+        registration_approval_service,
         streaming,
         sse_broadcaster,
     }

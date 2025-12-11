@@ -7,7 +7,7 @@ use misskey_db::repositories::WebhookRepository;
 use sea_orm::Set;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use sha2::{Digest, Sha256};
+use sha2::Sha256;
 use std::sync::Arc;
 
 /// Webhook events.

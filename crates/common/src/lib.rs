@@ -17,8 +17,9 @@
 //! use misskey_common::{Config, IdGenerator, AppResult};
 //!
 //! fn example() -> AppResult<()> {
-//!     let config = Config::from_env()?;
-//!     let id = IdGenerator::generate();
+//!     let config = Config::load()?;
+//!     let id_gen = IdGenerator::new();
+//!     let id = id_gen.generate();
 //!     println!("Generated ID: {}", id);
 //!     Ok(())
 //! }

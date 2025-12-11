@@ -252,6 +252,7 @@ async fn create_status(
         renote_id: None,
         file_ids: req.media_ids.unwrap_or_default(),
         visible_user_ids: vec![],
+        channel_id: None,
     };
 
     let note = state.note_service.create(&user.id, input).await?;

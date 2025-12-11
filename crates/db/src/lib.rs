@@ -14,7 +14,7 @@
 //! use misskey_common::Config;
 //!
 //! async fn setup_database() -> Result<(), Box<dyn std::error::Error>> {
-//!     let config = Config::from_env()?;
+//!     let config = Config::load()?;
 //!     let db = init(&config).await?;
 //!     migrate(&db).await?;
 //!     Ok(())
