@@ -75,6 +75,11 @@ pub struct UpdateUserInput {
     /// Default reaction emoji (e.g., "👍", ":like:", custom emoji shortcode)
     #[validate(length(max = 256))]
     pub default_reaction: Option<String>,
+
+    /// Require HTTP signature verification for requests to this user's resources.
+    /// When enabled, unauthenticated fetches of this user's profile and notes
+    /// will be rejected (Authorized Fetch / Secure Mode).
+    pub secure_fetch_only: Option<bool>,
 }
 
 impl UserService {
@@ -264,7 +269,10 @@ impl UserService {
         active.updated_at = Set(Some(chrono::Utc::now().into()));
 
         // Update profile fields if provided
-        if input.pronouns.is_some() || input.hide_bots.is_some() || input.default_reaction.is_some()
+        if input.pronouns.is_some()
+            || input.hide_bots.is_some()
+            || input.default_reaction.is_some()
+            || input.secure_fetch_only.is_some()
         {
             let profile = self.profile_repo.get_by_user_id(id).await?;
             let mut profile_active: user_profile::ActiveModel = profile.into();
@@ -283,6 +291,9 @@ impl UserService {
                     Some(default_reaction)
                 };
                 profile_active.default_reaction = Set(value);
+            }
+            if let Some(secure_fetch_only) = input.secure_fetch_only {
+                profile_active.secure_fetch_only = Set(secure_fetch_only);
             }
 
             profile_active.updated_at = Set(Some(chrono::Utc::now().into()));
@@ -434,6 +445,7 @@ mod tests {
             },
             database: DatabaseConfig {
                 url: "postgres://localhost/test".to_string(),
+                read_replicas: Vec::new(),
                 max_connections: 10,
                 min_connections: 1,
             },
@@ -670,6 +682,7 @@ mod tests {
             pronouns: None,
             hide_bots: None,
             default_reaction: None,
+            secure_fetch_only: None,
         };
         assert!(input.validate().is_err());
 
@@ -687,6 +700,7 @@ mod tests {
             pronouns: Some("they/them".to_string()),
             hide_bots: Some(true),
             default_reaction: Some("👍".to_string()),
+            secure_fetch_only: Some(false),
         };
         assert!(input.validate().is_ok());
 
@@ -704,6 +718,7 @@ mod tests {
             pronouns: None,
             hide_bots: None,
             default_reaction: Some("a".repeat(300)),
+            secure_fetch_only: None,
         };
         assert!(input.validate().is_err());
     }

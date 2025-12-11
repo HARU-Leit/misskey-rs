@@ -32,6 +32,19 @@ pub struct Model {
 
     /// When the clip was last updated.
     pub updated_at: Option<DateTimeWithTimeZone>,
+
+    /// Whether this is a smart clip (auto-adds notes based on conditions).
+    pub is_smart_clip: bool,
+
+    /// Smart clip conditions (JSON).
+    /// Example: {"keywords": ["rust"], "users": ["userId"], "hashtags": ["programming"]}
+    pub smart_conditions: Option<Json>,
+
+    /// Maximum notes for smart clip (oldest removed when exceeded).
+    pub smart_max_notes: Option<i32>,
+
+    /// When the smart clip last processed new notes.
+    pub smart_last_processed_at: Option<DateTimeWithTimeZone>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

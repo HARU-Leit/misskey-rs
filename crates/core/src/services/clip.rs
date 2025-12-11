@@ -3,6 +3,10 @@
 use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::{clip, clip_note};
 use misskey_db::repositories::ClipRepository;
+use serde::{Deserialize, Serialize};
+
+// Re-export for convenience
+pub use misskey_db::repositories::SmartClipConditions;
 
 /// Service for managing clips.
 #[derive(Clone)]
@@ -417,6 +421,390 @@ impl ClipService {
             .search_notes_by_comment(clip_id, query, limit, offset)
             .await
     }
+
+    // ==================== Smart Clip Operations ====================
+
+    /// Create a smart clip with automatic note collection conditions.
+    pub async fn create_smart_clip(
+        &self,
+        user_id: &str,
+        name: String,
+        description: Option<String>,
+        is_public: bool,
+        conditions: SmartClipConditions,
+        max_notes: Option<i32>,
+    ) -> AppResult<clip::Model> {
+        // Validate name length
+        if name.is_empty() || name.len() > 128 {
+            return Err(AppError::Validation(
+                "Clip name must be between 1 and 128 characters".to_string(),
+            ));
+        }
+
+        // Validate description length
+        if let Some(ref desc) = description
+            && desc.len() > 2048
+        {
+            return Err(AppError::Validation(
+                "Clip description must be at most 2048 characters".to_string(),
+            ));
+        }
+
+        // Validate conditions - at least one must be set
+        if conditions.keywords.is_empty()
+            && conditions.users.is_empty()
+            && conditions.hashtags.is_empty()
+            && conditions.min_reactions.is_none()
+            && !conditions.has_files
+        {
+            return Err(AppError::Validation(
+                "Smart clip must have at least one condition".to_string(),
+            ));
+        }
+
+        // Validate max_notes
+        if let Some(max) = max_notes
+            && max < 1
+        {
+            return Err(AppError::Validation(
+                "Max notes must be at least 1".to_string(),
+            ));
+        }
+
+        let id = self.id_gen.generate();
+
+        self.clip_repo
+            .create_smart_clip(
+                id,
+                user_id.to_string(),
+                name,
+                description,
+                is_public,
+                conditions,
+                max_notes,
+            )
+            .await
+    }
+
+    /// Update smart clip conditions.
+    pub async fn update_smart_conditions(
+        &self,
+        clip_id: &str,
+        user_id: &str,
+        conditions: SmartClipConditions,
+        max_notes: Option<i32>,
+    ) -> AppResult<clip::Model> {
+        // Verify ownership
+        let clip = self
+            .clip_repo
+            .find_by_id(clip_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Clip not found".to_string()))?;
+
+        if clip.user_id != user_id {
+            return Err(AppError::Forbidden("Not the clip owner".to_string()));
+        }
+
+        if !clip.is_smart_clip {
+            return Err(AppError::BadRequest(
+                "This clip is not a smart clip".to_string(),
+            ));
+        }
+
+        // Validate conditions
+        if conditions.keywords.is_empty()
+            && conditions.users.is_empty()
+            && conditions.hashtags.is_empty()
+            && conditions.min_reactions.is_none()
+            && !conditions.has_files
+        {
+            return Err(AppError::Validation(
+                "Smart clip must have at least one condition".to_string(),
+            ));
+        }
+
+        self.clip_repo
+            .update_smart_conditions(clip_id, conditions, max_notes)
+            .await
+    }
+
+    /// Convert a regular clip to a smart clip.
+    pub async fn convert_to_smart_clip(
+        &self,
+        clip_id: &str,
+        user_id: &str,
+        conditions: SmartClipConditions,
+        max_notes: Option<i32>,
+    ) -> AppResult<clip::Model> {
+        // Verify ownership
+        let clip = self
+            .clip_repo
+            .find_by_id(clip_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Clip not found".to_string()))?;
+
+        if clip.user_id != user_id {
+            return Err(AppError::Forbidden("Not the clip owner".to_string()));
+        }
+
+        if clip.is_smart_clip {
+            return Err(AppError::BadRequest(
+                "This clip is already a smart clip".to_string(),
+            ));
+        }
+
+        // Validate conditions
+        if conditions.keywords.is_empty()
+            && conditions.users.is_empty()
+            && conditions.hashtags.is_empty()
+            && conditions.min_reactions.is_none()
+            && !conditions.has_files
+        {
+            return Err(AppError::Validation(
+                "Smart clip must have at least one condition".to_string(),
+            ));
+        }
+
+        self.clip_repo
+            .convert_to_smart_clip(clip_id, conditions, max_notes)
+            .await
+    }
+
+    /// Convert a smart clip to a regular clip (removes conditions, keeps notes).
+    pub async fn convert_to_regular_clip(
+        &self,
+        clip_id: &str,
+        user_id: &str,
+    ) -> AppResult<clip::Model> {
+        // Verify ownership
+        let clip = self
+            .clip_repo
+            .find_by_id(clip_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Clip not found".to_string()))?;
+
+        if clip.user_id != user_id {
+            return Err(AppError::Forbidden("Not the clip owner".to_string()));
+        }
+
+        if !clip.is_smart_clip {
+            return Err(AppError::BadRequest(
+                "This clip is not a smart clip".to_string(),
+            ));
+        }
+
+        self.clip_repo.convert_to_regular_clip(clip_id).await
+    }
+
+    /// Get smart clips for a user.
+    pub async fn list_smart_clips(
+        &self,
+        user_id: &str,
+        limit: u64,
+        offset: u64,
+    ) -> AppResult<Vec<clip::Model>> {
+        self.clip_repo
+            .find_smart_clips_by_user(user_id, limit, offset)
+            .await
+    }
+
+    // ==================== Clip Note Move/Copy Operations ====================
+
+    /// Copy a note from one clip to another.
+    pub async fn copy_note(
+        &self,
+        source_clip_id: &str,
+        target_clip_id: &str,
+        note_id: &str,
+        user_id: &str,
+    ) -> AppResult<clip_note::Model> {
+        // Verify ownership of source clip
+        let source = self
+            .clip_repo
+            .find_by_id(source_clip_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Source clip not found".to_string()))?;
+
+        if source.user_id != user_id {
+            return Err(AppError::Forbidden("Not the source clip owner".to_string()));
+        }
+
+        // Verify ownership of target clip
+        let target = self
+            .clip_repo
+            .find_by_id(target_clip_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Target clip not found".to_string()))?;
+
+        if target.user_id != user_id {
+            return Err(AppError::Forbidden("Not the target clip owner".to_string()));
+        }
+
+        // Verify note exists in source clip
+        if !self
+            .clip_repo
+            .is_note_in_clip(source_clip_id, note_id)
+            .await?
+        {
+            return Err(AppError::NotFound(
+                "Note not found in source clip".to_string(),
+            ));
+        }
+
+        // Check if already in target clip
+        if self
+            .clip_repo
+            .is_note_in_clip(target_clip_id, note_id)
+            .await?
+        {
+            return Err(AppError::Validation(
+                "Note is already in target clip".to_string(),
+            ));
+        }
+
+        // Add to target clip
+        let id = self.id_gen.generate();
+        self.clip_repo
+            .add_note_to_clip(id, target_clip_id.to_string(), note_id.to_string(), None)
+            .await
+    }
+
+    /// Move a note from one clip to another.
+    pub async fn move_note(
+        &self,
+        source_clip_id: &str,
+        target_clip_id: &str,
+        note_id: &str,
+        user_id: &str,
+    ) -> AppResult<clip_note::Model> {
+        // First copy to target
+        let result = self
+            .copy_note(source_clip_id, target_clip_id, note_id, user_id)
+            .await?;
+
+        // Then remove from source
+        self.clip_repo
+            .remove_note_from_clip(source_clip_id, note_id)
+            .await?;
+
+        Ok(result)
+    }
+
+    /// Copy multiple notes from one clip to another.
+    pub async fn copy_notes_bulk(
+        &self,
+        source_clip_id: &str,
+        target_clip_id: &str,
+        note_ids: Vec<String>,
+        user_id: &str,
+    ) -> AppResult<BulkOperationResult> {
+        // Verify ownership of both clips
+        let source = self
+            .clip_repo
+            .find_by_id(source_clip_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Source clip not found".to_string()))?;
+
+        if source.user_id != user_id {
+            return Err(AppError::Forbidden("Not the source clip owner".to_string()));
+        }
+
+        let target = self
+            .clip_repo
+            .find_by_id(target_clip_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Target clip not found".to_string()))?;
+
+        if target.user_id != user_id {
+            return Err(AppError::Forbidden("Not the target clip owner".to_string()));
+        }
+
+        let mut copied = 0;
+        let mut skipped = 0;
+        let mut errors = Vec::new();
+
+        for note_id in note_ids {
+            // Check if in source
+            if !self
+                .clip_repo
+                .is_note_in_clip(source_clip_id, &note_id)
+                .await?
+            {
+                errors.push(format!("{note_id}: not in source clip"));
+                continue;
+            }
+
+            // Check if already in target
+            if self
+                .clip_repo
+                .is_note_in_clip(target_clip_id, &note_id)
+                .await?
+            {
+                skipped += 1;
+                continue;
+            }
+
+            // Copy
+            let id = self.id_gen.generate();
+            match self
+                .clip_repo
+                .add_note_to_clip(id, target_clip_id.to_string(), note_id.clone(), None)
+                .await
+            {
+                Ok(_) => copied += 1,
+                Err(e) => errors.push(format!("{note_id}: {e}")),
+            }
+        }
+
+        Ok(BulkOperationResult {
+            processed: copied,
+            skipped,
+            errors,
+        })
+    }
+
+    /// Move multiple notes from one clip to another.
+    pub async fn move_notes_bulk(
+        &self,
+        source_clip_id: &str,
+        target_clip_id: &str,
+        note_ids: Vec<String>,
+        user_id: &str,
+    ) -> AppResult<BulkOperationResult> {
+        // First copy all
+        let copy_result = self
+            .copy_notes_bulk(source_clip_id, target_clip_id, note_ids.clone(), user_id)
+            .await?;
+
+        // Then remove successfully copied ones from source
+        for note_id in &note_ids {
+            // Only remove if it was copied (exists in target now)
+            if self
+                .clip_repo
+                .is_note_in_clip(target_clip_id, note_id)
+                .await?
+            {
+                let _ = self
+                    .clip_repo
+                    .remove_note_from_clip(source_clip_id, note_id)
+                    .await;
+            }
+        }
+
+        Ok(copy_result)
+    }
+}
+
+/// Result of a bulk operation on clip notes.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BulkOperationResult {
+    /// Number of notes successfully processed.
+    pub processed: u64,
+    /// Number of notes skipped (already exists, etc.).
+    pub skipped: u64,
+    /// Errors encountered.
+    pub errors: Vec<String>,
 }
 
 #[cfg(test)]
@@ -438,6 +826,10 @@ mod tests {
             display_order: 0,
             created_at: Utc::now().into(),
             updated_at: None,
+            is_smart_clip: false,
+            smart_conditions: None,
+            smart_max_notes: None,
+            smart_last_processed_at: None,
         }
     }
 

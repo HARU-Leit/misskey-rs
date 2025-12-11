@@ -31,10 +31,16 @@ pub struct ChannelResponse {
     pub users_count: i64,
     pub last_noted_at: Option<String>,
     pub is_following: Option<bool>,
+    /// Whether federation is enabled for this channel.
+    pub is_federated: bool,
+    /// `ActivityPub` URI (only present if federated).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uri: Option<String>,
 }
 
 impl From<channel::Model> for ChannelResponse {
     fn from(c: channel::Model) -> Self {
+        let is_federated = c.uri.is_some();
         Self {
             id: c.id,
             created_at: c.created_at.to_rfc3339(),
@@ -50,6 +56,8 @@ impl From<channel::Model> for ChannelResponse {
             users_count: c.users_count,
             last_noted_at: c.last_noted_at.map(|dt| dt.to_rfc3339()),
             is_following: None,
+            is_federated,
+            uri: c.uri,
         }
     }
 }
@@ -295,6 +303,41 @@ async fn timeline(
     Ok(ApiResponse::ok(notes.into_iter().map(Into::into).collect()))
 }
 
+/// Federation request.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FederationRequest {
+    pub channel_id: String,
+}
+
+/// Enable federation for a channel.
+async fn enable_federation(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<FederationRequest>,
+) -> AppResult<ApiResponse<ChannelResponse>> {
+    let channel = state
+        .channel_service
+        .enable_federation(&req.channel_id, &user.id)
+        .await?;
+
+    Ok(ApiResponse::ok(channel.into()))
+}
+
+/// Disable federation for a channel.
+async fn disable_federation(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<FederationRequest>,
+) -> AppResult<ApiResponse<ChannelResponse>> {
+    let channel = state
+        .channel_service
+        .disable_federation(&req.channel_id, &user.id)
+        .await?;
+
+    Ok(ApiResponse::ok(channel.into()))
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/create", post(create))
@@ -308,4 +351,6 @@ pub fn router() -> Router<AppState> {
         .route("/follow", post(follow))
         .route("/unfollow", post(unfollow))
         .route("/timeline", post(timeline))
+        .route("/federation/enable", post(enable_federation))
+        .route("/federation/disable", post(disable_federation))
 }

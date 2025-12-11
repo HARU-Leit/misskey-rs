@@ -4,6 +4,7 @@ use chrono::Utc;
 use misskey_common::{AppError, AppResult, id::IdGenerator};
 use misskey_db::entities::channel;
 use misskey_db::repositories::ChannelRepository;
+use rsa::{RsaPrivateKey, RsaPublicKey, pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey};
 use sea_orm::Set;
 use serde::Deserialize;
 use validator::Validate;
@@ -51,15 +52,27 @@ pub struct UpdateChannelInput {
 pub struct ChannelService {
     channel_repo: ChannelRepository,
     id_gen: IdGenerator,
+    base_url: Option<String>,
 }
 
 impl ChannelService {
     /// Create a new channel service.
     #[must_use]
-    pub const fn new(channel_repo: ChannelRepository) -> Self {
+    pub fn new(channel_repo: ChannelRepository) -> Self {
         Self {
             channel_repo,
             id_gen: IdGenerator::new(),
+            base_url: None,
+        }
+    }
+
+    /// Create a new channel service with federation support.
+    #[must_use]
+    pub fn with_federation(channel_repo: ChannelRepository, base_url: String) -> Self {
+        Self {
+            channel_repo,
+            id_gen: IdGenerator::new(),
+            base_url: Some(base_url),
         }
     }
 
@@ -164,6 +177,13 @@ impl ChannelService {
             last_noted_at: Set(None),
             created_at: Set(now.into()),
             updated_at: Set(None),
+            // Federation fields (not enabled by default)
+            uri: Set(None),
+            public_key_pem: Set(None),
+            private_key_pem: Set(None),
+            inbox: Set(None),
+            shared_inbox: Set(None),
+            host: Set(None), // Local channel
         };
 
         self.channel_repo.create(model).await
@@ -309,6 +329,116 @@ impl ChannelService {
         // Otherwise, only followers can post
         self.channel_repo.is_following(user_id, channel_id).await
     }
+
+    // ==================== Federation ====================
+
+    /// Enable federation for a channel.
+    ///
+    /// Generates a keypair and sets up the channel for ActivityPub federation.
+    pub async fn enable_federation(
+        &self,
+        channel_id: &str,
+        user_id: &str,
+    ) -> AppResult<channel::Model> {
+        // Verify ownership
+        let channel = self.get_by_id_for_owner(channel_id, user_id).await?;
+
+        // Check if federation is already enabled
+        if channel.uri.is_some() {
+            return Err(AppError::Validation(
+                "Federation is already enabled for this channel".to_string(),
+            ));
+        }
+
+        // Check if base_url is configured
+        let base_url = self.base_url.as_ref().ok_or_else(|| {
+            AppError::Internal("Federation not configured: missing base URL".to_string())
+        })?;
+
+        // Generate RSA keypair
+        let (private_key_pem, public_key_pem) = generate_keypair()?;
+
+        // Build URIs
+        let uri = format!("{}/channels/{}", base_url, channel_id);
+        let inbox = format!("{}/channels/{}/inbox", base_url, channel_id);
+        let shared_inbox = format!("{}/inbox", base_url);
+
+        let now = Utc::now();
+        let mut active: channel::ActiveModel = channel.into();
+        active.uri = Set(Some(uri));
+        active.public_key_pem = Set(Some(public_key_pem));
+        active.private_key_pem = Set(Some(private_key_pem));
+        active.inbox = Set(Some(inbox));
+        active.shared_inbox = Set(Some(shared_inbox));
+        active.updated_at = Set(Some(now.into()));
+
+        self.channel_repo.update(active).await
+    }
+
+    /// Disable federation for a channel.
+    ///
+    /// Removes the keypair and ActivityPub URIs.
+    pub async fn disable_federation(
+        &self,
+        channel_id: &str,
+        user_id: &str,
+    ) -> AppResult<channel::Model> {
+        // Verify ownership
+        let channel = self.get_by_id_for_owner(channel_id, user_id).await?;
+
+        // Check if federation is enabled
+        if channel.uri.is_none() {
+            return Err(AppError::Validation(
+                "Federation is not enabled for this channel".to_string(),
+            ));
+        }
+
+        let now = Utc::now();
+        let mut active: channel::ActiveModel = channel.into();
+        active.uri = Set(None);
+        active.public_key_pem = Set(None);
+        active.private_key_pem = Set(None);
+        active.inbox = Set(None);
+        active.shared_inbox = Set(None);
+        active.updated_at = Set(Some(now.into()));
+
+        self.channel_repo.update(active).await
+    }
+
+    /// Check if federation is enabled for a channel.
+    pub async fn is_federation_enabled(&self, channel_id: &str) -> AppResult<bool> {
+        let channel = self.channel_repo.get_by_id(channel_id).await?;
+        Ok(channel.uri.is_some())
+    }
+
+    /// Get a channel by its ActivityPub URI.
+    pub async fn get_by_uri(&self, uri: &str) -> AppResult<Option<channel::Model>> {
+        self.channel_repo.find_by_uri(uri).await
+    }
+}
+
+/// Generate RSA keypair for ActivityPub signatures.
+fn generate_keypair() -> AppResult<(String, String)> {
+    use rand::rngs::OsRng;
+
+    let mut rng = OsRng;
+    let bits = 2048;
+
+    let private_key = RsaPrivateKey::new(&mut rng, bits)
+        .map_err(|e| AppError::Internal(format!("Failed to generate RSA key: {e}")))?;
+
+    let public_key = RsaPublicKey::from(&private_key);
+
+    let private_key_pem = private_key
+        .to_pkcs8_pem(rsa::pkcs8::LineEnding::LF)
+        .map_err(|e| AppError::Internal(format!("Failed to encode private key: {e}")))?
+        .to_string();
+
+    let public_key_pem = public_key
+        .to_public_key_pem(rsa::pkcs8::LineEnding::LF)
+        .map_err(|e| AppError::Internal(format!("Failed to encode public key: {e}")))?;
+
+    Ok((private_key_pem, public_key_pem))
 }
 
 /// Validate hex color format.
@@ -350,6 +480,13 @@ mod tests {
             last_noted_at: None,
             created_at: Utc::now().into(),
             updated_at: None,
+            // Federation fields
+            uri: None,
+            public_key_pem: None,
+            private_key_pem: None,
+            inbox: None,
+            shared_inbox: None,
+            host: None,
         }
     }
 

@@ -32,8 +32,11 @@ pub struct ServerConfig {
 /// Database connection configuration.
 #[derive(Debug, Clone, Deserialize)]
 pub struct DatabaseConfig {
-    /// `PostgreSQL` connection URL.
+    /// `PostgreSQL` connection URL (primary/write).
     pub url: String,
+    /// Read replica URLs (optional, for read scaling).
+    #[serde(default)]
+    pub read_replicas: Vec<String>,
     /// Maximum number of connections in the pool.
     #[serde(default = "default_max_connections")]
     pub max_connections: u32,

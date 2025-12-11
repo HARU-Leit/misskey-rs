@@ -41,6 +41,53 @@ impl ChannelRepository {
             .ok_or_else(|| AppError::NotFound(format!("Channel not found: {id}")))
     }
 
+    /// Find channel by ActivityPub URI.
+    pub async fn find_by_uri(&self, uri: &str) -> AppResult<Option<channel::Model>> {
+        Channel::find()
+            .filter(channel::Column::Uri.eq(uri))
+            .one(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
+    /// Get channel by URI, returning error if not found.
+    pub async fn get_by_uri(&self, uri: &str) -> AppResult<channel::Model> {
+        self.find_by_uri(uri)
+            .await?
+            .ok_or_else(|| AppError::NotFound(format!("Channel not found with URI: {uri}")))
+    }
+
+    /// Find local channels (host is null).
+    pub async fn find_local(&self, limit: u64, offset: u64) -> AppResult<Vec<channel::Model>> {
+        Channel::find()
+            .filter(channel::Column::Host.is_null())
+            .filter(channel::Column::IsArchived.eq(false))
+            .order_by(channel::Column::CreatedAt, Order::Desc)
+            .offset(offset)
+            .limit(limit)
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
+    /// Find remote channels from a specific host.
+    pub async fn find_by_host(
+        &self,
+        host: &str,
+        limit: u64,
+        offset: u64,
+    ) -> AppResult<Vec<channel::Model>> {
+        Channel::find()
+            .filter(channel::Column::Host.eq(host))
+            .filter(channel::Column::IsArchived.eq(false))
+            .order_by(channel::Column::CreatedAt, Order::Desc)
+            .offset(offset)
+            .limit(limit)
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
     /// Find channels by user ID (owned channels).
     pub async fn find_by_user(
         &self,
@@ -343,6 +390,13 @@ mod tests {
             last_noted_at: None,
             created_at: Utc::now().into(),
             updated_at: None,
+            // Federation fields
+            uri: None,
+            public_key_pem: None,
+            private_key_pem: None,
+            inbox: None,
+            shared_inbox: None,
+            host: None,
         }
     }
 

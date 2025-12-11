@@ -43,6 +43,7 @@ fn create_test_config() -> Config {
         },
         database: DatabaseConfig {
             url: "postgres://localhost/test".to_string(),
+            read_replicas: Vec::new(),
             max_connections: 10,
             min_connections: 1,
         },

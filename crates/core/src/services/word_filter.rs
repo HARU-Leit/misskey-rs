@@ -187,6 +187,7 @@ impl WordFilterService {
             match_count: Set(0),
             created_at: Set(now.into()),
             updated_at: Set(None),
+            group_id: Set(None),
         };
 
         self.filter_repo.create(model).await

@@ -13,6 +13,7 @@ pub mod drive;
 pub mod email;
 pub mod emoji;
 pub mod event_publisher;
+pub mod filter_group;
 pub mod following;
 pub mod gallery;
 pub mod group;
@@ -32,8 +33,10 @@ pub mod page;
 pub mod poll;
 pub mod push_notification;
 pub mod reaction;
+pub mod recurring_post;
 pub mod registration_approval;
 pub mod scheduled_note;
+pub mod search;
 pub mod storage;
 pub mod translation;
 pub mod two_factor;
@@ -64,6 +67,10 @@ pub use email::{
 };
 pub use emoji::EmojiService;
 pub use event_publisher::{EventPublisher, EventPublisherService, NoOpEventPublisher, StreamEvent};
+pub use filter_group::{
+    CreateGroupInput as CreateFilterGroupInput, FilterGroupService,
+    UpdateGroupInput as UpdateFilterGroupInput,
+};
 pub use following::{FollowResult, FollowingService};
 pub use gallery::{
     CreateGalleryPostInput, GalleryPostResponse, GalleryService, UpdateGalleryPostInput,
@@ -99,10 +106,12 @@ pub use push_notification::{
     PushPayload, PushSubscriptionResponse, UpdateSubscriptionInput, VapidConfig,
 };
 pub use reaction::ReactionService;
+pub use recurring_post::{CreateRecurringInput, RecurringPostService, UpdateRecurringInput};
 pub use registration_approval::RegistrationApprovalService;
 pub use scheduled_note::{
     CreateScheduledNoteInput, ScheduledNoteService, UpdateScheduledNoteInput,
 };
+pub use search::{NoteDocument, SearchConfig, SearchHit, SearchService, SearchStats, UserDocument};
 pub use storage::{LocalStorage, NoOpStorage, StorageBackend, StorageService};
 pub use translation::{
     LanguageDetectionResponse, SupportedLanguage, TranslateInput, TranslationConfig,

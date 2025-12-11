@@ -110,4 +110,54 @@ impl DriveFolderRepository {
             .await
             .map_err(|e| AppError::Database(e.to_string()))
     }
+
+    /// Get all ancestor folder IDs for a given folder (for circular reference detection).
+    /// Returns folder IDs from immediate parent up to root.
+    pub async fn get_ancestor_ids(&self, folder_id: &str) -> AppResult<Vec<String>> {
+        let mut ancestors = Vec::new();
+        let mut current_id = Some(folder_id.to_string());
+
+        // Limit iterations to prevent infinite loops in case of data corruption
+        const MAX_DEPTH: usize = 100;
+
+        for _ in 0..MAX_DEPTH {
+            let Some(id) = current_id else {
+                break;
+            };
+
+            let folder = self.find_by_id(&id).await?;
+            let Some(f) = folder else {
+                break;
+            };
+
+            if let Some(parent_id) = f.parent_id {
+                ancestors.push(parent_id.clone());
+                current_id = Some(parent_id);
+            } else {
+                break;
+            }
+        }
+
+        Ok(ancestors)
+    }
+
+    /// Check if moving a folder to a new parent would create a circular reference.
+    /// Returns true if the move would create a cycle.
+    pub async fn would_create_cycle(
+        &self,
+        folder_id: &str,
+        new_parent_id: &str,
+    ) -> AppResult<bool> {
+        // If the new parent is the folder itself, it's a cycle
+        if folder_id == new_parent_id {
+            return Ok(true);
+        }
+
+        // Get all ancestors of the new parent
+        let ancestors = self.get_ancestor_ids(new_parent_id).await?;
+
+        // If the folder we're moving appears in the new parent's ancestors,
+        // moving it would create a cycle
+        Ok(ancestors.contains(&folder_id.to_string()))
+    }
 }

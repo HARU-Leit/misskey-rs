@@ -2,12 +2,17 @@
 
 #![allow(missing_docs)]
 
+mod channel;
 mod collections;
 mod inbox;
 mod nodeinfo;
 mod user;
 mod webfinger;
 
+pub use channel::{
+    ChannelApState, channel_followers_handler, channel_handler, channel_inbox_handler,
+    channel_outbox_handler,
+};
 pub use collections::{
     ClipCollectionState, CollectionState, OrderedCollection, OrderedCollectionPage, clip_handler,
     clips_list_handler, followers_handler, following_handler, outbox_handler,

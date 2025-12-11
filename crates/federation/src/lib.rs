@@ -21,6 +21,7 @@ pub mod client;
 pub mod convert;
 pub mod delivery;
 pub mod handler;
+pub mod middleware;
 pub mod objects;
 pub mod processor;
 pub mod security;
@@ -33,6 +34,7 @@ pub use client::{ApClient, ApClientError};
 pub use convert::*;
 pub use delivery::DeliveryService;
 pub use handler::*;
+pub use middleware::{SignatureVerificationLayer, SignatureVerificationState, SignatureVerified};
 pub use objects::*;
 pub use processor::{
     AcceptProcessor, ActorFetcher, AnnounceProcessor, CreateProcessor, DeleteProcessor,

@@ -223,6 +223,7 @@ impl MoveProcessor {
                 hide_bots: Set(false),
                 default_reaction: Set(None),
                 receive_dm_from_followers_only: Set(false),
+                secure_fetch_only: Set(false),
                 created_at: Set(chrono::Utc::now().into()),
                 updated_at: Set(None),
             };

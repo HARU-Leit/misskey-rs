@@ -4,6 +4,10 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[features]
+default = []
+meilisearch = ["dep:meilisearch-sdk"]
+
 [dependencies]
 misskey-common = { workspace = true }
 misskey-db = { workspace = true }
@@ -21,6 +25,7 @@ serde_json.workspace = true
 
 # Utilities
 chrono.workspace = true
+chrono-tz.workspace = true
 uuid.workspace = true
 ulid = "1.1"
 thiserror.workspace = true
@@ -29,6 +34,8 @@ validator.workspace = true
 
 # Security
 argon2.workspace = true
+rsa.workspace = true
+pkcs8.workspace = true
 
 # Hashing
 md5 = "0.7"
@@ -55,6 +62,9 @@ sha2.workspace = true
 hmac.workspace = true
 hex.workspace = true
 reqwest.workspace = true
+
+# Search (optional Meilisearch integration)
+meilisearch-sdk = { workspace = true, optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros"] }

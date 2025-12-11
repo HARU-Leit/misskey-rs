@@ -102,6 +102,12 @@ pub struct Model {
     #[sea_orm(default_value = false)]
     pub receive_dm_from_followers_only: bool,
 
+    /// Require HTTP signature verification for requests to this user's resources.
+    /// When true, unsigned/invalid signature requests to this user's profile, notes, etc.
+    /// will be rejected with 401 Unauthorized.
+    #[sea_orm(default_value = false)]
+    pub secure_fetch_only: bool,
+
     pub created_at: DateTimeWithTimeZone,
 
     #[sea_orm(nullable)]

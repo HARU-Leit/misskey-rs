@@ -102,6 +102,9 @@ pub struct UpdateUserRequest {
     pub hide_bots: Option<bool>,
     /// Default reaction emoji (e.g., "👍", ":like:", custom emoji shortcode)
     pub default_reaction: Option<String>,
+    /// Require HTTP signature verification for requests to this user's resources.
+    /// When enabled (Authorized Fetch / Secure Mode), unsigned requests will be rejected.
+    pub secure_fetch_only: Option<bool>,
 }
 
 impl UpdateUserRequest {
@@ -124,6 +127,7 @@ impl UpdateUserRequest {
             pronouns: self.pronouns,
             hide_bots: self.hide_bots,
             default_reaction: self.default_reaction,
+            secure_fetch_only: self.secure_fetch_only,
         }
     }
 }

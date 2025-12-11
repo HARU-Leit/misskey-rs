@@ -83,6 +83,10 @@ pub struct Model {
 
     #[sea_orm(nullable)]
     pub updated_at: Option<DateTimeWithTimeZone>,
+
+    /// Filter group this filter belongs to (optional).
+    #[sea_orm(nullable)]
+    pub group_id: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -94,11 +98,23 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     User,
+    #[sea_orm(
+        belongs_to = "super::filter_group::Entity",
+        from = "Column::GroupId",
+        to = "super::filter_group::Column::Id"
+    )]
+    FilterGroup,
 }
 
 impl Related<super::user::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::User.def()
+    }
+}
+
+impl Related<super::filter_group::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::FilterGroup.def()
     }
 }
 

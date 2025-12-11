@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (DM制限機能実装)
+*Last Updated: 2025-12-11* (Meilisearch連携 & Read Replica対応)
 
 ---
 
@@ -27,7 +27,7 @@
 | ActivityPub Update activity対応（ノート編集連合） | ✅ 完了 | update.rs |
 | いいね/リアクションの適切な連合（Mastodon/Pleroma向け） | ✅ 完了 | emoji_react.rs, like.rs |
 | 引用リノートのMastodon連合（FEP-e232対応） | ✅ 完了 | note.rs |
-| チャンネルのフェデレーション（Group actor） | 未実装 | COMMUNITY_FEATURES.md |
+| チャンネルのフェデレーション（Group actor） | ✅ 完了 | group.rs, channel.rs |
 | ActivityPub Move activity対応（アカウント移行） | ✅ 完了 | move_activity.rs, move_processor.rs |
 
 ### Mastodon互換API完全対応
@@ -61,7 +61,7 @@
 |--------|------|------|
 | URLプレビューキャッシュ | ✅ 完了 | url_preview_cache.rs |
 | Redis分散カウンター（レート制限） | ✅ 完了 | rate_limit.rs |
-| 読み取りレプリカ対応 | 未実装 | COMMUNITY_FEATURES.md |
+| 読み取りレプリカ対応 | ✅ 完了 | DatabasePool (lib.rs) |
 
 ### タイムライン・フィード
 
@@ -77,7 +77,7 @@
 |--------|------|------|
 | ドライブ検索（ファイル名/説明） | ✅ 完了 | drive.rs |
 | インスタンス指定アンテナ | ✅ 完了 | antenna.rs (AntennaSource::Instances) |
-| Meilisearch連携 | 未実装 | FORK_FEATURES.md |
+| Meilisearch連携 | ✅ 完了 | search.rs (optional feature) |
 
 ### UI/UX API対応
 
@@ -85,7 +85,7 @@
 |--------|------|------|
 | ワンボタンいいね（Like/Reaction分離） | ✅ 完了 | notes.rs, reaction.rs |
 | デフォルトリアクション設定 | ✅ 完了 | user_profile, users.rs |
-| ユーザー単位Authorized Fetch | 未実装 | FORK_FEATURES.md |
+| ユーザー単位Authorized Fetch | ✅ 完了 | signature_verification.rs |
 
 ### データ管理
 
@@ -166,7 +166,7 @@
 | ドライブのファイル実体削除 | ✅ 完了 | drive.rs:252-264 |
 | NodeInfo実統計取得 | ✅ 完了 | nodeinfo.rs |
 | Mastodon API base_url設定 | ✅ TODO残 | timelines.rs |
-| フォルダ循環参照チェック | 未実装 | drive.rs:475 |
+| フォルダ循環参照チェック | ✅ 完了 | drive.rs, drive_folder.rs |
 | 非フォロワーからのメッセージ制限 | ✅ 完了 | messaging.rs, user_profile |
 
 ---
@@ -244,13 +244,48 @@
 ### メッセージング拡張 (2025-12-11)
 - **非フォロワーからのDM制限** - `user_profile.receive_dm_from_followers_only`設定でフォロワー以外からのダイレクトメッセージを拒否可能。有効にすると送信者がフォロワーでない場合は403エラーを返却。既存のブロックチェックに加えて追加のプライバシー保護を提供。
 
+### チャンネルフェデレーション (2025-12-11)
+- **Group actor実装** - チャンネルをActivityPubのGroup actorとしてフェデレーション可能に。`ApGroup`型を定義し、チャンネルをActivityPub Group表現に変換する`ChannelToApGroup`トレイトを実装。
+- **チャンネルエンティティ拡張** - `channel`テーブルにフェデレーション用フィールドを追加: `uri`（ActivityPub ID）、`public_key_pem`/`private_key_pem`（HTTP署名用キーペア）、`inbox`/`shared_inbox`（Activity受信用エンドポイント）、`host`（リモートチャンネル用）。
+- **チャンネルActivityPubエンドポイント** - `/channels/{id}` (Group actor取得)、`/channels/{id}/inbox` (Activity受信)、`/channels/{id}/outbox` (ノートコレクション)、`/channels/{id}/followers` (フォロワーコレクション)。
+- **WebFinger対応** - `acct:!channelname@domain`形式または`channel:channelname@domain`形式でチャンネルを検索可能。
+- **フェデレーション有効化API** - `/api/channels/federation/enable`でチャンネルのフェデレーションを有効化（キーペア自動生成）、`/api/channels/federation/disable`で無効化。
+
+### ドライブ改善 (2025-12-11)
+- **フォルダ循環参照チェック** - フォルダ移動時に親フォルダを再帰的に確認し、循環参照（ループ）を防止。`DriveFolderRepository.would_create_cycle()`メソッドで移動先が自分自身または子孫フォルダでないことを検証。
+
+### セキュリティ強化 (2025-12-11)
+- **ユーザー単位Authorized Fetch** - ユーザーごとにHTTP署名検証を必須化できる設定を追加。`user_profile.secure_fetch_only`フラグで有効化。
+  - `/api/users/update`エンドポイントに`secureFetchOnly`パラメータを追加
+  - `SignatureVerificationLayer`ミドルウェアによるHTTP署名検証
+  - インスタンス単位の設定も`instance.require_authorized_fetch`で可能
+  - 署名検証失敗時は401 Unauthorizedを返却
+
+### 検索強化 (2025-12-11)
+- **Meilisearch連携** - オプショナルなMeilisearch統合による高速全文検索。`meilisearch` Cargoフィーチャーで有効化。
+  - `SearchService`による統一検索インターフェース
+  - Meilisearch利用時はノート・ユーザーのインデックス管理、タイポ耐性検索、関連度スコアリング
+  - Meilisearch未設定時はPostgreSQL全文検索にフォールバック
+  - ノート検索: テキスト、CW、ユーザー名、タグでの検索、可視性・ユーザー・ホストでのフィルタリング
+  - ユーザー検索: ユーザー名、表示名、自己紹介での検索、ホスト・Bot・停止状態でのフィルタリング
+  - 反応数・リノート数・フォロワー数によるランキング
+
+### インフラ強化 (2025-12-11)
+- **Read Replica対応** - データベース読み取りレプリカのサポートによる水平スケーリング。
+  - `DatabasePool`構造体による読み書き分離
+  - `pool.writer()`でプライマリ接続（INSERT/UPDATE/DELETE用）
+  - `pool.reader()`でレプリカ接続（SELECT用、ラウンドロビン負荷分散）
+  - 設定: `database.read_replicas`配列にレプリカURLを指定
+  - レプリカ未設定時は自動的にプライマリを使用
+  - 接続失敗時は警告をログ出力し、残りのレプリカで継続
+
 ---
 
 ## 次のアクション推奨
 
-1. **フェデレーション**: チャンネルのフェデレーション（Group actor）
-2. **検索**: Meilisearch連携
-3. **セキュリティ**: ユーザー単位Authorized Fetch
+1. **拡張機能**: スマートクリップ、クリップ間移動/コピー
+2. **パフォーマンス**: バックグラウンドジョブの最適化
+3. **セキュリティ**: 信頼済みデバイス管理、セッション管理
 
 ---
 

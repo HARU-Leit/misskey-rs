@@ -8,6 +8,7 @@ pub mod clip;
 pub mod drive_file;
 pub mod drive_folder;
 pub mod emoji;
+pub mod filter_group;
 pub mod follow_request;
 pub mod following;
 pub mod gallery;
@@ -26,6 +27,7 @@ pub mod page;
 pub mod poll;
 pub mod push_subscription;
 pub mod reaction;
+pub mod recurring_post;
 pub mod scheduled_note;
 pub mod security_key;
 pub mod user;
@@ -39,10 +41,13 @@ pub use announcement::AnnouncementRepository;
 pub use antenna::AntennaRepository;
 pub use blocking::BlockingRepository;
 pub use channel::ChannelRepository;
-pub use clip::ClipRepository;
+pub use clip::{ClipRepository, SmartClipConditions};
 pub use drive_file::DriveFileRepository;
 pub use drive_folder::DriveFolderRepository;
 pub use emoji::EmojiRepository;
+pub use filter_group::{
+    CreateFilterGroupInput, FilterGroupRepository, UpdateFilterGroupInput,
+};
 pub use follow_request::FollowRequestRepository;
 pub use following::FollowingRepository;
 pub use gallery::GalleryRepository;
@@ -61,6 +66,9 @@ pub use page::PageRepository;
 pub use poll::{PollRepository, PollVoteRepository};
 pub use push_subscription::PushSubscriptionRepository;
 pub use reaction::ReactionRepository;
+pub use recurring_post::{
+    CreateRecurringPostInput, RecurringPostRepository, UpdateRecurringPostInput,
+};
 pub use scheduled_note::ScheduledNoteRepository;
 pub use security_key::SecurityKeyRepository;
 pub use user::UserRepository;

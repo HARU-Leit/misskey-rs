@@ -8,8 +8,38 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Order, PaginatorTrait,
     QueryFilter, QueryOrder, QuerySelect, RelationTrait, Set,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::entities::{Clip, ClipNote, clip, clip_note};
+
+/// Smart clip conditions for automatic note collection.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SmartClipConditions {
+    /// Keywords to match in note text.
+    #[serde(default)]
+    pub keywords: Vec<String>,
+    /// User IDs whose notes to include.
+    #[serde(default)]
+    pub users: Vec<String>,
+    /// Hashtags to match.
+    #[serde(default)]
+    pub hashtags: Vec<String>,
+    /// Whether all conditions must match (AND) or any (OR).
+    #[serde(default)]
+    pub match_all: bool,
+    /// Minimum reaction count.
+    pub min_reactions: Option<i32>,
+    /// Include only notes with files.
+    #[serde(default)]
+    pub has_files: bool,
+    /// Exclude replies.
+    #[serde(default)]
+    pub exclude_replies: bool,
+    /// Exclude renotes (boosts).
+    #[serde(default)]
+    pub exclude_renotes: bool,
+}
 
 /// Repository for clip operations.
 #[derive(Clone)]
@@ -109,6 +139,46 @@ impl ClipRepository {
             display_order: Set(0),
             created_at: Set(Utc::now().into()),
             updated_at: Set(None),
+            is_smart_clip: Set(false),
+            smart_conditions: Set(None),
+            smart_max_notes: Set(None),
+            smart_last_processed_at: Set(None),
+        };
+
+        active_model
+            .insert(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
+    /// Create a smart clip.
+    pub async fn create_smart_clip(
+        &self,
+        id: String,
+        user_id: String,
+        name: String,
+        description: Option<String>,
+        is_public: bool,
+        conditions: SmartClipConditions,
+        max_notes: Option<i32>,
+    ) -> AppResult<clip::Model> {
+        let conditions_json = serde_json::to_value(&conditions)
+            .map_err(|e| AppError::Internal(format!("Failed to serialize conditions: {e}")))?;
+
+        let active_model = clip::ActiveModel {
+            id: Set(id),
+            user_id: Set(user_id),
+            name: Set(name),
+            description: Set(description),
+            is_public: Set(is_public),
+            notes_count: Set(0),
+            display_order: Set(0),
+            created_at: Set(Utc::now().into()),
+            updated_at: Set(None),
+            is_smart_clip: Set(true),
+            smart_conditions: Set(Some(conditions_json)),
+            smart_max_notes: Set(max_notes),
+            smart_last_processed_at: Set(None),
         };
 
         active_model
@@ -179,6 +249,131 @@ impl ClipRepository {
             .map_err(|e| AppError::Database(e.to_string()))?;
 
         Ok(())
+    }
+
+    // ==================== Smart Clip Operations ====================
+
+    /// Find smart clips by user ID.
+    pub async fn find_smart_clips_by_user(
+        &self,
+        user_id: &str,
+        limit: u64,
+        offset: u64,
+    ) -> AppResult<Vec<clip::Model>> {
+        Clip::find()
+            .filter(clip::Column::UserId.eq(user_id))
+            .filter(clip::Column::IsSmartClip.eq(true))
+            .order_by(clip::Column::DisplayOrder, Order::Asc)
+            .order_by(clip::Column::CreatedAt, Order::Desc)
+            .offset(offset)
+            .limit(limit)
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
+    /// Update smart clip conditions.
+    pub async fn update_smart_conditions(
+        &self,
+        id: &str,
+        conditions: SmartClipConditions,
+        max_notes: Option<i32>,
+    ) -> AppResult<clip::Model> {
+        let clip = Clip::find_by_id(id)
+            .one(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?
+            .ok_or_else(|| AppError::NotFound(format!("Clip not found: {id}")))?;
+
+        let conditions_json = serde_json::to_value(&conditions)
+            .map_err(|e| AppError::Internal(format!("Failed to serialize conditions: {e}")))?;
+
+        let mut active: clip::ActiveModel = clip.into();
+        active.smart_conditions = Set(Some(conditions_json));
+        active.smart_max_notes = Set(max_notes);
+        active.updated_at = Set(Some(Utc::now().into()));
+
+        active
+            .update(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
+    /// Convert a regular clip to a smart clip.
+    pub async fn convert_to_smart_clip(
+        &self,
+        id: &str,
+        conditions: SmartClipConditions,
+        max_notes: Option<i32>,
+    ) -> AppResult<clip::Model> {
+        let clip = Clip::find_by_id(id)
+            .one(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?
+            .ok_or_else(|| AppError::NotFound(format!("Clip not found: {id}")))?;
+
+        let conditions_json = serde_json::to_value(&conditions)
+            .map_err(|e| AppError::Internal(format!("Failed to serialize conditions: {e}")))?;
+
+        let mut active: clip::ActiveModel = clip.into();
+        active.is_smart_clip = Set(true);
+        active.smart_conditions = Set(Some(conditions_json));
+        active.smart_max_notes = Set(max_notes);
+        active.updated_at = Set(Some(Utc::now().into()));
+
+        active
+            .update(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
+    /// Convert a smart clip to a regular clip.
+    pub async fn convert_to_regular_clip(&self, id: &str) -> AppResult<clip::Model> {
+        let clip = Clip::find_by_id(id)
+            .one(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?
+            .ok_or_else(|| AppError::NotFound(format!("Clip not found: {id}")))?;
+
+        let mut active: clip::ActiveModel = clip.into();
+        active.is_smart_clip = Set(false);
+        active.smart_conditions = Set(None);
+        active.smart_max_notes = Set(None);
+        active.smart_last_processed_at = Set(None);
+        active.updated_at = Set(Some(Utc::now().into()));
+
+        active
+            .update(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
+    /// Update smart clip last processed timestamp.
+    pub async fn update_smart_last_processed(&self, id: &str) -> AppResult<()> {
+        let clip = Clip::find_by_id(id)
+            .one(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?
+            .ok_or_else(|| AppError::NotFound(format!("Clip not found: {id}")))?;
+
+        let mut active: clip::ActiveModel = clip.into();
+        active.smart_last_processed_at = Set(Some(Utc::now().into()));
+
+        active
+            .update(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
+        Ok(())
+    }
+
+    /// Get all smart clips that need processing.
+    pub async fn find_smart_clips_for_processing(&self) -> AppResult<Vec<clip::Model>> {
+        Clip::find()
+            .filter(clip::Column::IsSmartClip.eq(true))
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
     }
 
     // ==================== Clip Note Operations ====================
@@ -456,6 +651,10 @@ mod tests {
             display_order: 0,
             created_at: Utc::now().into(),
             updated_at: None,
+            is_smart_clip: false,
+            smart_conditions: None,
+            smart_max_notes: None,
+            smart_last_processed_at: None,
         }
     }
 

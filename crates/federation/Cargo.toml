@@ -27,7 +27,9 @@ async-trait.workspace = true
 
 # Web
 axum.workspace = true
+tower.workspace = true
 url.workspace = true
+futures.workspace = true
 
 # Serialization
 serde.workspace = true

@@ -471,7 +471,17 @@ impl DriveService {
                         "Parent folder belongs to another user".to_string(),
                     ));
                 }
-                // TODO: Check for circular references
+
+                // Check for circular references
+                if self
+                    .folder_repo
+                    .would_create_cycle(folder_id, new_parent_id)
+                    .await?
+                {
+                    return Err(AppError::BadRequest(
+                        "Cannot move folder: would create circular reference".to_string(),
+                    ));
+                }
             } else {
                 return Err(AppError::NotFound("Parent folder not found".to_string()));
             }

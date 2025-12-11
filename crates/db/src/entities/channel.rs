@@ -4,6 +4,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Channel entity - a topic-based container for notes.
+/// Supports ActivityPub federation as a Group actor.
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "channel")]
 pub struct Model {
@@ -59,6 +60,33 @@ pub struct Model {
     /// When the channel was last updated.
     #[sea_orm(nullable)]
     pub updated_at: Option<DateTimeWithTimeZone>,
+
+    // === Federation fields (ActivityPub Group actor) ===
+    /// ActivityPub URI for this channel (unique identifier for federation).
+    /// Null for legacy local channels without federation enabled.
+    #[sea_orm(nullable, unique, indexed)]
+    pub uri: Option<String>,
+
+    /// Public key PEM for HTTP signature verification.
+    #[sea_orm(column_type = "Text", nullable)]
+    pub public_key_pem: Option<String>,
+
+    /// Private key PEM for signing outgoing activities.
+    /// Only present for local channels.
+    #[sea_orm(column_type = "Text", nullable)]
+    pub private_key_pem: Option<String>,
+
+    /// Inbox URL for receiving ActivityPub activities.
+    #[sea_orm(nullable)]
+    pub inbox: Option<String>,
+
+    /// Shared inbox URL for efficient activity delivery.
+    #[sea_orm(nullable)]
+    pub shared_inbox: Option<String>,
+
+    /// Host of the remote instance (null for local channels).
+    #[sea_orm(nullable, indexed)]
+    pub host: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

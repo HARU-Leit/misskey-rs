@@ -94,6 +94,11 @@ pub struct Model {
     #[sea_orm(default_value = false)]
     pub is_nodeinfo_fetched: bool,
 
+    /// Require HTTP signature verification for all incoming activities from this instance.
+    /// When true, unsigned/invalid signature activities from this instance will be rejected.
+    #[sea_orm(default_value = false)]
+    pub require_authorized_fetch: bool,
+
     pub created_at: DateTimeWithTimeZone,
 
     #[sea_orm(nullable)]
