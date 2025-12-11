@@ -99,7 +99,7 @@ impl NoteService {
         }
     }
 
-    /// Create a new note service with ActivityPub delivery support.
+    /// Create a new note service with `ActivityPub` delivery support.
     #[must_use]
     pub fn with_delivery(
         note_repo: NoteRepository,
@@ -263,8 +263,8 @@ impl NoteService {
             }
 
             // Publish to channel timeline if note was posted to a channel
-            if let Some(ref channel_id) = note.channel_id {
-                if let Err(e) = event_publisher
+            if let Some(ref channel_id) = note.channel_id
+                && let Err(e) = event_publisher
                     .publish_channel_note_created(
                         channel_id,
                         &note.id,
@@ -273,21 +273,20 @@ impl NoteService {
                         visibility_str,
                     )
                     .await
-                {
-                    tracing::warn!(
-                        error = %e,
-                        note_id = %note.id,
-                        channel_id = %channel_id,
-                        "Failed to publish channel note created event"
-                    );
-                }
+            {
+                tracing::warn!(
+                    error = %e,
+                    note_id = %note.id,
+                    channel_id = %channel_id,
+                    "Failed to publish channel note created event"
+                );
             }
         }
 
         Ok(note)
     }
 
-    /// Queue ActivityPub Create delivery for a note.
+    /// Queue `ActivityPub` Create delivery for a note.
     ///
     /// For quote renotes (renote with text), this includes FEP-c16b compliant
     /// `quoteUrl` and Misskey's `_misskey_quote` for maximum compatibility.
@@ -308,7 +307,7 @@ impl NoteService {
         let actor_url = format!("{}/users/{}", self.server_url, user.id);
         let activity_id = format!("{}/activities/create/{}", self.server_url, note.id);
 
-        let followers_url = format!("{}/followers", actor_url);
+        let followers_url = format!("{actor_url}/followers");
         let public_url = "https://www.w3.org/ns/activitystreams#Public".to_string();
 
         let (to_field, cc_field): (Vec<String>, Vec<String>) =
@@ -385,7 +384,7 @@ impl NoteService {
         Ok(())
     }
 
-    /// Queue ActivityPub Announce delivery for a pure renote (boost).
+    /// Queue `ActivityPub` Announce delivery for a pure renote (boost).
     ///
     /// This sends an Announce activity for boosting/renoting without additional text.
     /// Mastodon and other platforms treat this as a "boost" or "reblog".
@@ -410,7 +409,7 @@ impl NoteService {
         let actor_url = format!("{}/users/{}", self.server_url, user.id);
         let activity_id = format!("{}/activities/announce/{}", self.server_url, note.id);
 
-        let followers_url = format!("{}/followers", actor_url);
+        let followers_url = format!("{actor_url}/followers");
         let public_url = "https://www.w3.org/ns/activitystreams#Public".to_string();
 
         let (to_field, cc_field): (Vec<String>, Vec<String>) =
@@ -444,12 +443,11 @@ impl NoteService {
         // Also deliver to the original note author's inbox (if remote)
         if let Some(ref user_inbox) = renote_note.user_host {
             // Try to get the author's inbox
-            if let Ok(author) = self.user_repo.get_by_id(&renote_note.user_id).await {
-                if let Some(inbox) = author.shared_inbox.or(author.inbox) {
-                    if !inboxes.contains(&inbox) {
-                        inboxes.push(inbox);
-                    }
-                }
+            if let Ok(author) = self.user_repo.get_by_id(&renote_note.user_id).await
+                && let Some(inbox) = author.shared_inbox.or(author.inbox)
+                && !inboxes.contains(&inbox)
+            {
+                inboxes.push(inbox);
             }
             tracing::debug!(
                 note_id = %note.id,
@@ -460,9 +458,7 @@ impl NoteService {
         }
 
         if !inboxes.is_empty() {
-            delivery
-                .queue_announce(&user.id, inboxes, activity)
-                .await?;
+            delivery.queue_announce(&user.id, inboxes, activity).await?;
             tracing::debug!(
                 note_id = %note.id,
                 renote_of = %renote_note.id,
@@ -513,12 +509,11 @@ impl NoteService {
 
         // Queue ActivityPub Delete before actually deleting
         // (we need the note data for building the activity)
-        if let Some(ref delivery) = self.delivery {
-            if note.is_local {
-                if let Err(e) = self.queue_delete_delivery(&note, delivery).await {
-                    tracing::warn!(error = %e, note_id = %note.id, "Failed to queue ActivityPub Delete delivery");
-                }
-            }
+        if let Some(ref delivery) = self.delivery
+            && note.is_local
+            && let Err(e) = self.queue_delete_delivery(&note, delivery).await
+        {
+            tracing::warn!(error = %e, note_id = %note.id, "Failed to queue ActivityPub Delete delivery");
         }
 
         // Decrement reply count if this was a reply
@@ -539,16 +534,16 @@ impl NoteService {
         self.user_repo.decrement_notes_count(user_id).await?;
 
         // Publish real-time event
-        if let Some(ref event_publisher) = self.event_publisher {
-            if let Err(e) = event_publisher.publish_note_deleted(note_id, user_id).await {
-                tracing::warn!(error = %e, note_id = %note_id, "Failed to publish note deleted event");
-            }
+        if let Some(ref event_publisher) = self.event_publisher
+            && let Err(e) = event_publisher.publish_note_deleted(note_id, user_id).await
+        {
+            tracing::warn!(error = %e, note_id = %note_id, "Failed to publish note deleted event");
         }
 
         Ok(())
     }
 
-    /// Queue ActivityPub Delete delivery for a note.
+    /// Queue `ActivityPub` Delete delivery for a note.
     async fn queue_delete_delivery(
         &self,
         note: &note::Model,
@@ -586,7 +581,7 @@ impl NoteService {
         Ok(())
     }
 
-    /// Queue ActivityPub Update delivery for an edited note.
+    /// Queue `ActivityPub` Update delivery for an edited note.
     async fn queue_update_delivery(
         &self,
         note: &note::Model,
@@ -608,7 +603,7 @@ impl NoteService {
             chrono::Utc::now().timestamp_millis()
         );
 
-        let followers_url = format!("{}/followers", actor_url);
+        let followers_url = format!("{actor_url}/followers");
         let public_url = "https://www.w3.org/ns/activitystreams#Public".to_string();
 
         let (to_field, cc_field): (Vec<String>, Vec<String>) =
@@ -621,8 +616,7 @@ impl NoteService {
         // Get the updated_at timestamp or use current time
         let updated_at = note
             .updated_at
-            .map(|dt| dt.to_rfc3339())
-            .unwrap_or_else(|| chrono::Utc::now().to_rfc3339());
+            .map_or_else(|| chrono::Utc::now().to_rfc3339(), |dt| dt.to_rfc3339());
 
         let ap_note = json!({
             "type": "Note",
@@ -931,20 +925,19 @@ impl NoteService {
         let updated_note = self.note_repo.update(active_note).await?;
 
         // Queue ActivityPub Update delivery
-        if let Some(ref delivery) = self.delivery {
-            if let Err(e) = self
+        if let Some(ref delivery) = self.delivery
+            && let Err(e) = self
                 .queue_update_delivery(&updated_note, user_id, delivery)
                 .await
-            {
-                tracing::warn!(error = %e, note_id = %updated_note.id, "Failed to queue ActivityPub Update delivery");
-            }
+        {
+            tracing::warn!(error = %e, note_id = %updated_note.id, "Failed to queue ActivityPub Update delivery");
         }
 
         // Publish real-time event
-        if let Some(ref event_publisher) = self.event_publisher {
-            if let Err(e) = event_publisher.publish_note_updated(&updated_note.id).await {
-                tracing::warn!(error = %e, note_id = %updated_note.id, "Failed to publish note updated event");
-            }
+        if let Some(ref event_publisher) = self.event_publisher
+            && let Err(e) = event_publisher.publish_note_updated(&updated_note.id).await
+        {
+            tracing::warn!(error = %e, note_id = %updated_note.id, "Failed to publish note updated event");
         }
 
         Ok(updated_note)
@@ -1292,7 +1285,10 @@ mod tests {
 
         let service = NoteService::new(note_repo, user_repo, following_repo);
 
-        let result = service.home_timeline("user1", 10, None, None).await.unwrap();
+        let result = service
+            .home_timeline("user1", 10, None, None)
+            .await
+            .unwrap();
         assert_eq!(result.len(), 2);
     }
 

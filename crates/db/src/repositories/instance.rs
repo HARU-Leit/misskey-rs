@@ -19,7 +19,7 @@ pub struct InstanceRepository {
 impl InstanceRepository {
     /// Create a new instance repository.
     #[must_use]
-    pub fn new(db: Arc<DatabaseConnection>) -> Self {
+    pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self {
             db,
             id_gen: IdGenerator::new(),
@@ -144,7 +144,7 @@ impl InstanceRepository {
         };
 
         query = match sort_order {
-            Some("asc") | Some("ASC") => query.order_by_asc(column),
+            Some("asc" | "ASC") => query.order_by_asc(column),
             _ => query.order_by_desc(column),
         };
 

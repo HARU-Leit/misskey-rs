@@ -541,7 +541,7 @@ impl ClipCollectionState {
     }
 }
 
-/// Handle GET /users/{username}/clips/{clip_id} - User's clip as ActivityPub Collection.
+/// Handle GET /`users/{username}/clips/{clip_id`} - User's clip as `ActivityPub` Collection.
 pub async fn clip_handler(
     State(state): State<ClipCollectionState>,
     Path((username, clip_id)): Path<(String, String)>,
@@ -596,7 +596,7 @@ pub async fn clip_handler(
     let clip_url = state
         .url_config
         .base_url
-        .join(&format!("/users/{}/clips/{}", username, clip_id))
+        .join(&format!("/users/{username}/clips/{clip_id}"))
         .expect("valid URL");
 
     // If page=true, return a page of notes in the clip
@@ -740,7 +740,7 @@ pub async fn clips_list_handler(
     let clips_url = state
         .url_config
         .base_url
-        .join(&format!("/users/{}/clips", username))
+        .join(&format!("/users/{username}/clips"))
         .expect("valid URL");
 
     // If page=true, return a page of clips

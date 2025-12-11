@@ -6,19 +6,15 @@ use serde::{Deserialize, Serialize};
 /// Page visibility levels.
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::N(16))")]
+#[derive(Default)]
 pub enum PageVisibility {
     #[sea_orm(string_value = "public")]
+    #[default]
     Public,
     #[sea_orm(string_value = "followers")]
     Followers,
     #[sea_orm(string_value = "specified")]
     Specified,
-}
-
-impl Default for PageVisibility {
-    fn default() -> Self {
-        Self::Public
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]

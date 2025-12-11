@@ -204,7 +204,7 @@ async fn apply_word_filters(
                 response.filtered = true;
                 response.filter_action = filter_result
                     .action
-                    .map(|a| format!("{:?}", a).to_lowercase());
+                    .map(|a| format!("{a:?}").to_lowercase());
                 response.filter_matches = Some(filter_result.matched_phrases);
             }
         }
@@ -508,7 +508,7 @@ pub struct LikeResponse {
 /// Like a note using user's default reaction (one-button like).
 ///
 /// This endpoint simplifies the reaction process by automatically using
-/// the user's configured default_reaction, or falling back to 👍.
+/// the user's configured `default_reaction`, or falling back to 👍.
 async fn like_note(
     AuthUser(user): AuthUser,
     State(state): State<AppState>,
@@ -545,7 +545,10 @@ async fn unlike_note(
     State(state): State<AppState>,
     Json(req): Json<LikeNoteRequest>,
 ) -> AppResult<ApiResponse<()>> {
-    state.reaction_service.delete(&user.id, &req.note_id).await?;
+    state
+        .reaction_service
+        .delete(&user.id, &req.note_id)
+        .await?;
     Ok(ApiResponse::ok(()))
 }
 

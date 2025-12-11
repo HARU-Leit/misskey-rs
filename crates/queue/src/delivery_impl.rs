@@ -1,6 +1,6 @@
-//! Redis-backed ActivityPub delivery implementation.
+//! Redis-backed `ActivityPub` delivery implementation.
 //!
-//! This module provides a Redis-based implementation of the ActivityDelivery trait
+//! This module provides a Redis-based implementation of the `ActivityDelivery` trait
 //! that queues jobs for the apalis worker to process.
 
 #![allow(missing_docs)]
@@ -14,7 +14,7 @@ use std::sync::Arc;
 use crate::RedisPubSub;
 use crate::jobs::DeliverJob;
 
-/// Redis-backed ActivityPub delivery service.
+/// Redis-backed `ActivityPub` delivery service.
 ///
 /// This implementation queues delivery jobs to Redis for processing by
 /// the apalis deliver worker.
@@ -22,21 +22,23 @@ use crate::jobs::DeliverJob;
 pub struct RedisDeliveryService {
     /// Redis storage for job queue (apalis-redis).
     storage: apalis_redis::RedisStorage<DeliverJob>,
-    /// Optional PubSub for real-time events.
+    /// Optional `PubSub` for real-time events.
     pubsub: Option<Arc<RedisPubSub>>,
 }
 
 impl RedisDeliveryService {
     /// Create a new Redis delivery service.
-    pub fn new(storage: apalis_redis::RedisStorage<DeliverJob>) -> Self {
+    #[must_use]
+    pub const fn new(storage: apalis_redis::RedisStorage<DeliverJob>) -> Self {
         Self {
             storage,
             pubsub: None,
         }
     }
 
-    /// Create a new Redis delivery service with PubSub support.
-    pub fn with_pubsub(
+    /// Create a new Redis delivery service with `PubSub` support.
+    #[must_use]
+    pub const fn with_pubsub(
         storage: apalis_redis::RedisStorage<DeliverJob>,
         pubsub: Arc<RedisPubSub>,
     ) -> Self {
@@ -235,7 +237,6 @@ impl ActivityDelivery for RedisDeliveryService {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use super::*;
 
     // Tests would require a Redis mock
     // For now, we just test the struct can be created

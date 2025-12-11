@@ -1,4 +1,4 @@
-//! Create antenna and antenna_note tables.
+//! Create antenna and `antenna_note` tables.
 
 use sea_orm_migration::prelude::*;
 

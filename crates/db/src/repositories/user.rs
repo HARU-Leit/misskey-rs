@@ -289,7 +289,7 @@ impl UserRepository {
 
     /// Get IDs of all bot users.
     ///
-    /// Used for filtering out bot notes from timelines when hide_bots is enabled.
+    /// Used for filtering out bot notes from timelines when `hide_bots` is enabled.
     pub async fn find_bot_user_ids(&self) -> AppResult<Vec<String>> {
         User::find()
             .filter(user::Column::IsBot.eq(true))

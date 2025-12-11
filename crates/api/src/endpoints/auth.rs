@@ -72,13 +72,13 @@ pub struct SigninResponse {
     /// True if 2FA is required but not provided.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub requires_two_factor: bool,
-    /// True if WebAuthn is available.
+    /// True if `WebAuthn` is available.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub webauthn_available: bool,
-    /// Challenge ID for WebAuthn (if starting WebAuthn flow).
+    /// Challenge ID for `WebAuthn` (if starting `WebAuthn` flow).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub webauthn_challenge_id: Option<String>,
-    /// WebAuthn options (if starting WebAuthn flow).
+    /// `WebAuthn` options (if starting `WebAuthn` flow).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub webauthn_options: Option<serde_json::Value>,
 }
@@ -134,7 +134,7 @@ async fn signin(
     }))
 }
 
-/// Signin with WebAuthn request.
+/// Signin with `WebAuthn` request.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SigninWebAuthnBeginRequest {
@@ -142,7 +142,7 @@ pub struct SigninWebAuthnBeginRequest {
     pub password: String,
 }
 
-/// Begin WebAuthn authentication for signin.
+/// Begin `WebAuthn` authentication for signin.
 async fn signin_webauthn_begin(
     State(state): State<AppState>,
     Json(req): Json<SigninWebAuthnBeginRequest>,
@@ -178,7 +178,7 @@ async fn signin_webauthn_begin(
     }))
 }
 
-/// Complete WebAuthn signin request.
+/// Complete `WebAuthn` signin request.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SigninWebAuthnCompleteRequest {
@@ -188,7 +188,7 @@ pub struct SigninWebAuthnCompleteRequest {
     pub credential: serde_json::Value,
 }
 
-/// Complete WebAuthn authentication for signin.
+/// Complete `WebAuthn` authentication for signin.
 async fn signin_webauthn_complete(
     State(state): State<AppState>,
     Json(req): Json<SigninWebAuthnCompleteRequest>,

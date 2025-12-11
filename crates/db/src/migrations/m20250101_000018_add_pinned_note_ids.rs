@@ -1,4 +1,4 @@
-//! Add pinned_note_ids column to user_profile table.
+//! Add `pinned_note_ids` column to `user_profile` table.
 
 use sea_orm_migration::prelude::*;
 

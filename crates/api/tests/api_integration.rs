@@ -119,6 +119,7 @@ fn create_test_state() -> AppState {
     let note_service =
         NoteService::new(note_repo.clone(), user_repo.clone(), following_repo.clone());
     let blocking_service = BlockingService::new(blocking_repo.clone(), following_repo.clone());
+    let following_repo_for_messaging = following_repo.clone();
     let following_service =
         FollowingService::new(following_repo, follow_request_repo, user_repo.clone());
     let reaction_service = ReactionService::new(reaction_repo, note_repo.clone());
@@ -139,7 +140,13 @@ fn create_test_state() -> AppState {
     let antenna_service = AntennaService::new(antenna_repo);
     let channel_service = ChannelService::new(channel_repo);
     let instance_service = InstanceService::new(instance_repo, user_repo.clone());
-    let messaging_service = MessagingService::new(messaging_repo, user_repo.clone(), blocking_repo);
+    let messaging_service = MessagingService::new(
+        messaging_repo,
+        user_repo.clone(),
+        user_profile_repo.clone(),
+        following_repo_for_messaging,
+        blocking_repo,
+    );
     let clip_service = ClipService::new(clip_repo);
     let word_filter_service = WordFilterService::new(word_filter_repo);
     let scheduled_note_service = ScheduledNoteService::new(scheduled_note_repo);

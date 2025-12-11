@@ -91,7 +91,7 @@ pub struct NodeInfoState {
 impl NodeInfoState {
     /// Create new `NodeInfo` state.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         base_url: Url,
         instance_name: String,
         instance_description: String,
@@ -215,10 +215,10 @@ async fn get_statistics(state: &NodeInfoState) -> (u64, u64, u64, u64) {
     }
 
     // Get note statistics
-    if let Some(ref note_repo) = state.note_repo {
-        if let Ok(count) = note_repo.count_local_notes().await {
-            local_posts = count;
-        }
+    if let Some(ref note_repo) = state.note_repo
+        && let Ok(count) = note_repo.count_local_notes().await
+    {
+        local_posts = count;
     }
 
     (total_users, active_month, active_halfyear, local_posts)

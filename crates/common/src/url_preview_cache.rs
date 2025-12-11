@@ -57,7 +57,7 @@ pub struct UrlPreviewCache {
 impl UrlPreviewCache {
     /// Create a new URL preview cache with default TTL settings.
     #[must_use]
-    pub fn new(redis: Arc<RedisClient>) -> Self {
+    pub const fn new(redis: Arc<RedisClient>) -> Self {
         Self {
             redis,
             ttl_secs: DEFAULT_CACHE_TTL_SECS,
@@ -67,7 +67,7 @@ impl UrlPreviewCache {
 
     /// Create a new URL preview cache with custom TTL.
     #[must_use]
-    pub fn with_ttl(redis: Arc<RedisClient>, ttl: Duration, failed_ttl: Duration) -> Self {
+    pub const fn with_ttl(redis: Arc<RedisClient>, ttl: Duration, failed_ttl: Duration) -> Self {
         Self {
             redis,
             ttl_secs: ttl.as_secs() as i64,
@@ -227,15 +227,12 @@ impl UrlPreviewCache {
         // Fetch and cache
         let preview = crate::url_preview::fetch_preview(url, config).await;
 
-        match preview {
-            Some(p) => {
-                self.set(&p).await?;
-                Ok(Some(p))
-            }
-            None => {
-                self.set_failed(url).await?;
-                Ok(None)
-            }
+        if let Some(p) = preview {
+            self.set(&p).await?;
+            Ok(Some(p))
+        } else {
+            self.set_failed(url).await?;
+            Ok(None)
         }
     }
 }

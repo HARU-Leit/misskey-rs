@@ -1,4 +1,4 @@
-//! Create gallery_post and gallery_like tables.
+//! Create `gallery_post` and `gallery_like` tables.
 
 use sea_orm_migration::prelude::*;
 

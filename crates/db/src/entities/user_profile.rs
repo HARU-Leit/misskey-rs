@@ -82,7 +82,7 @@ pub struct Model {
     #[sea_orm(nullable)]
     pub pronouns: Option<String>,
 
-    /// Also known as (ActivityPub aliases for account migration)
+    /// Also known as (`ActivityPub` aliases for account migration)
     #[sea_orm(column_type = "JsonBinary", nullable)]
     pub also_known_as: Option<Json>,
 

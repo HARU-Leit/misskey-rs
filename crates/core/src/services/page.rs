@@ -121,7 +121,7 @@ pub struct PageService {
 impl PageService {
     /// Create a new page service.
     #[must_use]
-    pub fn new(page_repo: PageRepository) -> Self {
+    pub const fn new(page_repo: PageRepository) -> Self {
         Self {
             page_repo,
             id_gen: IdGenerator::new(),
@@ -247,13 +247,12 @@ impl PageService {
                 ));
             }
             // Check for duplicate name (excluding current page)
-            if let Some(existing) = self.page_repo.find_by_user_and_name(user_id, &name).await? {
-                if existing.id != page_id {
-                    return Err(AppError::Conflict(format!(
-                        "Page with name '{}' already exists",
-                        name
-                    )));
-                }
+            if let Some(existing) = self.page_repo.find_by_user_and_name(user_id, &name).await?
+                && existing.id != page_id
+            {
+                return Err(AppError::Conflict(format!(
+                    "Page with name '{name}' already exists"
+                )));
             }
             active.name = Set(name);
         }
@@ -290,8 +289,7 @@ impl PageService {
                 "specified" => page::PageVisibility::Specified,
                 _ => {
                     return Err(AppError::Validation(format!(
-                        "Invalid visibility: {}",
-                        visibility_str
+                        "Invalid visibility: {visibility_str}"
                     )));
                 }
             };
@@ -447,10 +445,10 @@ impl PageService {
 
     fn can_view(&self, page: &page::Model, viewer_id: Option<&str>) -> bool {
         // Owner can always view
-        if let Some(uid) = viewer_id {
-            if page.user_id == uid {
-                return true;
-            }
+        if let Some(uid) = viewer_id
+            && page.user_id == uid
+        {
+            return true;
         }
 
         match page.visibility {

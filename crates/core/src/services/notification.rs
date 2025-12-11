@@ -292,8 +292,8 @@ impl NotificationService {
             NotificationType::App => "app",
         };
 
-        if let Some(ref event_publisher) = self.event_publisher {
-            if let Err(e) = event_publisher
+        if let Some(ref event_publisher) = self.event_publisher
+            && let Err(e) = event_publisher
                 .publish_notification(
                     &notification_id,
                     notifiee_id,
@@ -302,9 +302,8 @@ impl NotificationService {
                     note_id,
                 )
                 .await
-            {
-                tracing::warn!(error = %e, "Failed to publish notification event");
-            }
+        {
+            tracing::warn!(error = %e, "Failed to publish notification event");
         }
 
         // Enqueue push notification job
@@ -328,8 +327,8 @@ impl NotificationService {
 
             let payload = PushPayload {
                 notification_type: type_str.to_string(),
-                title: format!("New {}", type_str),
-                body: format!("You have a new {} notification", type_str),
+                title: format!("New {type_str}"),
+                body: format!("You have a new {type_str} notification"),
                 icon: None,
                 url: None,
                 data: None,

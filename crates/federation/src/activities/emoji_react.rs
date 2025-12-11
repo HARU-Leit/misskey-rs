@@ -1,4 +1,4 @@
-//! EmojiReact activity (Pleroma/Akkoma style emoji reactions).
+//! `EmojiReact` activity (Pleroma/Akkoma style emoji reactions).
 //!
 //! This activity type is used by Pleroma/Akkoma to send emoji reactions.
 //! See: <https://docs.akkoma.dev/stable/development/ap_extensions/#emoji-reactions>
@@ -16,7 +16,7 @@ impl Default for EmojiReactType {
     }
 }
 
-/// Serialize `EmojiReactType` as the string "EmojiReact".
+/// Serialize `EmojiReactType` as the string "`EmojiReact`".
 impl Serialize for EmojiReactType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -26,7 +26,7 @@ impl Serialize for EmojiReactType {
     }
 }
 
-/// Deserialize "EmojiReact" string into `EmojiReactType`.
+/// Deserialize "`EmojiReact`" string into `EmojiReactType`.
 impl<'de> Deserialize<'de> for EmojiReactType {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -43,7 +43,7 @@ impl<'de> Deserialize<'de> for EmojiReactType {
     }
 }
 
-/// `ActivityPub` EmojiReact activity (Pleroma/Akkoma extension).
+/// `ActivityPub` `EmojiReact` activity (Pleroma/Akkoma extension).
 ///
 /// This is used for emoji reactions that carry a specific emoji/content.
 /// Mastodon does not support this; it only uses Like for favorites.
@@ -118,7 +118,7 @@ pub struct EmojiIcon {
 impl EmojiReactActivity {
     /// Create a new `EmojiReact` activity.
     #[must_use]
-    pub fn new(id: Url, actor: Url, object: Url, content: String) -> Self {
+    pub const fn new(id: Url, actor: Url, object: Url, content: String) -> Self {
         Self {
             kind: EmojiReactType,
             id,

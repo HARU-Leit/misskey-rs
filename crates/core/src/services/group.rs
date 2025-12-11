@@ -37,7 +37,7 @@ pub struct CreateGroupInput {
     pub rules: Option<String>,
 }
 
-fn default_true() -> bool {
+const fn default_true() -> bool {
     true
 }
 
@@ -107,6 +107,7 @@ pub struct GroupResponse {
 }
 
 impl GroupResponse {
+    #[must_use]
     pub fn from_model(model: group::Model, is_member: bool, my_role: Option<GroupRole>) -> Self {
         Self {
             id: model.id,
@@ -214,8 +215,7 @@ impl GroupService {
         let count = self.group_repo.count_owned_by_user(user_id).await?;
         if count >= MAX_GROUPS_PER_USER {
             return Err(AppError::Validation(format!(
-                "Maximum of {} groups allowed per user",
-                MAX_GROUPS_PER_USER
+                "Maximum of {MAX_GROUPS_PER_USER} groups allowed per user"
             )));
         }
 
@@ -835,8 +835,8 @@ impl GroupService {
     }
 }
 
-/// Check if actor_role can manage target_role.
-fn can_manage(actor_role: &GroupRole, target_role: &GroupRole) -> bool {
+/// Check if `actor_role` can manage `target_role`.
+const fn can_manage(actor_role: &GroupRole, target_role: &GroupRole) -> bool {
     match actor_role {
         GroupRole::Owner => true, // Owner can manage everyone
         GroupRole::Admin => matches!(target_role, GroupRole::Member | GroupRole::Moderator),

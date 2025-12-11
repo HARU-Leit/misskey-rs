@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 use crate::services::push_notification::{
     PushNotificationService, PushNotificationType, PushPayload,
@@ -121,6 +121,7 @@ pub struct JobService {
 
 impl JobService {
     /// Create a new job service.
+    #[must_use]
     pub fn new() -> Self {
         let (sender, receiver) = mpsc::channel(JOB_BUFFER_SIZE);
         Self {
@@ -130,6 +131,7 @@ impl JobService {
     }
 
     /// Get a job sender for enqueueing jobs.
+    #[must_use]
     pub fn sender(&self) -> JobSender {
         JobSender {
             sender: self.sender.clone(),
@@ -208,7 +210,7 @@ async fn process_push_notification(
     };
 
     match push_service
-        .send_to_user(user_id, notification_type.clone(), payload)
+        .send_to_user(user_id, notification_type, payload)
         .await
     {
         Ok(count) => {

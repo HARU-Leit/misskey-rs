@@ -1,4 +1,4 @@
-//! Create word_filter table.
+//! Create `word_filter` table.
 
 use sea_orm_migration::prelude::*;
 

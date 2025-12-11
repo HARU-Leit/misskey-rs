@@ -195,7 +195,7 @@ pub struct OAuthService {
 impl OAuthService {
     /// Create a new OAuth service.
     #[must_use]
-    pub fn new(oauth_repo: OAuthRepository) -> Self {
+    pub const fn new(oauth_repo: OAuthRepository) -> Self {
         Self {
             oauth_repo,
             id_gen: IdGenerator::new(),

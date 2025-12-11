@@ -137,7 +137,7 @@ pub trait EventPublisher: Send + Sync {
     ) -> AppResult<()>;
 }
 
-/// A no-op implementation of EventPublisher for testing or when real-time events are disabled.
+/// A no-op implementation of `EventPublisher` for testing or when real-time events are disabled.
 #[derive(Clone, Default)]
 pub struct NoOpEventPublisher;
 
@@ -222,5 +222,5 @@ impl EventPublisher for NoOpEventPublisher {
     }
 }
 
-/// Wrapper for boxed EventPublisher trait object.
+/// Wrapper for boxed `EventPublisher` trait object.
 pub type EventPublisherService = Arc<dyn EventPublisher>;

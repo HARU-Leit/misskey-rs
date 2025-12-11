@@ -37,14 +37,14 @@ impl QueryPlan {
         let planning_time = rows
             .iter()
             .find(|r| r.contains("Planning Time:"))
-            .and_then(|r| r.split(':').last())
+            .and_then(|r| r.split(':').next_back())
             .and_then(|s| s.trim().trim_end_matches(" ms").parse::<f64>().ok())
             .unwrap_or(0.0);
 
         let execution_time = rows
             .iter()
             .find(|r| r.contains("Execution Time:"))
-            .and_then(|r| r.split(':').last())
+            .and_then(|r| r.split(':').next_back())
             .and_then(|s| s.trim().trim_end_matches(" ms").parse::<f64>().ok())
             .unwrap_or(0.0);
 
@@ -136,7 +136,7 @@ async fn run_explain_analyze(
     query_name: &str,
     sql: &str,
 ) -> QueryPlan {
-    let explain_sql = format!("EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) {}", sql);
+    let explain_sql = format!("EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) {sql}");
 
     let rows: Vec<String> = db
         .query_all(Statement::from_string(DbBackend::Postgres, explain_sql))
@@ -185,7 +185,7 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
     let _ = db
         .execute(Statement::from_string(
             DbBackend::Postgres,
-            r#"
+            r"
         CREATE TABLE IF NOT EXISTS note (
             id VARCHAR(32) PRIMARY KEY,
             user_id VARCHAR(32) NOT NULL,
@@ -220,14 +220,14 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
         CREATE INDEX IF NOT EXISTS idx_note_user_visibility ON note (user_id, visibility);
         CREATE INDEX IF NOT EXISTS idx_note_is_local_visibility ON note (is_local, visibility);
         CREATE INDEX IF NOT EXISTS idx_note_uri ON note (uri);
-        "#,
+        ",
         ))
         .await;
 
     let _ = db
         .execute(Statement::from_string(
             DbBackend::Postgres,
-            r#"
+            r"
         CREATE TABLE IF NOT EXISTS following (
             id VARCHAR(32) PRIMARY KEY,
             follower_id VARCHAR(32) NOT NULL,
@@ -238,14 +238,14 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
 
         CREATE INDEX IF NOT EXISTS idx_following_follower ON following (follower_id);
         CREATE INDEX IF NOT EXISTS idx_following_followee ON following (followee_id);
-        "#,
+        ",
         ))
         .await;
 
     let _ = db
         .execute(Statement::from_string(
             DbBackend::Postgres,
-            r#"
+            r"
         CREATE TABLE IF NOT EXISTS reaction (
             id VARCHAR(32) PRIMARY KEY,
             user_id VARCHAR(32) NOT NULL,
@@ -257,21 +257,20 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
 
         CREATE INDEX IF NOT EXISTS idx_reaction_note ON reaction (note_id);
         CREATE INDEX IF NOT EXISTS idx_reaction_user ON reaction (user_id);
-        "#,
+        ",
         ))
         .await;
 
     // Insert test data
     for i in 0..100 {
-        let user_id = format!("user{:04}", i);
+        let user_id = format!("user{i:04}");
         let _ = db
             .execute(Statement::from_string(
                 DbBackend::Postgres,
                 format!(
                     r#"INSERT INTO "user" (id, username, username_lower, host, created_at)
-                   VALUES ('{}', 'user{}', 'user{}', NULL, NOW())
-                   ON CONFLICT (id) DO NOTHING"#,
-                    user_id, i, i
+                   VALUES ('{user_id}', 'user{i}', 'user{i}', NULL, NOW())
+                   ON CONFLICT (id) DO NOTHING"#
                 ),
             ))
             .await;
@@ -279,7 +278,7 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
 
     // Insert test notes (1000 notes)
     for i in 0..1000 {
-        let note_id = format!("note{:06}", i);
+        let note_id = format!("note{i:06}");
         let user_id = format!("user{:04}", i % 100);
         let visibility = if i % 10 == 0 { "home" } else { "public" };
         let is_local = i % 5 != 0;
@@ -287,10 +286,9 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
         let _ = db.execute(Statement::from_string(
             DbBackend::Postgres,
             format!(
-                r#"INSERT INTO note (id, user_id, text, visibility, is_local, created_at)
-                   VALUES ('{}', '{}', 'Test note content {}', '{}', {}, NOW() - INTERVAL '{} minutes')
-                   ON CONFLICT (id) DO NOTHING"#,
-                note_id, user_id, i, visibility, is_local, i
+                r"INSERT INTO note (id, user_id, text, visibility, is_local, created_at)
+                   VALUES ('{note_id}', '{user_id}', 'Test note content {i}', '{visibility}', {is_local}, NOW() - INTERVAL '{i} minutes')
+                   ON CONFLICT (id) DO NOTHING"
             ),
         )).await;
     }
@@ -303,10 +301,9 @@ async fn setup_test_data(db: &sea_orm::DatabaseConnection) {
             .execute(Statement::from_string(
                 DbBackend::Postgres,
                 format!(
-                    r#"INSERT INTO following (id, follower_id, followee_id, created_at)
-                   VALUES ('follow{:04}', '{}', '{}', NOW())
-                   ON CONFLICT (follower_id, followee_id) DO NOTHING"#,
-                    i, follower, followee
+                    r"INSERT INTO following (id, follower_id, followee_id, created_at)
+                   VALUES ('follow{i:04}', '{follower}', '{followee}', NOW())
+                   ON CONFLICT (follower_id, followee_id) DO NOTHING"
                 ),
             ))
             .await;
@@ -404,7 +401,7 @@ async fn analyze_home_timeline_query() {
     let plan = run_explain_analyze(
         &db,
         "Home Timeline",
-        r#"
+        r"
         SELECT n.* FROM note n
         WHERE n.user_id IN (
             SELECT followee_id FROM following WHERE follower_id = 'user0001'
@@ -414,7 +411,7 @@ async fn analyze_home_timeline_query() {
         AND n.visibility IN ('public', 'home', 'followers')
         ORDER BY n.id DESC
         LIMIT 20
-        "#,
+        ",
     )
     .await;
 

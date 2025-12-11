@@ -6,19 +6,15 @@ use serde::{Deserialize, Serialize};
 /// Approval status for registration requests.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::N(16))")]
+#[derive(Default)]
 pub enum ApprovalStatus {
     #[sea_orm(string_value = "pending")]
+    #[default]
     Pending,
     #[sea_orm(string_value = "approved")]
     Approved,
     #[sea_orm(string_value = "rejected")]
     Rejected,
-}
-
-impl Default for ApprovalStatus {
-    fn default() -> Self {
-        Self::Pending
-    }
 }
 
 /// Registration approval request.

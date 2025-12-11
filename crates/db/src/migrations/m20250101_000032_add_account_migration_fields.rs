@@ -1,4 +1,4 @@
-//! Migration to add account migration fields to user_profile.
+//! Migration to add account migration fields to `user_profile`.
 
 use sea_orm_migration::prelude::*;
 

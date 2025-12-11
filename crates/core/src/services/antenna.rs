@@ -50,7 +50,7 @@ pub struct CreateAntennaInput {
     pub local_only: bool,
 }
 
-fn default_source() -> AntennaSource {
+const fn default_source() -> AntennaSource {
     AntennaSource::All
 }
 
@@ -82,7 +82,7 @@ pub struct NoteMatchContext {
     pub user_host: Option<String>,
     pub is_reply: bool,
     pub has_files: bool,
-    /// User list memberships (user_id -> list_ids)
+    /// User list memberships (`user_id` -> `list_ids`)
     pub list_memberships: Vec<String>,
 }
 
@@ -149,8 +149,7 @@ impl AntennaService {
         let count = self.antenna_repo.count_by_user(user_id).await?;
         if count >= MAX_ANTENNAS_PER_USER {
             return Err(AppError::Validation(format!(
-                "Maximum of {} antennas allowed per user",
-                MAX_ANTENNAS_PER_USER
+                "Maximum of {MAX_ANTENNAS_PER_USER} antennas allowed per user"
             )));
         }
 
@@ -294,12 +293,12 @@ impl AntennaService {
     pub async fn reorder(&self, user_id: &str, antenna_ids: Vec<String>) -> AppResult<()> {
         for (index, antenna_id) in antenna_ids.iter().enumerate() {
             // Verify ownership
-            if let Ok(antenna) = self.antenna_repo.get_by_id(antenna_id).await {
-                if antenna.user_id == user_id {
-                    self.antenna_repo
-                        .update_display_order(antenna_id, index as i32)
-                        .await?;
-                }
+            if let Ok(antenna) = self.antenna_repo.get_by_id(antenna_id).await
+                && antenna.user_id == user_id
+            {
+                self.antenna_repo
+                    .update_display_order(antenna_id, index as i32)
+                    .await?;
             }
         }
 
@@ -522,7 +521,10 @@ impl AntennaService {
         let mut matched_antenna_ids = Vec::new();
 
         for antenna in antennas {
-            if let Ok(true) = self.process_note(&antenna, note_id, context).await {
+            if matches!(
+                self.process_note(&antenna, note_id, context).await,
+                Ok(true)
+            ) {
                 matched_antenna_ids.push(antenna.id);
             }
         }
@@ -530,9 +532,10 @@ impl AntennaService {
         Ok(matched_antenna_ids)
     }
 
-    /// Create a NoteMatchContext from note data.
+    /// Create a `NoteMatchContext` from note data.
     ///
     /// Helper method to build the context needed for antenna matching.
+    #[must_use]
     pub fn create_note_context(
         text: Option<&str>,
         user_id: &str,
@@ -544,7 +547,7 @@ impl AntennaService {
         NoteMatchContext {
             text: text.unwrap_or("").to_string(),
             user_id: user_id.to_string(),
-            user_host: user_host.map(|s| s.to_string()),
+            user_host: user_host.map(std::string::ToString::to_string),
             is_reply: reply_id.is_some(),
             has_files: !file_ids.is_empty(),
             list_memberships: user_list_memberships.to_vec(),
@@ -554,12 +557,11 @@ impl AntennaService {
     // ==================== Helper Methods ====================
 
     fn validate_keywords(&self, keywords: &[Vec<String>]) -> AppResult<()> {
-        let total_count: usize = keywords.iter().map(|g| g.len()).sum();
+        let total_count: usize = keywords.iter().map(std::vec::Vec::len).sum();
 
         if total_count > MAX_KEYWORDS {
             return Err(AppError::Validation(format!(
-                "Maximum of {} keywords allowed",
-                MAX_KEYWORDS
+                "Maximum of {MAX_KEYWORDS} keywords allowed"
             )));
         }
 
@@ -567,8 +569,7 @@ impl AntennaService {
             for keyword in group {
                 if keyword.len() > MAX_KEYWORD_LENGTH {
                     return Err(AppError::Validation(format!(
-                        "Keyword must be at most {} characters",
-                        MAX_KEYWORD_LENGTH
+                        "Keyword must be at most {MAX_KEYWORD_LENGTH} characters"
                     )));
                 }
                 if keyword.is_empty() {
@@ -640,12 +641,8 @@ mod tests {
         )));
 
         // Simple keyword match
-        assert!(service.matches_keywords("hello world", &vec![vec!["hello".to_string()]], false));
-        assert!(!service.matches_keywords(
-            "goodbye world",
-            &vec![vec!["hello".to_string()]],
-            false
-        ));
+        assert!(service.matches_keywords("hello world", &[vec!["hello".to_string()]], false));
+        assert!(!service.matches_keywords("goodbye world", &[vec!["hello".to_string()]], false));
     }
 
     #[test]

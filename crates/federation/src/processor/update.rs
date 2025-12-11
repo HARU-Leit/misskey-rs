@@ -157,7 +157,7 @@ impl UpdateProcessor {
             .map(|tags| {
                 tags.iter()
                     .filter(|t| t.kind == "Mention")
-                    .filter_map(|t| t.href.as_ref().map(|h| h.to_string()))
+                    .filter_map(|t| t.href.as_ref().map(std::string::ToString::to_string))
                     .collect()
             })
             .unwrap_or_default();

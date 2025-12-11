@@ -1,7 +1,7 @@
 //! Add admin settings:
-//! - max_remote_note_text_length for separate limits on remote notes
-//! - require_registration_approval for manual account approval
-//! - force_nsfw_media to auto-mark all uploads as NSFW
+//! - `max_remote_note_text_length` for separate limits on remote notes
+//! - `require_registration_approval` for manual account approval
+//! - `force_nsfw_media` to auto-mark all uploads as NSFW
 
 use sea_orm_migration::prelude::*;
 

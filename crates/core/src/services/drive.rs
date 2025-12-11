@@ -250,17 +250,16 @@ impl DriveService {
         }
 
         // Delete actual file from storage if storage backend is configured
-        if let Some(ref storage) = self.storage {
-            if let Some(ref storage_key) = file.storage_key {
-                if let Err(e) = storage.delete(storage_key).await {
-                    tracing::warn!(
-                        file_id = %file_id,
-                        storage_key = %storage_key,
-                        error = %e,
-                        "Failed to delete file from storage, proceeding with database deletion"
-                    );
-                }
-            }
+        if let Some(ref storage) = self.storage
+            && let Some(ref storage_key) = file.storage_key
+            && let Err(e) = storage.delete(storage_key).await
+        {
+            tracing::warn!(
+                file_id = %file_id,
+                storage_key = %storage_key,
+                error = %e,
+                "Failed to delete file from storage, proceeding with database deletion"
+            );
         }
 
         self.file_repo.delete(file_id).await
@@ -327,15 +326,15 @@ impl DriveService {
         // Delete files from storage
         if let Some(ref storage) = self.storage {
             for file in &files {
-                if let Some(ref storage_key) = file.storage_key {
-                    if let Err(e) = storage.delete(storage_key).await {
-                        tracing::warn!(
-                            file_id = %file.id,
-                            storage_key = %storage_key,
-                            error = %e,
-                            "Failed to delete file from storage during cleanup"
-                        );
-                    }
+                if let Some(ref storage_key) = file.storage_key
+                    && let Err(e) = storage.delete(storage_key).await
+                {
+                    tracing::warn!(
+                        file_id = %file.id,
+                        storage_key = %storage_key,
+                        error = %e,
+                        "Failed to delete file from storage during cleanup"
+                    );
                 }
             }
         }

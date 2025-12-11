@@ -27,6 +27,7 @@ impl GroupRepository {
     }
 
     /// Get reference to the database connection.
+    #[must_use]
     pub fn db(&self) -> &DatabaseConnection {
         self.db.as_ref()
     }

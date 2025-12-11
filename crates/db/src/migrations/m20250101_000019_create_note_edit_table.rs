@@ -1,4 +1,4 @@
-//! Create note_edit table for edit history.
+//! Create `note_edit` table for edit history.
 
 use sea_orm_migration::prelude::*;
 

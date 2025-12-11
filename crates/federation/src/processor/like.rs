@@ -23,7 +23,7 @@ pub struct LikeProcessor {
 impl LikeProcessor {
     /// Create a new like processor.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         user_repo: UserRepository,
         note_repo: NoteRepository,
         reaction_repo: ReactionRepository,

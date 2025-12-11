@@ -25,7 +25,7 @@ pub struct UpdateSubscriptionRequest {
 pub struct UnregisterRequest {
     /// Subscription ID (optional, use endpoint if not provided)
     pub subscription_id: Option<String>,
-    /// Endpoint URL (optional, use subscription_id if not provided)
+    /// Endpoint URL (optional, use `subscription_id` if not provided)
     pub endpoint: Option<String>,
 }
 

@@ -35,15 +35,15 @@ pub struct CreateFilterInput {
     pub expires_in: Option<i64>,
 }
 
-fn default_whole_word() -> bool {
+const fn default_whole_word() -> bool {
     true
 }
 
-fn default_action() -> FilterAction {
+const fn default_action() -> FilterAction {
     FilterAction::Hide
 }
 
-fn default_context() -> FilterContext {
+const fn default_context() -> FilterContext {
     FilterContext::All
 }
 
@@ -148,23 +148,21 @@ impl WordFilterService {
         let count = self.filter_repo.count_by_user(user_id).await?;
         if count >= MAX_FILTERS_PER_USER {
             return Err(AppError::Validation(format!(
-                "Maximum of {} filters allowed per user",
-                MAX_FILTERS_PER_USER
+                "Maximum of {MAX_FILTERS_PER_USER} filters allowed per user"
             )));
         }
 
         // Validate phrase length
         if input.phrase.len() > MAX_PHRASE_LENGTH {
             return Err(AppError::Validation(format!(
-                "Phrase must be at most {} characters",
-                MAX_PHRASE_LENGTH
+                "Phrase must be at most {MAX_PHRASE_LENGTH} characters"
             )));
         }
 
         // Validate regex if is_regex is true
         if input.is_regex {
             Regex::new(&input.phrase)
-                .map_err(|e| AppError::Validation(format!("Invalid regex pattern: {}", e)))?;
+                .map_err(|e| AppError::Validation(format!("Invalid regex pattern: {e}")))?;
         }
 
         // Calculate expiration
@@ -185,7 +183,7 @@ impl WordFilterService {
             whole_word: Set(input.whole_word),
             action: Set(input.action),
             context: Set(input.context),
-            expires_at: Set(expires_at.map(|dt| dt.into())),
+            expires_at: Set(expires_at.map(std::convert::Into::into)),
             match_count: Set(0),
             created_at: Set(now.into()),
             updated_at: Set(None),
@@ -212,8 +210,7 @@ impl WordFilterService {
         if let Some(ref phrase) = input.phrase {
             if phrase.len() > MAX_PHRASE_LENGTH {
                 return Err(AppError::Validation(format!(
-                    "Phrase must be at most {} characters",
-                    MAX_PHRASE_LENGTH
+                    "Phrase must be at most {MAX_PHRASE_LENGTH} characters"
                 )));
             }
 
@@ -221,12 +218,12 @@ impl WordFilterService {
             let is_regex = input.is_regex.unwrap_or(filter.is_regex);
             if is_regex {
                 Regex::new(phrase)
-                    .map_err(|e| AppError::Validation(format!("Invalid regex pattern: {}", e)))?;
+                    .map_err(|e| AppError::Validation(format!("Invalid regex pattern: {e}")))?;
             }
-        } else if let Some(true) = input.is_regex {
+        } else if input.is_regex == Some(true) {
             // Validating existing phrase as regex
             Regex::new(&filter.phrase).map_err(|e| {
-                AppError::Validation(format!("Existing phrase is not valid regex: {}", e))
+                AppError::Validation(format!("Existing phrase is not valid regex: {e}"))
             })?;
         }
 
@@ -257,7 +254,7 @@ impl WordFilterService {
                 let duration = Duration::seconds(secs);
                 Utc::now() + duration
             });
-            active.expires_at = Set(expires_at.map(|dt| dt.into()));
+            active.expires_at = Set(expires_at.map(std::convert::Into::into));
         }
 
         active.updated_at = Set(Some(now.into()));
@@ -354,14 +351,14 @@ impl WordFilterService {
             };
 
             let regex = Regex::new(&pattern)
-                .map_err(|e| AppError::Internal(format!("Invalid regex in filter: {}", e)))?;
+                .map_err(|e| AppError::Internal(format!("Invalid regex in filter: {e}")))?;
 
             Ok(regex.is_match(content))
         } else if filter.whole_word {
             // Word boundary matching
             let pattern = format!(r"\b{}\b", regex::escape(&phrase_to_check));
             let regex = Regex::new(&pattern).map_err(|e| {
-                AppError::Internal(format!("Failed to create word boundary regex: {}", e))
+                AppError::Internal(format!("Failed to create word boundary regex: {e}"))
             })?;
 
             Ok(regex.is_match(&content_to_check))

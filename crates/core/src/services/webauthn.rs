@@ -1,7 +1,7 @@
 //! WebAuthn/Passkey authentication service.
 //!
 //! This service handles security key registration and authentication
-//! using the WebAuthn standard.
+//! using the `WebAuthn` standard.
 
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use misskey_common::{AppError, AppResult, id::IdGenerator};
@@ -16,7 +16,7 @@ use tokio::sync::RwLock;
 use url::Url;
 use webauthn_rs::prelude::*;
 
-/// WebAuthn configuration.
+/// `WebAuthn` configuration.
 #[derive(Debug, Clone)]
 pub struct WebAuthnConfig {
     /// The relying party ID (usually the domain name).
@@ -28,7 +28,7 @@ pub struct WebAuthnConfig {
 }
 
 impl WebAuthnConfig {
-    /// Create a new WebAuthn configuration from a server URL.
+    /// Create a new `WebAuthn` configuration from a server URL.
     ///
     /// # Errors
     /// Returns an error if the URL is invalid.
@@ -151,10 +151,10 @@ pub struct WebAuthnService {
 }
 
 impl WebAuthnService {
-    /// Create a new WebAuthn service.
+    /// Create a new `WebAuthn` service.
     ///
     /// # Errors
-    /// Returns an error if the WebAuthn configuration is invalid.
+    /// Returns an error if the `WebAuthn` configuration is invalid.
     pub fn new(
         config: &WebAuthnConfig,
         security_key_repo: SecurityKeyRepository,
@@ -231,7 +231,7 @@ impl WebAuthnService {
         {
             let mut challenges = self.registration_challenges.write().await;
             challenges.insert(
-                format!("{}:{}", user_id, challenge_id),
+                format!("{user_id}:{challenge_id}"),
                 RegistrationState {
                     state: state_json,
                     expires_at,
@@ -361,7 +361,7 @@ impl WebAuthnService {
         {
             let mut challenges = self.authentication_challenges.write().await;
             challenges.insert(
-                format!("{}:{}", user_id, challenge_id),
+                format!("{user_id}:{challenge_id}"),
                 AuthenticationState {
                     state: state_json,
                     expires_at,
@@ -421,7 +421,7 @@ impl WebAuthnService {
             .await?
         {
             self.security_key_repo
-                .update_counter(&key.id, auth_result.counter() as i64)
+                .update_counter(&key.id, i64::from(auth_result.counter()))
                 .await?;
         }
 

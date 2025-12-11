@@ -104,7 +104,7 @@ const fn default_limit() -> u64 {
     10
 }
 
-fn default_context() -> FilterContext {
+const fn default_context() -> FilterContext {
     FilterContext::All
 }
 

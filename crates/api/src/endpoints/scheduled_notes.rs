@@ -51,7 +51,7 @@ impl From<scheduled_note::Model> for ScheduledNoteResponse {
             file_ids: serde_json::from_value(n.file_ids).unwrap_or_default(),
             reply_id: n.reply_id,
             renote_id: n.renote_id,
-            poll: n.poll.map(|p| p.into()),
+            poll: n.poll,
             scheduled_at: n.scheduled_at.to_rfc3339(),
             status: match n.status {
                 ScheduledStatus::Pending => "pending".to_string(),
@@ -87,7 +87,7 @@ pub struct CreateScheduledNoteRequest {
     pub scheduled_at: DateTime<Utc>,
 }
 
-fn default_visibility() -> ScheduledVisibility {
+const fn default_visibility() -> ScheduledVisibility {
     ScheduledVisibility::Public
 }
 

@@ -1,4 +1,4 @@
-//! Migration to add hide_bots setting to user_profile.
+//! Migration to add `hide_bots` setting to `user_profile`.
 
 use sea_orm_migration::prelude::*;
 

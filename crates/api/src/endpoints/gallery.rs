@@ -28,7 +28,7 @@ pub struct ListPostsRequest {
     pub offset: u64,
 }
 
-fn default_limit() -> u64 {
+const fn default_limit() -> u64 {
     10
 }
 

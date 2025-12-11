@@ -6,9 +6,11 @@ use serde::{Deserialize, Serialize};
 /// Role of a group member.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::N(20))")]
+#[derive(Default)]
 pub enum GroupRole {
     /// Regular member.
     #[sea_orm(string_value = "member")]
+    #[default]
     Member,
     /// Moderator - can manage members and content.
     #[sea_orm(string_value = "moderator")]
@@ -21,30 +23,28 @@ pub enum GroupRole {
     Owner,
 }
 
-impl Default for GroupRole {
-    fn default() -> Self {
-        Self::Member
-    }
-}
-
 impl GroupRole {
     /// Check if the role has moderation capabilities.
-    pub fn can_moderate(&self) -> bool {
+    #[must_use]
+    pub const fn can_moderate(&self) -> bool {
         matches!(self, Self::Moderator | Self::Admin | Self::Owner)
     }
 
     /// Check if the role can manage members (kick, promote).
-    pub fn can_manage_members(&self) -> bool {
+    #[must_use]
+    pub const fn can_manage_members(&self) -> bool {
         matches!(self, Self::Admin | Self::Owner)
     }
 
     /// Check if the role can manage group settings.
-    pub fn can_manage_settings(&self) -> bool {
+    #[must_use]
+    pub const fn can_manage_settings(&self) -> bool {
         matches!(self, Self::Admin | Self::Owner)
     }
 
     /// Check if this is the owner role.
-    pub fn is_owner(&self) -> bool {
+    #[must_use]
+    pub const fn is_owner(&self) -> bool {
         matches!(self, Self::Owner)
     }
 }

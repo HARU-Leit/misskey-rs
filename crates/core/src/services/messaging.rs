@@ -105,17 +105,16 @@ impl MessagingService {
         }
 
         // Check if recipient only allows DMs from followers
-        if let Some(profile) = self.user_profile_repo.find_by_user_id(recipient_id).await? {
-            if profile.receive_dm_from_followers_only
-                && !self
-                    .following_repo
-                    .is_following(sender_id, recipient_id)
-                    .await?
-            {
-                return Err(AppError::Forbidden(
-                    "This user only accepts messages from followers".to_string(),
-                ));
-            }
+        if let Some(profile) = self.user_profile_repo.find_by_user_id(recipient_id).await?
+            && profile.receive_dm_from_followers_only
+            && !self
+                .following_repo
+                .is_following(sender_id, recipient_id)
+                .await?
+        {
+            return Err(AppError::Forbidden(
+                "This user only accepts messages from followers".to_string(),
+            ));
         }
 
         let message_id = self.id_gen.generate();
@@ -137,8 +136,8 @@ impl MessagingService {
         // TODO: Create notification for recipient
 
         // Publish real-time event
-        if let Some(ref event_publisher) = self.event_publisher {
-            if let Err(e) = event_publisher
+        if let Some(ref event_publisher) = self.event_publisher
+            && let Err(e) = event_publisher
                 .publish_direct_message(
                     &message.id,
                     sender_id,
@@ -146,9 +145,8 @@ impl MessagingService {
                     message.text.as_deref(),
                 )
                 .await
-            {
-                tracing::warn!(error = %e, "Failed to publish direct message event");
-            }
+        {
+            tracing::warn!(error = %e, "Failed to publish direct message event");
         }
 
         Ok(message)

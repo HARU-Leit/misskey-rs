@@ -1,6 +1,6 @@
 //! Database layer for misskey-rs.
 //!
-//! This crate provides the persistence layer using SeaORM with PostgreSQL:
+//! This crate provides the persistence layer using `SeaORM` with `PostgreSQL`:
 //!
 //! - **Entities**: Database models in [`entities`]
 //! - **Migrations**: Schema migrations in [`migrations`]

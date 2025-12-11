@@ -1,17 +1,17 @@
-//! ActivityPub federation for misskey-rs.
+//! `ActivityPub` federation for misskey-rs.
 //!
-//! This crate implements the ActivityPub protocol for federated social networking:
+//! This crate implements the `ActivityPub` protocol for federated social networking:
 //!
 //! - **Activities**: Create, Delete, Follow, Like, Announce, Update, Undo
 //! - **Actors**: Person actor implementation
 //! - **Objects**: Note, Question, Image objects
-//! - **Handlers**: WebFinger, NodeInfo, inbox/outbox endpoints
+//! - **Handlers**: `WebFinger`, `NodeInfo`, inbox/outbox endpoints
 //! - **Security**: HTTP signatures, replay protection, rate limiting
 //! - **Delivery**: Activity delivery with retry and dead letter queue
 //!
-//! # ActivityPub Compliance
+//! # `ActivityPub` Compliance
 //!
-//! This implementation follows the W3C ActivityPub specification with
+//! This implementation follows the W3C `ActivityPub` specification with
 //! Misskey-specific extensions prefixed with `_misskey_`.
 
 pub mod activities;

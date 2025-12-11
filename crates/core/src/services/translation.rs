@@ -12,13 +12,13 @@ use misskey_common::{AppError, AppResult};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TranslationProvider {
-    /// DeepL API
+    /// `DeepL` API
     DeepL,
     /// Google Translate API
     Google,
-    /// LibreTranslate (self-hosted)
+    /// `LibreTranslate` (self-hosted)
     LibreTranslate,
-    /// OpenAI API (GPT-based translation)
+    /// `OpenAI` API (GPT-based translation)
     OpenAI,
     /// Anthropic Claude API
     Anthropic,
@@ -31,17 +31,17 @@ pub enum TranslationProvider {
 pub struct TranslationConfig {
     /// Active provider
     pub provider: TranslationProvider,
-    /// DeepL API key
+    /// `DeepL` API key
     pub deepl_api_key: Option<String>,
     /// Google Translate API key
     pub google_api_key: Option<String>,
-    /// LibreTranslate URL
+    /// `LibreTranslate` URL
     pub libretranslate_url: Option<String>,
-    /// LibreTranslate API key (optional)
+    /// `LibreTranslate` API key (optional)
     pub libretranslate_api_key: Option<String>,
-    /// OpenAI API key
+    /// `OpenAI` API key
     pub openai_api_key: Option<String>,
-    /// OpenAI model (e.g., "gpt-4o-mini")
+    /// `OpenAI` model (e.g., "gpt-4o-mini")
     pub openai_model: Option<String>,
     /// Anthropic API key
     pub anthropic_api_key: Option<String>,
@@ -160,6 +160,7 @@ pub struct TranslationService {
 
 impl TranslationService {
     /// Create a new translation service.
+    #[must_use]
     pub fn new(config: TranslationConfig) -> Self {
         Self {
             config,
@@ -180,10 +181,10 @@ impl TranslationService {
         }
 
         let cache = self.cache.read().await;
-        if let Some(entry) = cache.get(key) {
-            if entry.expires_at > std::time::Instant::now() {
-                return Some(entry.response.clone());
-            }
+        if let Some(entry) = cache.get(key)
+            && entry.expires_at > std::time::Instant::now()
+        {
+            return Some(entry.response.clone());
         }
         None
     }
@@ -361,7 +362,8 @@ impl TranslationService {
     }
 
     /// Get active provider.
-    pub fn active_provider(&self) -> TranslationProvider {
+    #[must_use]
+    pub const fn active_provider(&self) -> TranslationProvider {
         self.config.provider
     }
 
@@ -390,18 +392,17 @@ impl TranslationService {
         let response = self
             .http_client
             .post("https://api-free.deepl.com/v2/translate")
-            .header("Authorization", format!("DeepL-Auth-Key {}", api_key))
+            .header("Authorization", format!("DeepL-Auth-Key {api_key}"))
             .form(&params)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("DeepL request failed: {}", e)))?;
+            .map_err(|e| AppError::ExternalService(format!("DeepL request failed: {e}")))?;
 
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             return Err(AppError::ExternalService(format!(
-                "DeepL API error: {} - {}",
-                status, body
+                "DeepL API error: {status} - {body}"
             )));
         }
 
@@ -417,7 +418,7 @@ impl TranslationService {
         }
 
         let deepl_response: DeepLResponse = response.json().await.map_err(|e| {
-            AppError::ExternalService(format!("Failed to parse DeepL response: {}", e))
+            AppError::ExternalService(format!("Failed to parse DeepL response: {e}"))
         })?;
 
         let translation = deepl_response
@@ -444,10 +445,8 @@ impl TranslationService {
             AppError::BadRequest("Google Translate API key not configured".to_string())
         })?;
 
-        let mut url = format!(
-            "https://translation.googleapis.com/language/translate/v2?key={}",
-            api_key
-        );
+        let mut url =
+            format!("https://translation.googleapis.com/language/translate/v2?key={api_key}");
         // URL encode the text using percent-encoding
         let encoded_text: String = text
             .chars()
@@ -459,22 +458,21 @@ impl TranslationService {
                 }
             })
             .collect();
-        url.push_str(&format!("&q={}", encoded_text));
-        url.push_str(&format!("&target={}", target_lang));
+        url.push_str(&format!("&q={encoded_text}"));
+        url.push_str(&format!("&target={target_lang}"));
         if let Some(src) = source_lang {
-            url.push_str(&format!("&source={}", src));
+            url.push_str(&format!("&source={src}"));
         }
 
         let response = self.http_client.get(&url).send().await.map_err(|e| {
-            AppError::ExternalService(format!("Google Translate request failed: {}", e))
+            AppError::ExternalService(format!("Google Translate request failed: {e}"))
         })?;
 
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             return Err(AppError::ExternalService(format!(
-                "Google Translate API error: {} - {}",
-                status, body
+                "Google Translate API error: {status} - {body}"
             )));
         }
 
@@ -496,7 +494,7 @@ impl TranslationService {
         }
 
         let google_response: GoogleResponse = response.json().await.map_err(|e| {
-            AppError::ExternalService(format!("Failed to parse Google response: {}", e))
+            AppError::ExternalService(format!("Failed to parse Google response: {e}"))
         })?;
 
         let translation = google_response
@@ -539,20 +537,19 @@ impl TranslationService {
 
         let response = self
             .http_client
-            .post(format!("{}/translate", url))
+            .post(format!("{url}/translate"))
             .json(&body)
             .send()
             .await
             .map_err(|e| {
-                AppError::ExternalService(format!("LibreTranslate request failed: {}", e))
+                AppError::ExternalService(format!("LibreTranslate request failed: {e}"))
             })?;
 
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             return Err(AppError::ExternalService(format!(
-                "LibreTranslate API error: {} - {}",
-                status, body
+                "LibreTranslate API error: {status} - {body}"
             )));
         }
 
@@ -569,15 +566,14 @@ impl TranslationService {
         }
 
         let libre_response: LibreTranslateResponse = response.json().await.map_err(|e| {
-            AppError::ExternalService(format!("Failed to parse LibreTranslate response: {}", e))
+            AppError::ExternalService(format!("Failed to parse LibreTranslate response: {e}"))
         })?;
 
         Ok(TranslationResponse {
             text: libre_response.translated_text,
             source_lang: libre_response
                 .detected_language
-                .map(|d| d.language)
-                .unwrap_or_else(|| source_lang.unwrap_or("auto").to_string()),
+                .map_or_else(|| source_lang.unwrap_or("auto").to_string(), |d| d.language),
             target_lang: target_lang.to_string(),
             provider: TranslationProvider::LibreTranslate,
         })
@@ -599,8 +595,7 @@ impl TranslationService {
 
         let lang_name = self.language_code_to_name(target_lang);
         let prompt = format!(
-            "Translate the following text to {}. Output only the translated text without any explanation or additional content:\n\n{}",
-            lang_name, text
+            "Translate the following text to {lang_name}. Output only the translated text without any explanation or additional content:\n\n{text}"
         );
 
         let body = serde_json::json!({
@@ -614,18 +609,17 @@ impl TranslationService {
         let response = self
             .http_client
             .post("https://api.openai.com/v1/chat/completions")
-            .header("Authorization", format!("Bearer {}", api_key))
+            .header("Authorization", format!("Bearer {api_key}"))
             .json(&body)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("OpenAI request failed: {}", e)))?;
+            .map_err(|e| AppError::ExternalService(format!("OpenAI request failed: {e}")))?;
 
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             return Err(AppError::ExternalService(format!(
-                "OpenAI API error: {} - {}",
-                status, body
+                "OpenAI API error: {status} - {body}"
             )));
         }
 
@@ -645,7 +639,7 @@ impl TranslationService {
         }
 
         let openai_response: OpenAIResponse = response.json().await.map_err(|e| {
-            AppError::ExternalService(format!("Failed to parse OpenAI response: {}", e))
+            AppError::ExternalService(format!("Failed to parse OpenAI response: {e}"))
         })?;
 
         let translated = openai_response
@@ -685,8 +679,7 @@ impl TranslationService {
 
         let lang_name = self.language_code_to_name(target_lang);
         let prompt = format!(
-            "Translate the following text to {}. Output only the translated text without any explanation or additional content:\n\n{}",
-            lang_name, text
+            "Translate the following text to {lang_name}. Output only the translated text without any explanation or additional content:\n\n{text}"
         );
 
         let body = serde_json::json!({
@@ -706,14 +699,13 @@ impl TranslationService {
             .json(&body)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("Anthropic request failed: {}", e)))?;
+            .map_err(|e| AppError::ExternalService(format!("Anthropic request failed: {e}")))?;
 
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             return Err(AppError::ExternalService(format!(
-                "Anthropic API error: {} - {}",
-                status, body
+                "Anthropic API error: {status} - {body}"
             )));
         }
 
@@ -728,7 +720,7 @@ impl TranslationService {
         }
 
         let anthropic_response: AnthropicResponse = response.json().await.map_err(|e| {
-            AppError::ExternalService(format!("Failed to parse Anthropic response: {}", e))
+            AppError::ExternalService(format!("Failed to parse Anthropic response: {e}"))
         })?;
 
         let translated = anthropic_response
@@ -764,8 +756,7 @@ impl TranslationService {
 
         let lang_name = self.language_code_to_name(target_lang);
         let prompt = format!(
-            "Translate the following text to {}. Output only the translated text without any explanation:\n\n{}",
-            lang_name, text
+            "Translate the following text to {lang_name}. Output only the translated text without any explanation:\n\n{text}"
         );
 
         let body = serde_json::json!({
@@ -776,18 +767,17 @@ impl TranslationService {
 
         let response = self
             .http_client
-            .post(format!("{}/api/generate", url))
+            .post(format!("{url}/api/generate"))
             .json(&body)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("Ollama request failed: {}", e)))?;
+            .map_err(|e| AppError::ExternalService(format!("Ollama request failed: {e}")))?;
 
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             return Err(AppError::ExternalService(format!(
-                "Ollama API error: {} - {}",
-                status, body
+                "Ollama API error: {status} - {body}"
             )));
         }
 
@@ -797,7 +787,7 @@ impl TranslationService {
         }
 
         let ollama_response: OllamaResponse = response.json().await.map_err(|e| {
-            AppError::ExternalService(format!("Failed to parse Ollama response: {}", e))
+            AppError::ExternalService(format!("Failed to parse Ollama response: {e}"))
         })?;
 
         Ok(TranslationResponse {
@@ -836,20 +826,19 @@ impl TranslationService {
 
         let response = self
             .http_client
-            .post(format!("{}/detect", url))
+            .post(format!("{url}/detect"))
             .json(&body)
             .send()
             .await
             .map_err(|e| {
-                AppError::ExternalService(format!("LibreTranslate detect request failed: {}", e))
+                AppError::ExternalService(format!("LibreTranslate detect request failed: {e}"))
             })?;
 
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             return Err(AppError::ExternalService(format!(
-                "LibreTranslate detect API error: {} - {}",
-                status, body
+                "LibreTranslate detect API error: {status} - {body}"
             )));
         }
 
@@ -860,7 +849,7 @@ impl TranslationService {
         }
 
         let results: Vec<DetectResponse> = response.json().await.map_err(|e| {
-            AppError::ExternalService(format!("Failed to parse detect response: {}", e))
+            AppError::ExternalService(format!("Failed to parse detect response: {e}"))
         })?;
 
         let best = results
@@ -916,7 +905,7 @@ impl TranslationService {
         let (max_count, lang) = counts.iter().max_by_key(|(c, _)| c).unwrap();
 
         Ok(LanguageDetectionResponse {
-            language: lang.to_string(),
+            language: (*lang).to_string(),
             confidence: *max_count as f64 / total as f64,
         })
     }

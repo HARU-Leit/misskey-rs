@@ -1,4 +1,4 @@
-//! Create group, group_member, and group_invite tables.
+//! Create group, `group_member`, and `group_invite` tables.
 
 use sea_orm_migration::prelude::*;
 

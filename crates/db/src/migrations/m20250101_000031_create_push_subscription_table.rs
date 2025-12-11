@@ -1,4 +1,4 @@
-//! Create push_subscription table for Web Push notifications.
+//! Create `push_subscription` table for Web Push notifications.
 
 use sea_orm_migration::prelude::*;
 

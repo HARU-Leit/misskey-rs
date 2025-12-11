@@ -31,7 +31,8 @@ pub struct LocalStorage {
 
 impl LocalStorage {
     /// Create a new local storage backend.
-    pub fn new(base_path: PathBuf, base_url: String) -> Self {
+    #[must_use]
+    pub const fn new(base_path: PathBuf, base_url: String) -> Self {
         Self {
             base_path,
             base_url,
@@ -94,7 +95,7 @@ pub struct NoOpStorage {
 impl NoOpStorage {
     /// Create a new no-op storage backend.
     #[must_use]
-    pub fn new(base_url: String) -> Self {
+    pub const fn new(base_url: String) -> Self {
         Self { base_url }
     }
 }
