@@ -345,6 +345,7 @@ pub struct UpdateMetaSettingsRequest {
     pub max_pages_per_user: Option<i32>,
     pub default_drive_capacity_mb: Option<i32>,
     pub max_file_size_mb: Option<i32>,
+    pub bubble_instances: Option<Vec<String>>,
 }
 
 // ==================== Registration Approval Types ====================
@@ -815,6 +816,7 @@ async fn update_meta_settings(
         max_pages_per_user: req.max_pages_per_user,
         default_drive_capacity_mb: req.default_drive_capacity_mb,
         max_file_size_mb: req.max_file_size_mb,
+        bubble_instances: req.bubble_instances,
     };
 
     let meta = state.meta_settings_service.update(input).await?;

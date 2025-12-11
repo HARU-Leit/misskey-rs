@@ -100,6 +100,12 @@ pub struct Model {
     #[sea_orm(default_value = 256)]
     pub max_file_size_mb: i32,
 
+    // Bubble timeline settings
+    /// Whitelisted instances for bubble timeline (JSON array of hostnames)
+    /// e.g., ["mastodon.social", "pixelfed.social"]
+    #[sea_orm(column_type = "JsonBinary", nullable)]
+    pub bubble_instances: Option<Json>,
+
     // Timestamps
     pub created_at: DateTimeWithTimeZone,
 

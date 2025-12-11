@@ -54,6 +54,7 @@ impl MetaSettingsRepository {
             max_pages_per_user: Set(100),
             default_drive_capacity_mb: Set(1024),
             max_file_size_mb: Set(256),
+            bubble_instances: Set(Some(json!([]))),
             created_at: Set(now.into()),
             updated_at: Set(None),
         };

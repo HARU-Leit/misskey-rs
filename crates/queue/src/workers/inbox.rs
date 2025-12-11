@@ -291,7 +291,7 @@ async fn process_update(
     ctx: &InboxWorkerContext,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let activity: UpdateActivity = serde_json::from_value(job.activity.clone())?;
-    let processor = UpdateProcessor::new(ctx.user_repo());
+    let processor = UpdateProcessor::new(ctx.user_repo(), ctx.note_repo());
     let result = processor.process(&activity).await?;
     info!(?result, "Update activity processed");
     Ok(())
