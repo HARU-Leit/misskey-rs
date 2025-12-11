@@ -9,6 +9,9 @@
 //!
 //! Built on Axum 0.8 with Tower middleware stack.
 
+// Allow dead_code for API compatibility fields in request structs
+#![allow(dead_code)]
+
 pub mod endpoints;
 pub mod extractors;
 pub mod middleware;

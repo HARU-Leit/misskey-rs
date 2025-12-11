@@ -21,6 +21,7 @@ use super::statuses::{Account, user_to_account};
 #[derive(Debug, Deserialize)]
 pub struct PaginationQuery {
     pub max_id: Option<String>,
+    #[allow(dead_code)]
     pub since_id: Option<String>,
     #[serde(default = "default_limit")]
     pub limit: u64,

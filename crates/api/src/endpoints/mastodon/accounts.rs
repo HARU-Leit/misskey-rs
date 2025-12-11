@@ -68,6 +68,7 @@ pub struct Relationship {
 #[derive(Debug, Deserialize)]
 pub struct PaginationQuery {
     pub max_id: Option<String>,
+    #[allow(dead_code)]
     pub since_id: Option<String>,
     #[serde(default = "default_limit")]
     pub limit: u64,
@@ -81,7 +82,9 @@ const fn default_limit() -> u64 {
 #[derive(Debug, Deserialize)]
 pub struct StatusesQuery {
     pub max_id: Option<String>,
+    #[allow(dead_code)]
     pub since_id: Option<String>,
+    #[allow(dead_code)]
     pub min_id: Option<String>,
     #[serde(default = "default_statuses_limit")]
     pub limit: u64,

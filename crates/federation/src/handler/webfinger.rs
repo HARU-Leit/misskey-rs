@@ -1,5 +1,7 @@
 //! `WebFinger` handler for actor discovery.
 
+#![allow(clippy::expect_used)] // URL joins with known-valid paths cannot fail
+
 use axum::{
     Json,
     extract::{Query, State},

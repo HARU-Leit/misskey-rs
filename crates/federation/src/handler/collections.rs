@@ -1,5 +1,7 @@
 //! `ActivityPub` Collection handlers (Outbox, Followers, Following).
 
+#![allow(clippy::expect_used)] // URL joins with known-valid paths cannot fail
+
 use axum::{
     Json,
     extract::{Path, Query, State},

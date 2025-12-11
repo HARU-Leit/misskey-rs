@@ -15,6 +15,7 @@ use validator::Validate;
 const MAX_GROUPS_PER_USER: u64 = 5;
 
 /// Maximum number of groups a user can join.
+#[allow(dead_code)]
 const MAX_JOINED_GROUPS: u64 = 50;
 
 /// Input for creating a group.

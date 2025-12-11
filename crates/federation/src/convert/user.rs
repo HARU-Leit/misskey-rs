@@ -1,5 +1,7 @@
 //! User <-> `ApPerson` conversion.
 
+#![allow(clippy::expect_used)] // URL joins with known-valid paths cannot fail
+
 use misskey_db::entities::user;
 use url::Url;
 

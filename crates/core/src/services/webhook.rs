@@ -125,6 +125,7 @@ pub struct WebhookService {
 impl WebhookService {
     /// Create a new webhook service.
     #[must_use]
+    #[allow(clippy::expect_used)] // Client build only fails with incompatible TLS settings
     pub fn new(webhook_repo: WebhookRepository) -> Self {
         let http_client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(10))
@@ -451,6 +452,7 @@ impl WebhookService {
         URL_SAFE_NO_PAD.encode(bytes)
     }
 
+    #[allow(clippy::expect_used)] // HMAC accepts any key size, this cannot fail
     fn sign_payload(&self, payload: &str, secret: &str) -> String {
         use hmac::{Hmac, Mac};
 

@@ -3,7 +3,7 @@
 //! This module provides a Redis-based implementation of the `ActivityDelivery` trait
 //! that queues jobs for the apalis worker to process.
 
-#![allow(missing_docs)]
+#![allow(missing_docs, dead_code)]
 
 use async_trait::async_trait;
 use misskey_common::AppResult;

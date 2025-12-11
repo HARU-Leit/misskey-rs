@@ -14,6 +14,7 @@ use serde_json::json;
 pub struct PollService {
     poll_repo: PollRepository,
     vote_repo: PollVoteRepository,
+    #[allow(dead_code)]
     note_repo: NoteRepository,
     id_gen: IdGenerator,
 }
@@ -80,7 +81,7 @@ impl PollService {
 
         // Calculate expiration
         let expires_at = input.expires_in.map(|seconds| {
-            let duration = Duration::seconds(seconds.min(2592000)); // Max 30 days
+            let duration = Duration::seconds(seconds.min(2_592_000)); // Max 30 days
             (Utc::now() + duration).into()
         });
 
