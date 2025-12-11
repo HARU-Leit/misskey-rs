@@ -80,6 +80,7 @@ impl<T> DeadLetterEntry<T> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

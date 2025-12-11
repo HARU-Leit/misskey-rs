@@ -239,6 +239,7 @@ async fn readiness_check(State(state): State<AppState>) -> (StatusCode, Json<Rea
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

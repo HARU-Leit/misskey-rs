@@ -336,6 +336,7 @@ async fn rate_limit_with_config(
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

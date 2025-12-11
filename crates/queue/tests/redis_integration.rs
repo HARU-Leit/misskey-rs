@@ -6,6 +6,8 @@
 //! Set `REDIS_URL` environment variable to point to your Redis instance.
 //! Default: <redis://localhost:6379>
 
+#![allow(clippy::unwrap_used)]
+
 use std::time::Duration;
 
 use misskey_queue::{PubSubEvent, RedisPubSub, pubsub_channels};

@@ -284,6 +284,7 @@ async fn process_cleanup(_context: &JobWorkerContext, task: CleanupTask) {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

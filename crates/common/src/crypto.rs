@@ -141,6 +141,7 @@ pub fn parse_public_key(pem: &str) -> AppResult<RsaPublicKey> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

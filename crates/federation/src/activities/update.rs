@@ -57,6 +57,7 @@ impl UpdateActivity {
 
     /// Set the public audience.
     #[must_use]
+    #[allow(clippy::unwrap_used)] // Static URL is known to be valid
     pub fn public(mut self) -> Self {
         self.to = Some(vec![
             Url::parse("https://www.w3.org/ns/activitystreams#Public").unwrap(),

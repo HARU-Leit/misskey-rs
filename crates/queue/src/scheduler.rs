@@ -226,6 +226,7 @@ pub async fn run_scheduler<E: JobExecutor + 'static>(config: SchedulerConfig, ex
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

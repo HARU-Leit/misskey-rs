@@ -22,9 +22,10 @@ fn nodes_to_html(nodes: &[MfmNode]) -> String {
 }
 
 /// Convert a single node to HTML.
+#[allow(clippy::too_many_lines)]
 fn node_to_html(node: &MfmNode) -> String {
     match &node.node_type {
-        MfmNodeType::Text { text } => html_escape(text),
+        MfmNodeType::Text { text } | MfmNodeType::Plain { text } => html_escape(text),
         MfmNodeType::Bold { children } => {
             format!("<b>{}</b>", nodes_to_html(children))
         }
@@ -37,17 +38,16 @@ fn node_to_html(node: &MfmNode) -> String {
         MfmNodeType::InlineCode { code } => {
             format!("<code>{}</code>", html_escape(code))
         }
-        MfmNodeType::CodeBlock { code, lang } => {
-            if let Some(l) = lang {
+        MfmNodeType::CodeBlock { code, lang } => lang.as_ref().map_or_else(
+            || format!("<pre><code>{}</code></pre>", html_escape(code)),
+            |l| {
                 format!(
                     "<pre><code class=\"language-{}\">{}</code></pre>",
                     html_escape(l),
                     html_escape(code)
                 )
-            } else {
-                format!("<pre><code>{}</code></pre>", html_escape(code))
-            }
-        }
+            },
+        ),
         MfmNodeType::Quote { children } => {
             format!("<blockquote>{}</blockquote>", nodes_to_html(children))
         }
@@ -56,11 +56,10 @@ fn node_to_html(node: &MfmNode) -> String {
             host,
             acct,
         } => {
-            let href = if let Some(h) = host {
-                format!("https://{h}/@{username}")
-            } else {
-                format!("/@{username}")
-            };
+            let href = host.as_ref().map_or_else(
+                || format!("/@{username}"),
+                |h| format!("https://{h}/@{username}"),
+            );
             format!(
                 "<a href=\"{}\" class=\"mention\">{}</a>",
                 html_escape(&href),
@@ -137,7 +136,6 @@ fn node_to_html(node: &MfmNode) -> String {
                 _ => nodes_to_html(children),
             }
         }
-        MfmNodeType::Plain { text } => html_escape(text),
         MfmNodeType::Center { children } => {
             format!(
                 "<div style=\"text-align: center;\">{}</div>",
@@ -170,22 +168,21 @@ fn nodes_to_plain_text(nodes: &[MfmNode]) -> String {
 /// Convert a single node to plain text.
 fn node_to_plain_text(node: &MfmNode) -> String {
     match &node.node_type {
-        MfmNodeType::Text { text } => text.clone(),
+        MfmNodeType::Text { text } | MfmNodeType::Plain { text } => text.clone(),
         MfmNodeType::Bold { children }
         | MfmNodeType::Italic { children }
         | MfmNodeType::Strike { children }
         | MfmNodeType::Quote { children }
         | MfmNodeType::Center { children }
-        | MfmNodeType::Small { children } => nodes_to_plain_text(children),
+        | MfmNodeType::Small { children }
+        | MfmNodeType::Link { children, .. }
+        | MfmNodeType::Fn { children, .. } => nodes_to_plain_text(children),
         MfmNodeType::InlineCode { code } | MfmNodeType::CodeBlock { code, .. } => code.clone(),
         MfmNodeType::Mention { acct, .. } => acct.clone(),
         MfmNodeType::Hashtag { tag } => format!("#{tag}"),
         MfmNodeType::Url { url, .. } => url.clone(),
-        MfmNodeType::Link { children, .. } => nodes_to_plain_text(children),
         MfmNodeType::Emoji { name } => format!(":{name}:"),
         MfmNodeType::UnicodeEmoji { emoji } => emoji.clone(),
-        MfmNodeType::Fn { children, .. } => nodes_to_plain_text(children),
-        MfmNodeType::Plain { text } => text.clone(),
         MfmNodeType::Search { content, .. } => content.clone(),
         MfmNodeType::LineBreak => "\n".to_string(),
     }
@@ -290,10 +287,12 @@ fn convert_blockquotes(html: &str) -> String {
 }
 
 /// Convert links to MFM format.
+#[allow(clippy::expect_used)]
 fn convert_links(html: &str) -> String {
     use regex::Regex;
 
-    let link_re = Regex::new(r#"<a[^>]*href="([^"]*)"[^>]*>([^<]*)</a>"#).unwrap();
+    let link_re =
+        Regex::new(r#"<a[^>]*href="([^"]*)"[^>]*>([^<]*)</a>"#).expect("valid regex pattern");
     link_re
         .replace_all(html, |caps: &regex::Captures| {
             let url = &caps[1];
@@ -308,11 +307,12 @@ fn convert_links(html: &str) -> String {
 }
 
 /// Convert code blocks to MFM format.
+#[allow(clippy::expect_used)]
 fn convert_code_blocks(html: &str) -> String {
     use regex::Regex;
 
-    let code_re =
-        Regex::new(r#"<pre><code(?:\s+class="language-(\w+)")?>([^<]*)</code></pre>"#).unwrap();
+    let code_re = Regex::new(r#"<pre><code(?:\s+class="language-(\w+)")?>([^<]*)</code></pre>"#)
+        .expect("valid regex pattern");
 
     code_re
         .replace_all(html, |caps: &regex::Captures| {
@@ -328,26 +328,29 @@ fn convert_code_blocks(html: &str) -> String {
 }
 
 /// Convert inline code to MFM format.
+#[allow(clippy::expect_used)]
 fn convert_inline_code(html: &str) -> String {
     use regex::Regex;
 
-    let code_re = Regex::new(r"<code>([^<]*)</code>").unwrap();
+    let code_re = Regex::new(r"<code>([^<]*)</code>").expect("valid regex pattern");
     code_re.replace_all(html, "`$1`").to_string()
 }
 
 /// Strip remaining HTML tags.
+#[allow(clippy::expect_used)]
 fn strip_remaining_tags(html: &str) -> String {
     use regex::Regex;
 
-    let tag_re = Regex::new(r"<[^>]+>").unwrap();
+    let tag_re = Regex::new(r"<[^>]+>").expect("valid regex pattern");
     tag_re.replace_all(html, "").to_string()
 }
 
 /// Clean up excessive newlines.
+#[allow(clippy::expect_used)]
 fn clean_newlines(s: &str) -> String {
     use regex::Regex;
 
-    let newline_re = Regex::new(r"\n{3,}").unwrap();
+    let newline_re = Regex::new(r"\n{3,}").expect("valid regex pattern");
     newline_re.replace_all(s, "\n\n").to_string()
 }
 

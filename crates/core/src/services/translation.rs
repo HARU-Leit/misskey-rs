@@ -874,6 +874,7 @@ impl TranslationService {
         })
     }
 
+    #[allow(clippy::unwrap_used)] // counts array is never empty, max_by_key always returns Some
     fn detect_language_heuristic(&self, text: &str) -> AppResult<LanguageDetectionResponse> {
         // Simple heuristic based on character ranges
         let mut ja_count = 0;
@@ -947,6 +948,7 @@ impl TranslationService {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

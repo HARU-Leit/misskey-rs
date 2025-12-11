@@ -540,6 +540,7 @@ fn get_image_dimensions(data: &[u8]) -> (Option<i32>, Option<i32>) {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

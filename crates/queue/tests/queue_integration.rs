@@ -2,6 +2,8 @@
 //!
 //! These tests verify the queue components work correctly together.
 
+#![allow(clippy::unwrap_used)]
+
 use std::time::Duration;
 
 use misskey_queue::{

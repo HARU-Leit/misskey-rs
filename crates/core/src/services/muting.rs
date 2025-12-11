@@ -87,6 +87,7 @@ impl MutingService {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     #[test]
     fn test_muting_service_requires_different_users() {

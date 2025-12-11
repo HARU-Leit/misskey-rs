@@ -266,6 +266,7 @@ impl ApNote {
 
     /// Set public addressing.
     #[must_use]
+    #[allow(clippy::unwrap_used)] // Static URL is known to be valid
     pub fn public(mut self) -> Self {
         self.to = Some(vec![
             "https://www.w3.org/ns/activitystreams#Public"
@@ -277,6 +278,7 @@ impl ApNote {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

@@ -13,6 +13,8 @@
 //!   `TEST_DB_PASSWORD` (default: `misskey_test`)
 //!   `TEST_DB_NAME` (default: `misskey_test`)
 
+#![allow(clippy::unwrap_used)]
+
 use misskey_db::test_utils::{TestDatabase, TestDbConfig, TestRedisConfig};
 
 #[tokio::test]

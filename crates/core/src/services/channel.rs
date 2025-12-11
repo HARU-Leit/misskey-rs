@@ -328,6 +328,7 @@ fn is_valid_color(color: &str) -> bool {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
     use chrono::Utc;

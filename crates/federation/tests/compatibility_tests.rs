@@ -8,6 +8,8 @@
 //! These tests focus on verifying that the `ActivityPub` objects and activities
 //! we produce are compatible with what these implementations expect.
 
+#![allow(clippy::unwrap_used)]
+
 use chrono::Utc;
 use misskey_federation::objects::{ApAttachment, ApNote, ApObjectType, ApTag};
 use serde_json::json;

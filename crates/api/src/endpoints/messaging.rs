@@ -242,6 +242,7 @@ async fn get_unread_count(
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

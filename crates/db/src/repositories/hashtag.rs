@@ -170,6 +170,7 @@ impl HashtagRepository {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
     use sea_orm::{DatabaseBackend, MockDatabase};

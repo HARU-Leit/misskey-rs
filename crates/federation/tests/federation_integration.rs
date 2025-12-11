@@ -2,6 +2,8 @@
 //!
 //! Tests for `ActivityPub` federation functionality.
 
+#![allow(clippy::unwrap_used)]
+
 use chrono::Utc;
 use misskey_federation::objects::{ApAttachment, ApNote, ApTag};
 use url::Url;

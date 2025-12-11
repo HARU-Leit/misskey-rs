@@ -224,6 +224,7 @@ async fn process_announce(
     Ok(())
 }
 
+#[allow(clippy::unwrap_used)] // Static URL "https://invalid" is always valid
 async fn process_undo(
     job: &InboxJob,
     ctx: &InboxWorkerContext,

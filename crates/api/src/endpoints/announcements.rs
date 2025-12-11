@@ -349,6 +349,7 @@ async fn mark_as_read(
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 
