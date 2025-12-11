@@ -250,6 +250,66 @@ async fn export_notes(
     Ok(ApiResponse::ok(response))
 }
 
+/// Export blocking list immediately.
+async fn export_blocking(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+) -> AppResult<ApiResponse<Vec<ExportedFollow>>> {
+    // Get all blocked users (up to 10000)
+    let blockings = state
+        .blocking_service
+        .get_blocking(&user.id, 10000, None)
+        .await?;
+
+    let mut result = Vec::new();
+    for blocking in blockings {
+        if let Ok(blockee) = state.user_service.get(&blocking.blockee_id).await {
+            let acct = if let Some(host) = &blockee.host {
+                format!("{}@{}", blockee.username, host)
+            } else {
+                blockee.username.clone()
+            };
+
+            result.push(ExportedFollow {
+                acct,
+                uri: blockee.uri,
+            });
+        }
+    }
+
+    Ok(ApiResponse::ok(result))
+}
+
+/// Export muting list immediately.
+async fn export_muting(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+) -> AppResult<ApiResponse<Vec<ExportedFollow>>> {
+    // Get all muted users (up to 10000)
+    let mutings = state
+        .muting_service
+        .get_muting(&user.id, 10000, None)
+        .await?;
+
+    let mut result = Vec::new();
+    for muting in mutings {
+        if let Ok(mutee) = state.user_service.get(&muting.mutee_id).await {
+            let acct = if let Some(host) = &mutee.host {
+                format!("{}@{}", mutee.username, host)
+            } else {
+                mutee.username.clone()
+            };
+
+            result.push(ExportedFollow {
+                acct,
+                uri: mutee.uri,
+            });
+        }
+    }
+
+    Ok(ApiResponse::ok(result))
+}
+
 /// Request to get export job status.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -472,6 +532,8 @@ pub fn router() -> Router<AppState> {
         .route("/export/following", post(export_following))
         .route("/export/followers", post(export_followers))
         .route("/export/notes", post(export_notes))
+        .route("/export/blocking", post(export_blocking))
+        .route("/export/muting", post(export_muting))
         .route("/export/status", post(export_status))
         // Import
         .route("/import", post(create_import))
