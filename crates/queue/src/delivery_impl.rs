@@ -198,6 +198,23 @@ impl ActivityDelivery for RedisDeliveryService {
 
         self.queue_to_inboxes(user_id, activity, inboxes).await
     }
+
+    async fn queue_update_note(
+        &self,
+        user_id: &str,
+        note_id: &str,
+        activity: Value,
+        inboxes: Vec<String>,
+    ) -> AppResult<()> {
+        tracing::info!(
+            user_id = %user_id,
+            note_id = %note_id,
+            inbox_count = %inboxes.len(),
+            "Queueing Update activity delivery"
+        );
+
+        self.queue_to_inboxes(user_id, activity, inboxes).await
+    }
 }
 
 #[cfg(test)]

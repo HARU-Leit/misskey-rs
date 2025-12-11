@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (Mastodon互換API完全対応)
+*Last Updated: 2025-12-11* (ActivityPub Update activity対応)
 
 ---
 
@@ -24,7 +24,7 @@
 
 | タスク | 状況 | 参照 |
 |--------|------|------|
-| ActivityPub Update activity対応（ノート編集連合） | 🔧 API実装済/AP未対応 | MISSING_FEATURES.md |
+| ActivityPub Update activity対応（ノート編集連合） | ✅ 完了 | update.rs |
 | いいね/リアクションの適切な連合（Mastodon/Pleroma向け） | 未実装 | FORK_FEATURES.md |
 | 引用リノートのMastodon連合（FEP-e232対応） | 未実装 | COMMUNITY_FEATURES.md |
 | チャンネルのフェデレーション（Group actor） | 未実装 | COMMUNITY_FEATURES.md |
@@ -201,11 +201,14 @@
 - Blocks/Mutes リスト取得
 - Timelines API（home/public）
 
+### ActivityPub拡張 (2025-12-11)
+- **ActivityPub Update activity対応** - ローカルノート編集時にUpdate activityを配信、リモートからのUpdate activity受信でノート更新
+
 ---
 
 ## 次のアクション推奨
 
-1. **フェデレーション**: ActivityPub Update activity対応 → ノート編集が他サーバーに反映
+1. **フェデレーション**: いいね/リアクションの適切な連合（Mastodon/Pleroma向け）
 2. **パフォーマンス**: URLプレビューキャッシュ → 外部リンク表示高速化
 3. **タイムライン**: バブルタイムライン → 信頼インスタンス間の連携強化
 

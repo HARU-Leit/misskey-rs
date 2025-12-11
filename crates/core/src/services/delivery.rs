@@ -117,6 +117,21 @@ pub trait ActivityDelivery: Send + Sync {
         inboxes: Vec<String>,
         activity: Value,
     ) -> AppResult<()>;
+
+    /// Queue an Update activity for a note.
+    ///
+    /// # Arguments
+    /// * `user_id` - The ID of the user who updated the note
+    /// * `note_id` - The ID of the note
+    /// * `activity` - The serialized Update activity
+    /// * `inboxes` - List of inbox URLs to deliver to
+    async fn queue_update_note(
+        &self,
+        user_id: &str,
+        note_id: &str,
+        activity: Value,
+        inboxes: Vec<String>,
+    ) -> AppResult<()>;
 }
 
 /// A no-op implementation of ActivityDelivery for testing or when federation is disabled.
@@ -195,6 +210,16 @@ impl ActivityDelivery for NoOpDelivery {
         _user_id: &str,
         _inboxes: Vec<String>,
         _activity: Value,
+    ) -> AppResult<()> {
+        Ok(())
+    }
+
+    async fn queue_update_note(
+        &self,
+        _user_id: &str,
+        _note_id: &str,
+        _activity: Value,
+        _inboxes: Vec<String>,
     ) -> AppResult<()> {
         Ok(())
     }

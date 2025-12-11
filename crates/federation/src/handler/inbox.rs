@@ -22,7 +22,7 @@ use crate::{
     client::ApClient,
     processor::{
         AcceptProcessor, AnnounceProcessor, CreateProcessor, FollowProcessor, LikeProcessor,
-        ParsedUndoActivity, UndoProcessor,
+        ParsedUndoActivity, UndoProcessor, UpdateProcessor,
     },
     signature::{HttpVerifier, verify_digest},
 };
@@ -333,9 +333,8 @@ async fn process_activity(state: &InboxState, activity: &InboxActivity) -> AppRe
         }
         InboxActivity::Update(update) => {
             info!("Processing Update activity");
-            // Update actor or object in database
-            // For now, log the update - full implementation would update the user profile
-            info!(actor = %update.actor, "Received Update activity (profile updates not yet implemented)");
+            let processor = UpdateProcessor::new(state.user_repo.clone(), state.note_repo.clone());
+            processor.process(update).await?;
         }
         InboxActivity::Announce(announce) => {
             info!(object = %announce.object, "Processing Announce activity");

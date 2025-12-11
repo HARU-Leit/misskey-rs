@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::actors::ApPerson;
+use crate::objects::ApNote;
 
 /// `ActivityPub` Update activity.
 /// Used to update an actor or object.
@@ -16,7 +17,7 @@ pub struct UpdateActivity {
     pub kind: UpdateType,
     pub id: Url,
     pub actor: Url,
-    /// The updated object (typically an actor).
+    /// The updated object (actor or note).
     pub object: UpdateObject,
     pub published: DateTime<Utc>,
 
@@ -31,7 +32,11 @@ pub struct UpdateActivity {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum UpdateObject {
+    /// A full Person object (for actor profile updates).
     Person(ApPerson),
+    /// A full Note object (for note content updates).
+    Note(ApNote),
+    /// Just a URL reference to an object.
     ObjectUrl(Url),
 }
 
@@ -55,6 +60,20 @@ impl UpdateActivity {
         }
     }
 
+    /// Create a new Update activity for a Note.
+    #[must_use]
+    pub const fn new_note(id: Url, actor: Url, note: ApNote, published: DateTime<Utc>) -> Self {
+        Self {
+            kind: UpdateType::Update,
+            id,
+            actor,
+            object: UpdateObject::Note(note),
+            published,
+            to: None,
+            cc: None,
+        }
+    }
+
     /// Set the public audience.
     #[must_use]
     #[allow(clippy::unwrap_used)] // Static URL is known to be valid
@@ -62,6 +81,14 @@ impl UpdateActivity {
         self.to = Some(vec![
             Url::parse("https://www.w3.org/ns/activitystreams#Public").unwrap(),
         ]);
+        self
+    }
+
+    /// Set specific audiences (to and cc).
+    #[must_use]
+    pub fn with_audience(mut self, to: Vec<Url>, cc: Vec<Url>) -> Self {
+        self.to = if to.is_empty() { None } else { Some(to) };
+        self.cc = if cc.is_empty() { None } else { Some(cc) };
         self
     }
 }
