@@ -191,12 +191,11 @@ impl RecurringPostService {
         // Validate interval-specific fields
         match input.interval {
             RecurringInterval::Weekly => {
-                if input.day_of_week.is_none() {
+                let Some(dow) = input.day_of_week else {
                     return Err(AppError::Validation(
                         "Weekly recurring posts require day_of_week".to_string(),
                     ));
-                }
-                let dow = input.day_of_week.unwrap();
+                };
                 if !(0..=6).contains(&dow) {
                     return Err(AppError::Validation(
                         "day_of_week must be 0-6 (Sunday-Saturday)".to_string(),
@@ -204,12 +203,11 @@ impl RecurringPostService {
                 }
             }
             RecurringInterval::Monthly => {
-                if input.day_of_month.is_none() {
+                let Some(dom) = input.day_of_month else {
                     return Err(AppError::Validation(
                         "Monthly recurring posts require day_of_month".to_string(),
                     ));
-                }
-                let dom = input.day_of_month.unwrap();
+                };
                 if !(1..=31).contains(&dom) {
                     return Err(AppError::Validation(
                         "day_of_month must be 1-31".to_string(),
@@ -295,9 +293,8 @@ impl RecurringPostService {
             let minute = input.minute.unwrap_or(post.minute_utc);
             let (h, m) = convert_to_utc(hour, minute, &tz)?;
             (Some(h), Some(m))
-        } else if tz.is_some() {
+        } else if let Some(tz) = tz {
             // Timezone changed but time didn't, recalculate UTC
-            let tz = tz.unwrap();
             let (h, m) = convert_to_utc(post.hour_utc, post.minute_utc, &tz)?;
             (Some(h), Some(m))
         } else {
@@ -472,8 +469,8 @@ impl RecurringPostService {
                 };
 
                 let current_weekday = now_local.weekday();
-                let days_until = (target_weekday.num_days_from_sunday() as i64
-                    - current_weekday.num_days_from_sunday() as i64
+                let days_until = (i64::from(target_weekday.num_days_from_sunday())
+                    - i64::from(current_weekday.num_days_from_sunday())
                     + 7)
                     % 7;
 
@@ -578,7 +575,7 @@ fn convert_to_utc(hour: i16, minute: i16, tz: &Tz) -> AppResult<(i16, i16)> {
 }
 
 /// Get the number of days in a month.
-fn days_in_month(year: i32, month: u32) -> u32 {
+const fn days_in_month(year: i32, month: u32) -> u32 {
     match month {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
         4 | 6 | 9 | 11 => 30,

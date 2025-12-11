@@ -1,7 +1,10 @@
 //! Media processing service for image and video handling.
 
-use serde::{Deserialize, Serialize};
+use std::io::Cursor;
 use std::path::Path;
+
+use image::{DynamicImage, GenericImageView, ImageReader, imageops::FilterType};
+use serde::{Deserialize, Serialize};
 
 use misskey_common::{AppError, AppResult};
 
@@ -270,31 +273,80 @@ impl MediaService {
 
     /// Get image metadata from file data.
     pub fn get_image_metadata(&self, data: &[u8]) -> AppResult<ImageMetadata> {
-        // In a real implementation, use image-rs to extract metadata
-        // This is a placeholder implementation
-
         // Detect format from magic bytes
         let format = self.detect_image_format(data)?;
 
-        // Get dimensions (placeholder - would use image-rs)
-        let dimensions = ImageDimensions {
-            width: 0,
-            height: 0,
-        };
+        // Decode image to get dimensions
+        let img = self.decode_image(data)?;
+        let (width, height) = img.dimensions();
+
+        // Check for alpha channel
+        let has_alpha = matches!(
+            img,
+            DynamicImage::ImageRgba8(_)
+                | DynamicImage::ImageRgba16(_)
+                | DynamicImage::ImageRgba32F(_)
+                | DynamicImage::ImageLumaA8(_)
+                | DynamicImage::ImageLumaA16(_)
+        );
+
+        // Check if animated (GIF with multiple frames - simplified check)
+        let is_animated = matches!(format, ImageFormat::Gif);
+
+        // Generate blurhash
+        let blurhash = self.generate_blurhash_internal(&img).ok();
+
+        // Extract dominant color
+        let dominant_color = self.extract_dominant_color(&img);
 
         Ok(ImageMetadata {
-            dimensions,
+            dimensions: ImageDimensions { width, height },
             format,
             file_size: data.len() as u64,
-            has_alpha: matches!(
-                format,
-                ImageFormat::Png | ImageFormat::WebP | ImageFormat::Gif
-            ),
-            is_animated: matches!(format, ImageFormat::Gif),
-            blurhash: None,
-            dominant_color: None,
-            exif: None,
+            has_alpha,
+            is_animated,
+            blurhash,
+            dominant_color,
+            exif: None, // EXIF extraction requires additional crate
         })
+    }
+
+    /// Decode image from bytes.
+    fn decode_image(&self, data: &[u8]) -> AppResult<DynamicImage> {
+        let reader = ImageReader::new(Cursor::new(data))
+            .with_guessed_format()
+            .map_err(|e| AppError::Validation(format!("Failed to detect image format: {e}")))?;
+
+        reader
+            .decode()
+            .map_err(|e| AppError::Validation(format!("Failed to decode image: {e}")))
+    }
+
+    /// Generate blurhash from decoded image.
+    fn generate_blurhash_internal(&self, img: &DynamicImage) -> AppResult<String> {
+        // Resize for blurhash (small size is fine for hash)
+        let small = img.resize(32, 32, FilterType::Triangle);
+        let rgba = small.to_rgba8();
+        let (width, height) = rgba.dimensions();
+
+        let hash = blurhash::encode(
+            4, // x components
+            3, // y components
+            width,
+            height,
+            rgba.as_raw(),
+        )
+        .map_err(|e| AppError::Internal(format!("Failed to generate blurhash: {e}")))?;
+
+        Ok(hash)
+    }
+
+    /// Extract dominant color from image.
+    fn extract_dominant_color(&self, img: &DynamicImage) -> Option<String> {
+        // Simple approach: sample center pixel of a small resized version
+        let small = img.resize_exact(1, 1, FilterType::Triangle);
+        let pixel = small.get_pixel(0, 0);
+        Some(format!("#{:02x}{:02x}{:02x}", pixel[0], pixel[1], pixel[2]))
     }
 
     /// Detect image format from magic bytes.
@@ -343,35 +395,60 @@ impl MediaService {
         data: &[u8],
         size: ThumbnailSize,
     ) -> AppResult<ProcessedImage> {
-        let format = self.detect_image_format(data)?;
         let (max_width, max_height) = size.dimensions();
 
-        // In a real implementation, use image-rs to:
-        // 1. Decode the image
-        // 2. Resize maintaining aspect ratio
-        // 3. Encode to WebP or original format
+        // Decode original image
+        let img = self.decode_image(data)?;
 
-        // Placeholder implementation
-        tracing::info!(
-            format = ?format,
-            max_width = max_width,
-            max_height = max_height,
-            "Would generate thumbnail (implementation pending)"
+        // Resize maintaining aspect ratio
+        let thumbnail = img.resize(max_width, max_height, FilterType::Lanczos3);
+        let (width, height) = thumbnail.dimensions();
+
+        // Determine output format
+        let output_format = if self.config.enable_webp_conversion {
+            ImageFormat::WebP
+        } else {
+            self.detect_image_format(data)?
+        };
+
+        // Encode thumbnail
+        let output_data = self.encode_image(&thumbnail, output_format)?;
+
+        tracing::debug!(
+            original_size = data.len(),
+            thumbnail_size = output_data.len(),
+            width = width,
+            height = height,
+            format = ?output_format,
+            "Generated thumbnail"
         );
 
         Ok(ProcessedImage {
-            data: data.to_vec(), // Would be processed data
-            format: if self.config.enable_webp_conversion {
-                ImageFormat::WebP
-            } else {
-                format
-            },
-            dimensions: ImageDimensions {
-                width: max_width,
-                height: max_height,
-            },
-            file_size: data.len() as u64,
+            file_size: output_data.len() as u64,
+            data: output_data,
+            format: output_format,
+            dimensions: ImageDimensions { width, height },
         })
+    }
+
+    /// Encode image to bytes in specified format.
+    fn encode_image(&self, img: &DynamicImage, format: ImageFormat) -> AppResult<Vec<u8>> {
+        let mut buffer = Cursor::new(Vec::new());
+
+        let image_format = match format {
+            ImageFormat::Jpeg => image::ImageFormat::Jpeg,
+            ImageFormat::Png => image::ImageFormat::Png,
+            ImageFormat::WebP => image::ImageFormat::WebP,
+            ImageFormat::Gif => image::ImageFormat::Gif,
+            ImageFormat::Avif => {
+                return Err(AppError::Validation("AVIF encoding not supported".to_string()));
+            }
+        };
+
+        img.write_to(&mut buffer, image_format)
+            .map_err(|e| AppError::Internal(format!("Failed to encode image: {e}")))?;
+
+        Ok(buffer.into_inner())
     }
 
     /// Process and optimize an image.
@@ -380,44 +457,65 @@ impl MediaService {
         data: &[u8],
         options: ImageProcessingOptions,
     ) -> AppResult<ProcessedImage> {
-        let format = self.detect_image_format(data)?;
-        let output_format = options.format.unwrap_or(format);
+        let input_format = self.detect_image_format(data)?;
+        let output_format = options.format.unwrap_or(input_format);
 
-        // In a real implementation:
-        // 1. Decode image
-        // 2. Auto-orient if requested
-        // 3. Resize if needed
-        // 4. Strip metadata if requested
-        // 5. Encode to target format with quality
+        // Decode image
+        let mut img = self.decode_image(data)?;
 
-        tracing::info!(
-            input_format = ?format,
+        // Resize if needed
+        let (original_width, original_height) = img.dimensions();
+        let mut needs_resize = false;
+        let mut target_width = original_width;
+        let mut target_height = original_height;
+
+        if let Some(max_w) = options.max_width {
+            if original_width > max_w {
+                target_width = max_w;
+                needs_resize = true;
+            }
+        }
+        if let Some(max_h) = options.max_height {
+            if original_height > max_h {
+                target_height = max_h;
+                needs_resize = true;
+            }
+        }
+
+        if needs_resize {
+            img = img.resize(target_width, target_height, FilterType::Lanczos3);
+        }
+
+        let (final_width, final_height) = img.dimensions();
+
+        // Encode to output format
+        let output_data = self.encode_image(&img, output_format)?;
+
+        tracing::debug!(
+            input_format = ?input_format,
             output_format = ?output_format,
-            quality = ?options.quality,
-            "Would process image (implementation pending)"
+            original_dimensions = ?(original_width, original_height),
+            final_dimensions = ?(final_width, final_height),
+            input_size = data.len(),
+            output_size = output_data.len(),
+            "Processed image"
         );
 
         Ok(ProcessedImage {
-            data: data.to_vec(),
+            file_size: output_data.len() as u64,
+            data: output_data,
             format: output_format,
             dimensions: ImageDimensions {
-                width: 0,
-                height: 0,
+                width: final_width,
+                height: final_height,
             },
-            file_size: data.len() as u64,
         })
     }
 
     /// Generate blurhash for an image.
     pub fn generate_blurhash(&self, data: &[u8]) -> AppResult<String> {
-        // In a real implementation, use blurhash crate
-        // Placeholder
-        let _ = self.detect_image_format(data)?;
-
-        tracing::info!("Would generate blurhash (implementation pending)");
-
-        // Return a placeholder blurhash
-        Ok("L00000fQfQfQfQfQfQfQfQfQfQfQ".to_string())
+        let img = self.decode_image(data)?;
+        self.generate_blurhash_internal(&img)
     }
 
     /// Extract video thumbnail at a specific time.

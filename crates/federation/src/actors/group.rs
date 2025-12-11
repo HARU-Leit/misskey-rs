@@ -8,8 +8,8 @@ use super::person::{ApImage, ApPublicKey};
 
 /// `ActivityPub` Group actor representing a channel.
 ///
-/// Used for federating channel content across ActivityPub instances.
-/// Follows the W3C ActivityPub specification for Group actors.
+/// Used for federating channel content across `ActivityPub` instances.
+/// Follows the W3C `ActivityPub` specification for Group actors.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApGroup {
@@ -100,7 +100,7 @@ pub struct ApGroup {
 impl ApGroup {
     /// Create a new Group actor with minimal required fields.
     #[must_use]
-    pub fn new(id: Url, preferred_username: String, inbox: Url, outbox: Url) -> Self {
+    pub const fn new(id: Url, preferred_username: String, inbox: Url, outbox: Url) -> Self {
         Self {
             kind: GroupType::Group,
             id,

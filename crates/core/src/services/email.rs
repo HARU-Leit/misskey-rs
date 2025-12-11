@@ -1,5 +1,10 @@
 //! Email notification service.
 
+use lettre::{
+    AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
+    message::{Mailbox, MultiPart, SinglePart, header::ContentType},
+    transport::smtp::authentication::Credentials,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -471,41 +476,328 @@ impl EmailService {
 
     async fn send_smtp(
         &self,
-        _smtp: &SmtpConfig,
-        _config: &EmailConfig,
-        _message: EmailMessage,
+        smtp: &SmtpConfig,
+        config: &EmailConfig,
+        message: EmailMessage,
     ) -> AppResult<EmailDeliveryResult> {
-        // In a real implementation, use lettre crate for SMTP
-        // For now, log and return success placeholder
-        tracing::info!(
-            to = %_message.to,
-            subject = %_message.subject,
-            "Would send email via SMTP (implementation pending)"
-        );
-        Ok(EmailDeliveryResult {
-            success: true,
-            message_id: Some(format!("smtp-{}", uuid::Uuid::new_v4())),
-            error: None,
-        })
+        // Parse from address
+        let from_mailbox: Mailbox = format!("{} <{}>", config.from_name, config.from_address)
+            .parse()
+            .map_err(|e| AppError::Validation(format!("Invalid from address: {e}")))?;
+
+        // Parse to address
+        let to_mailbox: Mailbox = message
+            .to
+            .parse()
+            .map_err(|e| AppError::Validation(format!("Invalid to address: {e}")))?;
+
+        // Build email message
+        let mut email_builder = Message::builder()
+            .from(from_mailbox)
+            .to(to_mailbox)
+            .subject(&message.subject);
+
+        // Add reply-to if specified
+        if let Some(ref reply_to) = message.reply_to.as_ref().or(config.reply_to.as_ref()) {
+            let reply_to_mailbox: Mailbox = reply_to
+                .parse()
+                .map_err(|e| AppError::Validation(format!("Invalid reply-to address: {e}")))?;
+            email_builder = email_builder.reply_to(reply_to_mailbox);
+        }
+
+        // Build message body
+        let email = if let Some(html_body) = message.html_body {
+            // Multipart email with both text and HTML
+            email_builder
+                .multipart(
+                    MultiPart::alternative()
+                        .singlepart(
+                            SinglePart::builder()
+                                .header(ContentType::TEXT_PLAIN)
+                                .body(message.text_body),
+                        )
+                        .singlepart(
+                            SinglePart::builder()
+                                .header(ContentType::TEXT_HTML)
+                                .body(html_body),
+                        ),
+                )
+                .map_err(|e| AppError::Internal(format!("Failed to build email: {e}")))?
+        } else {
+            // Plain text only
+            email_builder
+                .body(message.text_body)
+                .map_err(|e| AppError::Internal(format!("Failed to build email: {e}")))?
+        };
+
+        // Build SMTP transport
+        if !smtp.use_tls {
+            // For non-TLS, use the plain transport
+            return self.send_smtp_plain(smtp, email).await;
+        }
+
+        let mut transport = AsyncSmtpTransport::<Tokio1Executor>::relay(&smtp.host)
+            .map_err(|e| AppError::ExternalService(format!("SMTP connection failed: {e}")))?
+            .port(smtp.port);
+
+        // Add credentials if provided
+        if let (Some(username), Some(password)) = (&smtp.username, &smtp.password) {
+            transport = transport.credentials(Credentials::new(username.clone(), password.clone()));
+        }
+
+        let mailer = transport.build();
+
+        // Send email
+        match mailer.send(email).await {
+            Ok(response) => {
+                tracing::info!(
+                    to = %message.to,
+                    subject = %message.subject,
+                    "Email sent via SMTP"
+                );
+                Ok(EmailDeliveryResult {
+                    success: true,
+                    message_id: Some(response.message().next().map_or_else(
+                        || format!("smtp-{}", uuid::Uuid::new_v4()),
+                        |s| s.to_string(),
+                    )),
+                    error: None,
+                })
+            }
+            Err(e) => {
+                tracing::error!(error = %e, "SMTP send failed");
+                Ok(EmailDeliveryResult {
+                    success: false,
+                    message_id: None,
+                    error: Some(e.to_string()),
+                })
+            }
+        }
+    }
+
+    /// Send email via plain (non-TLS) SMTP connection.
+    async fn send_smtp_plain(
+        &self,
+        smtp: &SmtpConfig,
+        email: Message,
+    ) -> AppResult<EmailDeliveryResult> {
+        let mut transport =
+            AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&smtp.host).port(smtp.port);
+
+        // Add credentials if provided
+        if let (Some(username), Some(password)) = (&smtp.username, &smtp.password) {
+            transport = transport.credentials(Credentials::new(username.clone(), password.clone()));
+        }
+
+        let mailer = transport.build();
+
+        match mailer.send(email).await {
+            Ok(response) => Ok(EmailDeliveryResult {
+                success: true,
+                message_id: Some(response.message().next().map_or_else(
+                    || format!("smtp-{}", uuid::Uuid::new_v4()),
+                    |s| s.to_string(),
+                )),
+                error: None,
+            }),
+            Err(e) => {
+                tracing::error!(error = %e, "SMTP send failed");
+                Ok(EmailDeliveryResult {
+                    success: false,
+                    message_id: None,
+                    error: Some(e.to_string()),
+                })
+            }
+        }
     }
 
     async fn send_ses(
         &self,
-        _ses: &SesConfig,
-        _config: &EmailConfig,
-        _message: EmailMessage,
+        ses: &SesConfig,
+        config: &EmailConfig,
+        message: EmailMessage,
     ) -> AppResult<EmailDeliveryResult> {
-        // In a real implementation, use AWS SDK
-        tracing::info!(
-            to = %_message.to,
-            subject = %_message.subject,
-            "Would send email via SES (implementation pending)"
+        // Build raw email using lettre for proper MIME formatting
+        let from_mailbox: Mailbox = format!("{} <{}>", config.from_name, config.from_address)
+            .parse()
+            .map_err(|e| AppError::Validation(format!("Invalid from address: {e}")))?;
+
+        let to_mailbox: Mailbox = message
+            .to
+            .parse()
+            .map_err(|e| AppError::Validation(format!("Invalid to address: {e}")))?;
+
+        let mut email_builder = Message::builder()
+            .from(from_mailbox)
+            .to(to_mailbox)
+            .subject(&message.subject);
+
+        if let Some(ref reply_to) = message.reply_to.as_ref().or(config.reply_to.as_ref()) {
+            let reply_to_mailbox: Mailbox = reply_to
+                .parse()
+                .map_err(|e| AppError::Validation(format!("Invalid reply-to address: {e}")))?;
+            email_builder = email_builder.reply_to(reply_to_mailbox);
+        }
+
+        let email = if let Some(html_body) = message.html_body {
+            email_builder
+                .multipart(
+                    MultiPart::alternative()
+                        .singlepart(
+                            SinglePart::builder()
+                                .header(ContentType::TEXT_PLAIN)
+                                .body(message.text_body.clone()),
+                        )
+                        .singlepart(
+                            SinglePart::builder()
+                                .header(ContentType::TEXT_HTML)
+                                .body(html_body),
+                        ),
+                )
+                .map_err(|e| AppError::Internal(format!("Failed to build email: {e}")))?
+        } else {
+            email_builder
+                .body(message.text_body.clone())
+                .map_err(|e| AppError::Internal(format!("Failed to build email: {e}")))?
+        };
+
+        // Get raw email content
+        let raw_email = email.formatted();
+        let raw_email_base64 = base64::Engine::encode(
+            &base64::engine::general_purpose::STANDARD,
+            &raw_email,
         );
-        Ok(EmailDeliveryResult {
-            success: true,
-            message_id: Some(format!("ses-{}", uuid::Uuid::new_v4())),
-            error: None,
-        })
+
+        // Build SES v1 API request
+        let endpoint = format!("https://email.{}.amazonaws.com", ses.region);
+        let timestamp = chrono::Utc::now();
+        let date_stamp = timestamp.format("%Y%m%d").to_string();
+        let amz_date = timestamp.format("%Y%m%dT%H%M%SZ").to_string();
+
+        // Create AWS signature v4
+        let (authorization, signed_headers) =
+            self.create_ses_signature(ses, &endpoint, &amz_date, &date_stamp, &raw_email_base64)?;
+
+        // Build request body
+        let body = format!(
+            "Action=SendRawEmail&RawMessage.Data={}",
+            urlencoding::encode(&raw_email_base64)
+        );
+
+        // Send request
+        let response = self
+            .http_client
+            .post(&endpoint)
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .header("X-Amz-Date", &amz_date)
+            .header("Host", format!("email.{}.amazonaws.com", ses.region))
+            .header("Authorization", authorization)
+            .header("X-Amz-Content-Sha256", signed_headers)
+            .body(body)
+            .send()
+            .await
+            .map_err(|e| AppError::ExternalService(format!("SES request failed: {e}")))?;
+
+        if response.status().is_success() {
+            // Parse response XML to get message ID
+            let response_text = response.text().await.unwrap_or_default();
+            let message_id = self.extract_ses_message_id(&response_text);
+
+            tracing::info!(
+                to = %message.to,
+                subject = %message.subject,
+                "Email sent via SES"
+            );
+
+            Ok(EmailDeliveryResult {
+                success: true,
+                message_id,
+                error: None,
+            })
+        } else {
+            let error_text = response.text().await.unwrap_or_default();
+            tracing::error!(error = %error_text, "SES send failed");
+            Ok(EmailDeliveryResult {
+                success: false,
+                message_id: None,
+                error: Some(error_text),
+            })
+        }
+    }
+
+    /// Create AWS Signature Version 4 for SES.
+    fn create_ses_signature(
+        &self,
+        ses: &SesConfig,
+        endpoint: &str,
+        amz_date: &str,
+        date_stamp: &str,
+        payload: &str,
+    ) -> AppResult<(String, String)> {
+        use hmac::{Hmac, Mac};
+        use sha2::{Digest, Sha256};
+
+        // Step 1: Create canonical request
+        let host = format!("email.{}.amazonaws.com", ses.region);
+        let payload_hash = hex::encode(Sha256::digest(payload.as_bytes()));
+
+        let canonical_request = format!(
+            "POST\n/\n\ncontent-type:application/x-www-form-urlencoded\nhost:{}\nx-amz-date:{}\n\ncontent-type;host;x-amz-date\n{}",
+            host, amz_date, payload_hash
+        );
+
+        // Step 2: Create string to sign
+        let credential_scope = format!("{}/{}/ses/aws4_request", date_stamp, ses.region);
+        let canonical_request_hash = hex::encode(Sha256::digest(canonical_request.as_bytes()));
+        let string_to_sign = format!(
+            "AWS4-HMAC-SHA256\n{}\n{}\n{}",
+            amz_date, credential_scope, canonical_request_hash
+        );
+
+        // Step 3: Calculate signature
+        type HmacSha256 = Hmac<Sha256>;
+
+        let k_secret = format!("AWS4{}", ses.secret_access_key);
+        let mut mac = HmacSha256::new_from_slice(k_secret.as_bytes())
+            .map_err(|e| AppError::Internal(format!("HMAC error: {e}")))?;
+        mac.update(date_stamp.as_bytes());
+        let k_date = mac.finalize().into_bytes();
+
+        let mut mac = HmacSha256::new_from_slice(&k_date)
+            .map_err(|e| AppError::Internal(format!("HMAC error: {e}")))?;
+        mac.update(ses.region.as_bytes());
+        let k_region = mac.finalize().into_bytes();
+
+        let mut mac = HmacSha256::new_from_slice(&k_region)
+            .map_err(|e| AppError::Internal(format!("HMAC error: {e}")))?;
+        mac.update(b"ses");
+        let k_service = mac.finalize().into_bytes();
+
+        let mut mac = HmacSha256::new_from_slice(&k_service)
+            .map_err(|e| AppError::Internal(format!("HMAC error: {e}")))?;
+        mac.update(b"aws4_request");
+        let k_signing = mac.finalize().into_bytes();
+
+        let mut mac = HmacSha256::new_from_slice(&k_signing)
+            .map_err(|e| AppError::Internal(format!("HMAC error: {e}")))?;
+        mac.update(string_to_sign.as_bytes());
+        let signature = hex::encode(mac.finalize().into_bytes());
+
+        // Step 4: Build authorization header
+        let authorization = format!(
+            "AWS4-HMAC-SHA256 Credential={}/{}, SignedHeaders=content-type;host;x-amz-date, Signature={}",
+            ses.access_key_id, credential_scope, signature
+        );
+
+        Ok((authorization, payload_hash))
+    }
+
+    /// Extract message ID from SES XML response.
+    fn extract_ses_message_id(&self, response: &str) -> Option<String> {
+        // Simple XML parsing for <MessageId>...</MessageId>
+        let start = response.find("<MessageId>")? + 11;
+        let end = response[start..].find("</MessageId>")? + start;
+        Some(response[start..end].to_string())
     }
 
     async fn send_sendgrid(

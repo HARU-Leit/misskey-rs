@@ -108,7 +108,7 @@ pub async fn channel_inbox_handler(Path(channel_id): Path<String>) -> impl IntoR
 
 /// Handle GET /channels/{id}/outbox for channel outbox.
 ///
-/// Returns an OrderedCollection of the channel's notes.
+/// Returns an `OrderedCollection` of the channel's notes.
 pub async fn channel_outbox_handler(
     State(state): State<ChannelApState>,
     Path(channel_id): Path<String>,

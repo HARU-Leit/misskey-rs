@@ -41,7 +41,7 @@ impl ChannelRepository {
             .ok_or_else(|| AppError::NotFound(format!("Channel not found: {id}")))
     }
 
-    /// Find channel by ActivityPub URI.
+    /// Find channel by `ActivityPub` URI.
     pub async fn find_by_uri(&self, uri: &str) -> AppResult<Option<channel::Model>> {
         Channel::find()
             .filter(channel::Column::Uri.eq(uri))

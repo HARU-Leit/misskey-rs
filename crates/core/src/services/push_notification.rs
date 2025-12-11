@@ -1,10 +1,16 @@
 //! Push notification service for Web Push.
 
+use std::sync::Arc;
+
 use chrono::Utc;
 use misskey_db::entities::push_subscription;
 use misskey_db::repositories::PushSubscriptionRepository;
 use sea_orm::Set;
 use serde::{Deserialize, Serialize};
+use web_push::{
+    ContentEncoding, IsahcWebPushClient, SubscriptionInfo, VapidSignatureBuilder,
+    WebPushClient, WebPushMessageBuilder,
+};
 
 use misskey_common::{AppError, AppResult};
 
@@ -165,18 +171,26 @@ pub struct PushPayload {
 pub struct PushNotificationService {
     repo: PushSubscriptionRepository,
     vapid_config: Option<VapidConfig>,
-    http_client: reqwest::Client,
+    web_push_client: Arc<IsahcWebPushClient>,
 }
 
 impl PushNotificationService {
     /// Create a new push notification service.
-    #[must_use]
-    pub fn new(repo: PushSubscriptionRepository, vapid_config: Option<VapidConfig>) -> Self {
-        Self {
+    ///
+    /// # Errors
+    /// Returns an error if the HTTP client cannot be initialized.
+    pub fn new(
+        repo: PushSubscriptionRepository,
+        vapid_config: Option<VapidConfig>,
+    ) -> AppResult<Self> {
+        let web_push_client = IsahcWebPushClient::new()
+            .map_err(|e| AppError::Internal(format!("Failed to create Web Push client: {e}")))?;
+
+        Ok(Self {
             repo,
             vapid_config,
-            http_client: reqwest::Client::new(),
-        }
+            web_push_client: Arc::new(web_push_client),
+        })
     }
 
     /// Check if push notifications are enabled.
@@ -396,43 +410,58 @@ impl PushNotificationService {
             .as_ref()
             .ok_or_else(|| AppError::BadRequest("VAPID not configured".to_string()))?;
 
-        // Build Web Push message using VAPID
-        let payload_json = serde_json::to_string(payload)
+        // Serialize payload to JSON
+        let payload_json = serde_json::to_vec(payload)
             .map_err(|e| AppError::Internal(format!("Failed to serialize payload: {e}")))?;
 
-        // In a real implementation, we'd use a proper Web Push library like web-push
-        // For now, we'll use the low-level HTTP API approach
-        // This is a simplified implementation - production code should use web-push crate
+        // Build subscription info from stored data
+        let subscription_info = SubscriptionInfo::new(
+            &subscription.endpoint,
+            &subscription.p256dh,
+            &subscription.auth,
+        );
 
-        // Build the encrypted payload (requires ECE - Encrypted Content-Encoding)
-        // For simplicity, we'll document that a proper implementation needs:
-        // 1. Generate ephemeral ECDH key pair
-        // 2. Derive shared secret using subscription's p256dh
-        // 3. Encrypt payload using AES-128-GCM
-        // 4. Build VAPID JWT for authorization
+        // Build VAPID signature
+        let mut sig_builder = VapidSignatureBuilder::from_base64(
+            &vapid.private_key,
+            web_push::URL_SAFE_NO_PAD,
+            &subscription_info,
+        )
+        .map_err(|e| AppError::Internal(format!("Failed to create VAPID signature builder: {e}")))?;
 
-        // Placeholder that shows the structure of what we need to send
-        let _ = self
-            .http_client
-            .post(&subscription.endpoint)
-            .header("TTL", "86400")
-            .header("Content-Encoding", "aes128gcm")
-            .header(
-                "Authorization",
-                format!("vapid t={}, k={}", "jwt_token", vapid.public_key),
-            )
-            .body(payload_json)
+        sig_builder.add_claim("sub", vapid.subject.clone());
+
+        let signature = sig_builder
             .build()
-            .map_err(|e| AppError::Internal(format!("Failed to build request: {e}")))?;
+            .map_err(|e| AppError::Internal(format!("Failed to build VAPID signature: {e}")))?;
 
-        // For now, we'll just simulate success
-        // In production, uncomment the actual send:
-        // let response = self.http_client.execute(request).await
-        //     .map_err(|e| AppError::ExternalService(format!("Push request failed: {}", e)))?;
+        // Build the Web Push message
+        let mut message_builder = WebPushMessageBuilder::new(&subscription_info);
+        message_builder.set_payload(ContentEncoding::Aes128Gcm, &payload_json);
+        message_builder.set_vapid_signature(signature);
+        message_builder.set_ttl(86400); // 24 hours TTL
+
+        let message = message_builder
+            .build()
+            .map_err(|e| AppError::Internal(format!("Failed to build Web Push message: {e}")))?;
+
+        // Send the push notification
+        self.web_push_client
+            .send(message)
+            .await
+            .map_err(|e| {
+                tracing::warn!(
+                    endpoint = %subscription.endpoint,
+                    error = %e,
+                    "Web Push send failed"
+                );
+                AppError::ExternalService(format!("Web Push send failed: {e}"))
+            })?;
 
         tracing::debug!(
             endpoint = %subscription.endpoint,
-            "Would send push notification (implementation pending)"
+            notification_type = %payload.notification_type,
+            "Push notification sent successfully"
         );
 
         Ok(())

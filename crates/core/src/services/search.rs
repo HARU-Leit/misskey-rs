@@ -1,10 +1,10 @@
 //! Search service with optional Meilisearch integration.
 //!
 //! This module provides a unified search interface that can use either:
-//! - PostgreSQL full-text search (default, always available)
+//! - `PostgreSQL` full-text search (default, always available)
 //! - Meilisearch (optional, for improved performance and relevance)
 //!
-//! When Meilisearch is configured, it's used for search queries while PostgreSQL
+//! When Meilisearch is configured, it's used for search queries while `PostgreSQL`
 //! remains the source of truth for data storage.
 
 #[cfg(feature = "meilisearch")]
@@ -21,7 +21,7 @@ use meilisearch_sdk::client::Client as MeilisearchClient;
 /// Configuration for the search service.
 #[derive(Clone, Debug)]
 pub struct SearchConfig {
-    /// Meilisearch host URL (e.g., "http://localhost:7700")
+    /// Meilisearch host URL (e.g., "<http://localhost:7700>")
     pub meilisearch_url: Option<String>,
     /// Meilisearch API key (optional, for authenticated access)
     pub meilisearch_api_key: Option<String>,
@@ -42,7 +42,7 @@ impl Default for SearchConfig {
 impl SearchConfig {
     /// Create a new search config with Meilisearch enabled.
     #[must_use]
-    pub fn with_meilisearch(url: String, api_key: Option<String>) -> Self {
+    pub const fn with_meilisearch(url: String, api_key: Option<String>) -> Self {
         Self {
             meilisearch_url: Some(url),
             meilisearch_api_key: api_key,
@@ -52,7 +52,7 @@ impl SearchConfig {
 
     /// Check if Meilisearch is configured.
     #[must_use]
-    pub fn has_meilisearch(&self) -> bool {
+    pub const fn has_meilisearch(&self) -> bool {
         self.meilisearch_url.is_some() && self.use_meilisearch
     }
 }
@@ -120,7 +120,7 @@ pub struct SearchHit<T> {
     pub score: Option<f64>,
 }
 
-/// Search service providing unified search across PostgreSQL and Meilisearch.
+/// Search service providing unified search across `PostgreSQL` and Meilisearch.
 #[derive(Clone)]
 pub struct SearchService {
     note_repo: NoteRepository,
@@ -135,7 +135,7 @@ impl SearchService {
     /// Index name for users in Meilisearch.
     pub const USERS_INDEX: &'static str = "users";
 
-    /// Create a new search service with PostgreSQL only.
+    /// Create a new search service with `PostgreSQL` only.
     #[must_use]
     pub fn new(note_repo: NoteRepository) -> Self {
         Self {
@@ -180,7 +180,7 @@ impl SearchService {
 
     /// Check if Meilisearch is available and connected.
     #[must_use]
-    pub fn is_meilisearch_available(&self) -> bool {
+    pub const fn is_meilisearch_available(&self) -> bool {
         #[cfg(feature = "meilisearch")]
         {
             self.meilisearch.is_some()
@@ -193,7 +193,7 @@ impl SearchService {
 
     /// Get the search configuration.
     #[must_use]
-    pub fn config(&self) -> &SearchConfig {
+    pub const fn config(&self) -> &SearchConfig {
         &self.config
     }
 

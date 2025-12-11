@@ -1,5 +1,7 @@
 //! Repository for recurring post operations.
 
+use std::sync::Arc;
+
 use chrono::{DateTime, Utc};
 use misskey_common::id::IdGenerator;
 use sea_orm::{
@@ -52,13 +54,14 @@ pub struct UpdateRecurringPostInput {
 /// Repository for recurring post operations.
 #[derive(Clone)]
 pub struct RecurringPostRepository {
-    db: DatabaseConnection,
+    db: Arc<DatabaseConnection>,
     id_gen: IdGenerator,
 }
 
 impl RecurringPostRepository {
     /// Create a new recurring post repository.
-    pub fn new(db: DatabaseConnection) -> Self {
+    #[must_use]
+    pub fn new(db: Arc<DatabaseConnection>) -> Self {
         Self {
             db,
             id_gen: IdGenerator::new(),
@@ -94,12 +97,12 @@ impl RecurringPostRepository {
             updated_at: Set(None),
         };
 
-        model.insert(&self.db).await
+        model.insert(self.db.as_ref()).await
     }
 
     /// Get a recurring post by ID.
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Model>, DbErr> {
-        Entity::find_by_id(id).one(&self.db).await
+        Entity::find_by_id(id).one(self.db.as_ref()).await
     }
 
     /// Get all recurring posts for a user.
@@ -107,7 +110,7 @@ impl RecurringPostRepository {
         Entity::find()
             .filter(Column::UserId.eq(user_id))
             .order_by_desc(Column::CreatedAt)
-            .all(&self.db)
+            .all(self.db.as_ref())
             .await
     }
 
@@ -117,7 +120,7 @@ impl RecurringPostRepository {
             .filter(Column::UserId.eq(user_id))
             .filter(Column::IsActive.eq(true))
             .order_by_desc(Column::CreatedAt)
-            .all(&self.db)
+            .all(self.db.as_ref())
             .await
     }
 
@@ -127,7 +130,7 @@ impl RecurringPostRepository {
             .filter(Column::IsActive.eq(true))
             .filter(Column::NextPostAt.lte(before.fixed_offset()))
             .order_by_asc(Column::NextPostAt)
-            .all(&self.db)
+            .all(self.db.as_ref())
             .await
     }
 
@@ -137,7 +140,7 @@ impl RecurringPostRepository {
         id: &str,
         input: UpdateRecurringPostInput,
     ) -> Result<Option<Model>, DbErr> {
-        let Some(existing) = Entity::find_by_id(id).one(&self.db).await? else {
+        let Some(existing) = Entity::find_by_id(id).one(self.db.as_ref()).await? else {
             return Ok(None);
         };
 
@@ -189,7 +192,7 @@ impl RecurringPostRepository {
             model.expires_at = Set(expires_at.map(|dt| dt.fixed_offset()));
         }
 
-        model.update(&self.db).await.map(Some)
+        model.update(self.db.as_ref()).await.map(Some)
     }
 
     /// Update the next post time.
@@ -198,7 +201,7 @@ impl RecurringPostRepository {
         id: &str,
         next_post_at: Option<DateTime<Utc>>,
     ) -> Result<Option<Model>, DbErr> {
-        let Some(existing) = Entity::find_by_id(id).one(&self.db).await? else {
+        let Some(existing) = Entity::find_by_id(id).one(self.db.as_ref()).await? else {
             return Ok(None);
         };
 
@@ -206,12 +209,12 @@ impl RecurringPostRepository {
         model.next_post_at = Set(next_post_at.map(|dt| dt.fixed_offset()));
         model.updated_at = Set(Some(Utc::now().fixed_offset()));
 
-        model.update(&self.db).await.map(Some)
+        model.update(self.db.as_ref()).await.map(Some)
     }
 
     /// Record that a post was executed.
     pub async fn record_post_execution(&self, id: &str) -> Result<Option<Model>, DbErr> {
-        let Some(existing) = Entity::find_by_id(id).one(&self.db).await? else {
+        let Some(existing) = Entity::find_by_id(id).one(self.db.as_ref()).await? else {
             return Ok(None);
         };
 
@@ -223,25 +226,23 @@ impl RecurringPostRepository {
         model.updated_at = Set(Some(now));
 
         // Check if max posts reached
-        if let Some(max_posts) = existing.max_posts {
-            if existing.post_count + 1 >= max_posts {
+        if let Some(max_posts) = existing.max_posts
+            && existing.post_count + 1 >= max_posts {
                 model.is_active = Set(false);
             }
-        }
 
         // Check if expired
-        if let Some(expires_at) = existing.expires_at {
-            if now >= expires_at {
+        if let Some(expires_at) = existing.expires_at
+            && now >= expires_at {
                 model.is_active = Set(false);
             }
-        }
 
-        model.update(&self.db).await.map(Some)
+        model.update(self.db.as_ref()).await.map(Some)
     }
 
     /// Deactivate a recurring post.
     pub async fn deactivate(&self, id: &str) -> Result<Option<Model>, DbErr> {
-        let Some(existing) = Entity::find_by_id(id).one(&self.db).await? else {
+        let Some(existing) = Entity::find_by_id(id).one(self.db.as_ref()).await? else {
             return Ok(None);
         };
 
@@ -249,12 +250,12 @@ impl RecurringPostRepository {
         model.is_active = Set(false);
         model.updated_at = Set(Some(Utc::now().fixed_offset()));
 
-        model.update(&self.db).await.map(Some)
+        model.update(self.db.as_ref()).await.map(Some)
     }
 
     /// Activate a recurring post.
     pub async fn activate(&self, id: &str) -> Result<Option<Model>, DbErr> {
-        let Some(existing) = Entity::find_by_id(id).one(&self.db).await? else {
+        let Some(existing) = Entity::find_by_id(id).one(self.db.as_ref()).await? else {
             return Ok(None);
         };
 
@@ -262,12 +263,12 @@ impl RecurringPostRepository {
         model.is_active = Set(true);
         model.updated_at = Set(Some(Utc::now().fixed_offset()));
 
-        model.update(&self.db).await.map(Some)
+        model.update(self.db.as_ref()).await.map(Some)
     }
 
     /// Delete a recurring post.
     pub async fn delete(&self, id: &str) -> Result<bool, DbErr> {
-        let result = Entity::delete_by_id(id).exec(&self.db).await?;
+        let result = Entity::delete_by_id(id).exec(self.db.as_ref()).await?;
         Ok(result.rows_affected > 0)
     }
 
@@ -275,7 +276,7 @@ impl RecurringPostRepository {
     pub async fn delete_by_user(&self, user_id: &str) -> Result<u64, DbErr> {
         let result = Entity::delete_many()
             .filter(Column::UserId.eq(user_id))
-            .exec(&self.db)
+            .exec(self.db.as_ref())
             .await?;
         Ok(result.rows_affected)
     }
@@ -284,7 +285,7 @@ impl RecurringPostRepository {
     pub async fn count_by_user(&self, user_id: &str) -> Result<u64, DbErr> {
         Entity::find()
             .filter(Column::UserId.eq(user_id))
-            .count(&self.db)
+            .count(self.db.as_ref())
             .await
     }
 
@@ -293,7 +294,7 @@ impl RecurringPostRepository {
         Entity::find()
             .filter(Column::UserId.eq(user_id))
             .filter(Column::IsActive.eq(true))
-            .count(&self.db)
+            .count(self.db.as_ref())
             .await
     }
 }

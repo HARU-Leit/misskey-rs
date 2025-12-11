@@ -58,7 +58,7 @@ pub struct ChannelService {
 impl ChannelService {
     /// Create a new channel service.
     #[must_use]
-    pub fn new(channel_repo: ChannelRepository) -> Self {
+    pub const fn new(channel_repo: ChannelRepository) -> Self {
         Self {
             channel_repo,
             id_gen: IdGenerator::new(),
@@ -68,7 +68,7 @@ impl ChannelService {
 
     /// Create a new channel service with federation support.
     #[must_use]
-    pub fn with_federation(channel_repo: ChannelRepository, base_url: String) -> Self {
+    pub const fn with_federation(channel_repo: ChannelRepository, base_url: String) -> Self {
         Self {
             channel_repo,
             id_gen: IdGenerator::new(),
@@ -334,7 +334,7 @@ impl ChannelService {
 
     /// Enable federation for a channel.
     ///
-    /// Generates a keypair and sets up the channel for ActivityPub federation.
+    /// Generates a keypair and sets up the channel for `ActivityPub` federation.
     pub async fn enable_federation(
         &self,
         channel_id: &str,
@@ -359,9 +359,9 @@ impl ChannelService {
         let (private_key_pem, public_key_pem) = generate_keypair()?;
 
         // Build URIs
-        let uri = format!("{}/channels/{}", base_url, channel_id);
-        let inbox = format!("{}/channels/{}/inbox", base_url, channel_id);
-        let shared_inbox = format!("{}/inbox", base_url);
+        let uri = format!("{base_url}/channels/{channel_id}");
+        let inbox = format!("{base_url}/channels/{channel_id}/inbox");
+        let shared_inbox = format!("{base_url}/inbox");
 
         let now = Utc::now();
         let mut active: channel::ActiveModel = channel.into();
@@ -377,7 +377,7 @@ impl ChannelService {
 
     /// Disable federation for a channel.
     ///
-    /// Removes the keypair and ActivityPub URIs.
+    /// Removes the keypair and `ActivityPub` URIs.
     pub async fn disable_federation(
         &self,
         channel_id: &str,
@@ -411,13 +411,13 @@ impl ChannelService {
         Ok(channel.uri.is_some())
     }
 
-    /// Get a channel by its ActivityPub URI.
+    /// Get a channel by its `ActivityPub` URI.
     pub async fn get_by_uri(&self, uri: &str) -> AppResult<Option<channel::Model>> {
         self.channel_repo.find_by_uri(uri).await
     }
 }
 
-/// Generate RSA keypair for ActivityPub signatures.
+/// Generate RSA keypair for `ActivityPub` signatures.
 fn generate_keypair() -> AppResult<(String, String)> {
     use rand::rngs::OsRng;
 

@@ -66,6 +66,17 @@ reqwest.workspace = true
 # Search (optional Meilisearch integration)
 meilisearch-sdk = { workspace = true, optional = true }
 
+# Email
+lettre.workspace = true
+urlencoding.workspace = true
+
+# Web Push
+web-push.workspace = true
+
+# Image Processing
+image.workspace = true
+blurhash.workspace = true
+
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros"] }
 sea-orm = { workspace = true, features = ["mock"] }

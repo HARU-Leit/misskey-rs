@@ -126,7 +126,7 @@ impl ChannelToApGroup for channel::Model {
 fn slug_from_name(name: &str) -> String {
     name.chars()
         .filter_map(|c| {
-            if c.is_alphanumeric() {
+            if c.is_ascii_alphanumeric() {
                 Some(c.to_ascii_lowercase())
             } else if c.is_whitespace() || c == '-' || c == '_' {
                 Some('_')

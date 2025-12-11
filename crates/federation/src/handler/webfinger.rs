@@ -51,7 +51,7 @@ pub struct WebfingerState {
 impl WebfingerState {
     /// Create a new `WebFinger` state.
     #[must_use]
-    pub fn new(domain: String, base_url: Url, user_repo: UserRepository) -> Self {
+    pub const fn new(domain: String, base_url: Url, user_repo: UserRepository) -> Self {
         Self {
             domain,
             base_url,
@@ -62,7 +62,7 @@ impl WebfingerState {
 
     /// Create a new `WebFinger` state with channel support.
     #[must_use]
-    pub fn with_channels(
+    pub const fn with_channels(
         domain: String,
         base_url: Url,
         user_repo: UserRepository,
@@ -77,7 +77,7 @@ impl WebfingerState {
     }
 }
 
-/// Resource type for WebFinger lookup.
+/// Resource type for `WebFinger` lookup.
 #[derive(Debug)]
 pub enum ResourceType {
     /// User account (acct:username@domain)
@@ -154,7 +154,7 @@ pub async fn webfinger_handler(
     }
 }
 
-/// Handle WebFinger lookup for users.
+/// Handle `WebFinger` lookup for users.
 async fn webfinger_user(
     state: &WebfingerState,
     resource: &str,
@@ -224,7 +224,7 @@ async fn webfinger_user(
         .into_response()
 }
 
-/// Handle WebFinger lookup for channels.
+/// Handle `WebFinger` lookup for channels.
 async fn webfinger_channel(
     state: &WebfingerState,
     resource: &str,
@@ -258,12 +258,9 @@ async fn webfinger_channel(
         .into_iter()
         .find(|c| c.name.eq_ignore_ascii_case(name) && c.host.is_none());
 
-    let channel = match channel {
-        Some(c) => c,
-        None => {
-            info!(name = %name, "Channel not found for WebFinger");
-            return (StatusCode::NOT_FOUND, "Channel not found").into_response();
-        }
+    let channel = if let Some(c) = channel { c } else {
+        info!(name = %name, "Channel not found for WebFinger");
+        return (StatusCode::NOT_FOUND, "Channel not found").into_response();
     };
 
     // Check if channel has federation enabled

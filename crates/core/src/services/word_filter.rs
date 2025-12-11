@@ -403,6 +403,7 @@ mod tests {
             match_count: 0,
             created_at: Utc::now().into(),
             updated_at: None,
+            group_id: None,
         }
     }
 

@@ -1,7 +1,7 @@
 //! HTTP Signature verification middleware for Authorized Fetch.
 //!
 //! This middleware verifies HTTP signatures on incoming requests to protected
-//! ActivityPub resources. It supports per-user and per-instance security settings.
+//! `ActivityPub` resources. It supports per-user and per-instance security settings.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -21,7 +21,7 @@ use crate::signature::HttpVerifier;
 /// State required for signature verification.
 #[derive(Clone)]
 pub struct SignatureVerificationState {
-    /// ActivityPub client for fetching actor public keys.
+    /// `ActivityPub` client for fetching actor public keys.
     pub ap_client: ApClient,
     /// Whether signature verification is globally required.
     pub require_signatures: bool,
@@ -159,7 +159,7 @@ where
             let path = req
                 .uri()
                 .path_and_query()
-                .map_or_else(|| req.uri().path().to_string(), |pq| pq.to_string());
+                .map_or_else(|| req.uri().path().to_string(), std::string::ToString::to_string);
 
             // Verify the signature
             match HttpVerifier::verify(&public_key_pem, &components, method, &path, &headers_map) {
@@ -183,12 +183,12 @@ where
     }
 }
 
-/// Extract actor URL from key_id (removes #main-key fragment).
+/// Extract actor URL from `key_id` (removes #main-key fragment).
 fn extract_actor_url(key_id: &str) -> Option<String> {
     key_id.split('#').next().map(String::from)
 }
 
-/// Fetch actor's public key from the key_id URL.
+/// Fetch actor's public key from the `key_id` URL.
 async fn fetch_public_key(ap_client: &ApClient, key_id: &str) -> Result<String, String> {
     // Extract actor URL
     let actor_url = extract_actor_url(key_id).ok_or_else(|| "Invalid key_id format".to_string())?;
@@ -222,7 +222,7 @@ fn build_headers_map(req: &Request<Body>, signed_headers: &[String]) -> HashMap<
             let path = req
                 .uri()
                 .path_and_query()
-                .map_or_else(|| req.uri().path().to_string(), |pq| pq.to_string());
+                .map_or_else(|| req.uri().path().to_string(), std::string::ToString::to_string);
             format!("{method} {path}")
         } else if let Some(value) = req.headers().get(header_name.as_str()) {
             value.to_str().unwrap_or("").to_string()
@@ -240,13 +240,13 @@ fn build_headers_map(req: &Request<Body>, signed_headers: &[String]) -> HashMap<
 ///
 /// This function can be used by handlers to check user-specific settings
 /// and enforce signature verification accordingly.
-pub fn user_requires_authorized_fetch(secure_fetch_only: bool) -> bool {
+pub const fn user_requires_authorized_fetch(secure_fetch_only: bool) -> bool {
     secure_fetch_only
 }
 
 /// Check if an instance requires authorized fetch.
 ///
-/// Returns true if the instance has require_authorized_fetch enabled.
-pub fn instance_requires_authorized_fetch(require_authorized_fetch: bool) -> bool {
+/// Returns true if the instance has `require_authorized_fetch` enabled.
+pub const fn instance_requires_authorized_fetch(require_authorized_fetch: bool) -> bool {
     require_authorized_fetch
 }

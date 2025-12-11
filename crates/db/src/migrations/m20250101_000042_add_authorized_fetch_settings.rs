@@ -1,4 +1,4 @@
-//! Add authorized fetch settings to user_profile and instance tables.
+//! Add authorized fetch settings to `user_profile` and instance tables.
 
 use sea_orm_migration::prelude::*;
 

@@ -1,5 +1,7 @@
 //! Repository for filter group operations.
 
+use std::sync::Arc;
+
 use chrono::Utc;
 use misskey_common::id::IdGenerator;
 use sea_orm::{
@@ -39,13 +41,14 @@ pub struct UpdateFilterGroupInput {
 /// Repository for filter group operations.
 #[derive(Clone)]
 pub struct FilterGroupRepository {
-    db: DatabaseConnection,
+    db: Arc<DatabaseConnection>,
     id_gen: IdGenerator,
 }
 
 impl FilterGroupRepository {
     /// Create a new filter group repository.
-    pub fn new(db: DatabaseConnection) -> Self {
+    #[must_use]
+    pub fn new(db: Arc<DatabaseConnection>) -> Self {
         Self {
             db,
             id_gen: IdGenerator::new(),
@@ -60,7 +63,7 @@ impl FilterGroupRepository {
         // Get next display order
         let count = Entity::find()
             .filter(Column::UserId.eq(&input.user_id))
-            .count(&self.db)
+            .count(self.db.as_ref())
             .await?;
 
         let model = ActiveModel {
@@ -74,12 +77,12 @@ impl FilterGroupRepository {
             updated_at: Set(None),
         };
 
-        model.insert(&self.db).await
+        model.insert(self.db.as_ref()).await
     }
 
     /// Get a filter group by ID.
     pub async fn find_by_id(&self, id: &str) -> Result<Option<Model>, DbErr> {
-        Entity::find_by_id(id).one(&self.db).await
+        Entity::find_by_id(id).one(self.db.as_ref()).await
     }
 
     /// Get all filter groups for a user.
@@ -87,7 +90,7 @@ impl FilterGroupRepository {
         Entity::find()
             .filter(Column::UserId.eq(user_id))
             .order_by_asc(Column::DisplayOrder)
-            .all(&self.db)
+            .all(self.db.as_ref())
             .await
     }
 
@@ -97,7 +100,7 @@ impl FilterGroupRepository {
             .filter(Column::UserId.eq(user_id))
             .filter(Column::IsActive.eq(true))
             .order_by_asc(Column::DisplayOrder)
-            .all(&self.db)
+            .all(self.db.as_ref())
             .await
     }
 
@@ -107,7 +110,7 @@ impl FilterGroupRepository {
         id: &str,
         input: UpdateFilterGroupInput,
     ) -> Result<Option<Model>, DbErr> {
-        let Some(existing) = Entity::find_by_id(id).one(&self.db).await? else {
+        let Some(existing) = Entity::find_by_id(id).one(self.db.as_ref()).await? else {
             return Ok(None);
         };
 
@@ -129,7 +132,7 @@ impl FilterGroupRepository {
             model.display_order = Set(display_order);
         }
 
-        model.update(&self.db).await.map(Some)
+        model.update(self.db.as_ref()).await.map(Some)
     }
 
     /// Activate a filter group.
@@ -151,9 +154,9 @@ impl FilterGroupRepository {
     }
 
     /// Delete a filter group.
-    /// Note: This will set group_id to NULL on associated word filters.
+    /// Note: This will set `group_id` to NULL on associated word filters.
     pub async fn delete(&self, id: &str) -> Result<bool, DbErr> {
-        let result = Entity::delete_by_id(id).exec(&self.db).await?;
+        let result = Entity::delete_by_id(id).exec(self.db.as_ref()).await?;
         Ok(result.rows_affected > 0)
     }
 
@@ -161,7 +164,7 @@ impl FilterGroupRepository {
     pub async fn delete_by_user(&self, user_id: &str) -> Result<u64, DbErr> {
         let result = Entity::delete_many()
             .filter(Column::UserId.eq(user_id))
-            .exec(&self.db)
+            .exec(self.db.as_ref())
             .await?;
         Ok(result.rows_affected)
     }
@@ -170,7 +173,7 @@ impl FilterGroupRepository {
     pub async fn count_by_user(&self, user_id: &str) -> Result<u64, DbErr> {
         Entity::find()
             .filter(Column::UserId.eq(user_id))
-            .count(&self.db)
+            .count(self.db.as_ref())
             .await
     }
 
@@ -180,7 +183,7 @@ impl FilterGroupRepository {
 
         for (index, group_id) in group_ids.iter().enumerate() {
             // Verify the group belongs to the user before updating
-            let Some(existing) = Entity::find_by_id(group_id).one(&self.db).await? else {
+            let Some(existing) = Entity::find_by_id(group_id).one(self.db.as_ref()).await? else {
                 continue;
             };
 
@@ -191,7 +194,7 @@ impl FilterGroupRepository {
             let mut model: ActiveModel = existing.into();
             model.display_order = Set(index as i32);
             model.updated_at = Set(Some(now));
-            model.update(&self.db).await?;
+            model.update(self.db.as_ref()).await?;
         }
 
         Ok(())
@@ -202,7 +205,7 @@ impl FilterGroupRepository {
         word_filter::Entity::find()
             .filter(word_filter::Column::GroupId.eq(group_id))
             .order_by_asc(word_filter::Column::CreatedAt)
-            .all(&self.db)
+            .all(self.db.as_ref())
             .await
     }
 
@@ -213,7 +216,7 @@ impl FilterGroupRepository {
         group_id: &str,
     ) -> Result<Option<word_filter::Model>, DbErr> {
         let Some(filter) = word_filter::Entity::find_by_id(filter_id)
-            .one(&self.db)
+            .one(self.db.as_ref())
             .await?
         else {
             return Ok(None);
@@ -224,7 +227,7 @@ impl FilterGroupRepository {
         model.group_id = Set(Some(group_id.to_string()));
         model.updated_at = Set(Some(now));
 
-        model.update(&self.db).await.map(Some)
+        model.update(self.db.as_ref()).await.map(Some)
     }
 
     /// Remove a filter from its group.
@@ -233,7 +236,7 @@ impl FilterGroupRepository {
         filter_id: &str,
     ) -> Result<Option<word_filter::Model>, DbErr> {
         let Some(filter) = word_filter::Entity::find_by_id(filter_id)
-            .one(&self.db)
+            .one(self.db.as_ref())
             .await?
         else {
             return Ok(None);
@@ -244,7 +247,7 @@ impl FilterGroupRepository {
         model.group_id = Set(None);
         model.updated_at = Set(Some(now));
 
-        model.update(&self.db).await.map(Some)
+        model.update(self.db.as_ref()).await.map(Some)
     }
 
     /// Move multiple filters to a group.
@@ -258,7 +261,7 @@ impl FilterGroupRepository {
 
         for filter_id in filter_ids {
             let Some(filter) = word_filter::Entity::find_by_id(filter_id)
-                .one(&self.db)
+                .one(self.db.as_ref())
                 .await?
             else {
                 continue;
@@ -267,7 +270,7 @@ impl FilterGroupRepository {
             let mut model: word_filter::ActiveModel = filter.into();
             model.group_id = Set(Some(group_id.to_string()));
             model.updated_at = Set(Some(now));
-            model.update(&self.db).await?;
+            model.update(self.db.as_ref()).await?;
             count += 1;
         }
 
@@ -283,7 +286,7 @@ impl FilterGroupRepository {
             .filter(word_filter::Column::UserId.eq(user_id))
             .filter(word_filter::Column::GroupId.is_null())
             .order_by_asc(word_filter::Column::CreatedAt)
-            .all(&self.db)
+            .all(self.db.as_ref())
             .await
     }
 }
