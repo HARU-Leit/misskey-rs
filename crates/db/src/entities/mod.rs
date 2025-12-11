@@ -46,6 +46,7 @@ pub mod push_subscription;
 pub mod group;
 pub mod group_member;
 pub mod group_invite;
+pub mod meta_settings;
 
 pub use abuse_report::Entity as AbuseReport;
 pub use announcement::Entity as Announcement;
@@ -93,3 +94,4 @@ pub use push_subscription::Entity as PushSubscription;
 pub use group::Entity as Group;
 pub use group_member::Entity as GroupMember;
 pub use group_invite::Entity as GroupInvite;
+pub use meta_settings::Entity as MetaSettings;

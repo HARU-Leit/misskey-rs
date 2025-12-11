@@ -64,6 +64,10 @@ pub struct UpdateUserInput {
     pub is_bot: Option<bool>,
     pub is_cat: Option<bool>,
     pub is_locked: Option<bool>,
+
+    /// User pronouns (e.g., "they/them", "she/her", "he/him")
+    #[validate(length(max = 128))]
+    pub pronouns: Option<String>,
 }
 
 impl UserService {
@@ -249,6 +253,15 @@ impl UserService {
         }
 
         active.updated_at = Set(Some(chrono::Utc::now().into()));
+
+        // Update pronouns in user profile if provided
+        if let Some(pronouns) = input.pronouns {
+            let profile = self.profile_repo.get_by_user_id(id).await?;
+            let mut profile_active: user_profile::ActiveModel = profile.into();
+            profile_active.pronouns = Set(Some(pronouns));
+            profile_active.updated_at = Set(Some(chrono::Utc::now().into()));
+            self.profile_repo.update(profile_active).await?;
+        }
 
         self.user_repo.update(active).await
     }
@@ -578,6 +591,7 @@ mod tests {
             is_bot: None,
             is_cat: None,
             is_locked: None,
+            pronouns: None,
         };
         assert!(input.validate().is_err());
 
@@ -592,6 +606,7 @@ mod tests {
             is_bot: Some(false),
             is_cat: Some(true),
             is_locked: Some(false),
+            pronouns: Some("they/them".to_string()),
         };
         assert!(input.validate().is_ok());
     }

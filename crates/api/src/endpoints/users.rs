@@ -96,6 +96,8 @@ pub struct UpdateUserRequest {
     pub is_bot: Option<bool>,
     pub is_cat: Option<bool>,
     pub is_locked: Option<bool>,
+    /// User pronouns (e.g., "they/them", "she/her", "he/him")
+    pub pronouns: Option<String>,
 }
 
 impl UpdateUserRequest {
@@ -111,6 +113,7 @@ impl UpdateUserRequest {
             is_bot: self.is_bot,
             is_cat: self.is_cat,
             is_locked: self.is_locked,
+            pronouns: self.pronouns,
         }
     }
 }
