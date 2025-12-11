@@ -238,7 +238,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let moderation_service = ModerationService::new(moderation_repo, user_repo.clone());
     let emoji_service = EmojiService::new(emoji_repo);
     let announcement_service = AnnouncementService::new(announcement_repo);
-    let messaging_service = MessagingService::new(messaging_repo, user_repo.clone(), blocking_repo);
+    let messaging_service = MessagingService::new(
+        messaging_repo,
+        user_repo.clone(),
+        user_profile_repo.clone(),
+        following_repo.clone(),
+        blocking_repo,
+    );
     let clip_service = ClipService::new(clip_repo.clone());
     let antenna_service = AntennaService::new(antenna_repo);
     let channel_service = ChannelService::new(channel_repo);

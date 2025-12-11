@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (Mastodon形式インポート実装)
+*Last Updated: 2025-12-11* (DM制限機能実装)
 
 ---
 
@@ -68,7 +68,7 @@
 | タスク | 状況 | 参照 |
 |--------|------|------|
 | バブルタイムライン | ✅ 完了 | timelines.rs, meta_settings |
-| チャンネルタイムラインのストリーミング | 未実装 | MISSING_FEATURES.md |
+| チャンネルタイムラインのストリーミング | ✅ 完了 | streaming.rs, pubsub.rs |
 | Bot非表示オプション | ✅ 完了 | user_profile, notes.rs |
 
 ### 検索・発見
@@ -83,7 +83,7 @@
 
 | タスク | 状況 | 参照 |
 |--------|------|------|
-| ワンボタンいいね（Like/Reaction分離） | 未実装 | FORK_FEATURES.md |
+| ワンボタンいいね（Like/Reaction分離） | ✅ 完了 | notes.rs, reaction.rs |
 | デフォルトリアクション設定 | ✅ 完了 | user_profile, users.rs |
 | ユーザー単位Authorized Fetch | 未実装 | FORK_FEATURES.md |
 
@@ -162,10 +162,12 @@
 
 | タスク | ファイル | 参照 |
 |--------|----------|------|
-| メッセージングのブロックチェック | messaging.rs:81 | IMPLEMENTATION_STATUS.md |
-| ドライブのファイル実体削除 | drive.rs:218 | IMPLEMENTATION_STATUS.md |
-| NodeInfo実統計取得 | ✅ 実装済 | nodeinfo.rs |
+| メッセージングのブロックチェック | ✅ 完了 | messaging.rs:87-96 |
+| ドライブのファイル実体削除 | ✅ 完了 | drive.rs:252-264 |
+| NodeInfo実統計取得 | ✅ 完了 | nodeinfo.rs |
 | Mastodon API base_url設定 | ✅ TODO残 | timelines.rs |
+| フォルダ循環参照チェック | 未実装 | drive.rs:475 |
+| 非フォロワーからのメッセージ制限 | ✅ 完了 | messaging.rs, user_profile |
 
 ---
 
@@ -228,10 +230,19 @@
 ### UI/UX設定 (2025-12-11)
 - **デフォルトリアクション設定** - ユーザーごとにデフォルトリアクション絵文字を設定可能。`user_profile.default_reaction`フィールドに絵文字（Unicode絵文字またはカスタム絵文字ショートコード）を保存。`/api/users/update`エンドポイントの`defaultReaction`パラメータで設定可能
 
+### ストリーミング拡張 (2025-12-11)
+- **チャンネルタイムラインのストリーミング** - WebSocket経由でチャンネルタイムラインのリアルタイム更新を購読可能。`StreamChannel::Channel { channel_id }`で特定のチャンネルに接続し、チャンネルに投稿されたノートをリアルタイムで受信。Redis Pub/Subの`misskey:channel:{channel_id}`チャンネルを使用してイベントを配信。
+
+### ワンボタンいいね (2025-12-11)
+- **シンプルないいねAPI** - `/api/notes/like`エンドポイントでワンボタンいいねを実現。ユーザーの`default_reaction`設定を使用し、未設定の場合は👍にフォールバック。`/api/notes/unlike`でいいね解除。`ReactionService.like()`メソッドがユーザーのデフォルトリアクションを自動的に適用。
+
 ### データ管理 (2025-12-11)
 - **ノートエクスポート（JSON/CSV）** - `/api/i/account/export/notes`エンドポイントでユーザーのノートをエクスポート可能。JSON形式（デフォルト）とCSV形式をサポート。各ノートはID、テキスト、CW、公開範囲、返信先、リノート先、ファイルID、タグ、URI、URL、作成日時、更新日時を含む。`limit`パラメータで最大件数指定（デフォルト10000）、`format`パラメータで形式選択（`json`または`csv`）。
 - **ブロック/ミュートエクスポート** - `/api/i/account/export/blocking`および`/api/i/account/export/muting`エンドポイントでブロック・ミュートしているユーザーをエクスポート可能。`ExportedFollow`形式（acct、uri）で最大10000件まで出力。
 - **Mastodon形式インポート** - `/api/i/account/import/blocking`および`/api/i/account/import/muting`エンドポイントでMastodon形式CSVからブロック・ミュートリストをインポート可能。ヘッダー行付きCSV（`Account address`列）またはシンプルな1行1acct形式に対応。インポート結果としてtotal/imported/skipped/failedカウントとエラー詳細を返却。
+
+### メッセージング拡張 (2025-12-11)
+- **非フォロワーからのDM制限** - `user_profile.receive_dm_from_followers_only`設定でフォロワー以外からのダイレクトメッセージを拒否可能。有効にすると送信者がフォロワーでない場合は403エラーを返却。既存のブロックチェックに加えて追加のプライバシー保護を提供。
 
 ---
 
@@ -239,7 +250,7 @@
 
 1. **フェデレーション**: チャンネルのフェデレーション（Group actor）
 2. **検索**: Meilisearch連携
-3. **UI/UX**: ワンボタンいいね（Like/Reaction分離）
+3. **セキュリティ**: ユーザー単位Authorized Fetch
 
 ---
 

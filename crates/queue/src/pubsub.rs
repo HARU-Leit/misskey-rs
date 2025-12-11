@@ -26,6 +26,8 @@ pub mod channels {
     pub const LOCAL_TIMELINE: &str = "misskey:timeline:local";
     /// User-specific events (suffix with user ID).
     pub const USER_PREFIX: &str = "misskey:user:";
+    /// Channel-specific events (suffix with channel ID).
+    pub const CHANNEL_PREFIX: &str = "misskey:channel:";
     /// Note events (create, delete, update).
     pub const NOTES: &str = "misskey:notes";
     /// Notification events.
@@ -224,6 +226,46 @@ impl RedisPubSub {
             _ => {}
         }
 
+        Ok(())
+    }
+
+    /// Publish a note creation event to a specific channel timeline.
+    pub async fn publish_channel_note_created(
+        &self,
+        channel_id: &str,
+        note_id: &str,
+        user_id: &str,
+        text: Option<&str>,
+        visibility: &str,
+    ) -> Result<(), RedisError> {
+        let event = PubSubEvent::NoteCreated {
+            id: note_id.to_string(),
+            user_id: user_id.to_string(),
+            text: text.map(String::from),
+            visibility: visibility.to_string(),
+        };
+
+        // Publish to channel-specific channel
+        let channel = format!("{}{}", channels::CHANNEL_PREFIX, channel_id);
+        self.publish(&channel, &event).await?;
+
+        debug!(channel_id, note_id, "Published note to channel timeline");
+        Ok(())
+    }
+
+    /// Subscribe to a channel-specific events.
+    pub async fn subscribe_channel(&self, channel_id: &str) -> Result<(), RedisError> {
+        let channel = format!("{}{}", channels::CHANNEL_PREFIX, channel_id);
+        self.subscriber.subscribe(&channel).await?;
+        debug!(channel_id, "Subscribed to channel timeline");
+        Ok(())
+    }
+
+    /// Unsubscribe from a channel-specific events.
+    pub async fn unsubscribe_channel(&self, channel_id: &str) -> Result<(), RedisError> {
+        let channel = format!("{}{}", channels::CHANNEL_PREFIX, channel_id);
+        self.subscriber.unsubscribe(&channel).await?;
+        debug!(channel_id, "Unsubscribed from channel timeline");
         Ok(())
     }
 
@@ -493,6 +535,19 @@ impl EventPublisher for RedisPubSub {
         text: Option<&str>,
     ) -> AppResult<()> {
         RedisPubSub::publish_direct_message(self, id, sender_id, recipient_id, text)
+            .await
+            .map_err(|e| misskey_common::AppError::Internal(e.to_string()))
+    }
+
+    async fn publish_channel_note_created(
+        &self,
+        channel_id: &str,
+        note_id: &str,
+        user_id: &str,
+        text: Option<&str>,
+        visibility: &str,
+    ) -> AppResult<()> {
+        RedisPubSub::publish_channel_note_created(self, channel_id, note_id, user_id, text, visibility)
             .await
             .map_err(|e| misskey_common::AppError::Internal(e.to_string()))
     }

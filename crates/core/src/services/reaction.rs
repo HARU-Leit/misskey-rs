@@ -74,6 +74,25 @@ impl ReactionService {
         self.event_publisher = Some(event_publisher);
     }
 
+    /// System default reaction emoji (fallback when user has no default set).
+    const DEFAULT_LIKE_EMOJI: &'static str = "👍";
+
+    /// Like a note using the user's default reaction or system default.
+    ///
+    /// This is the "one-button like" feature that simplifies reacting to notes.
+    /// It uses the user's configured default_reaction if set, otherwise falls back
+    /// to the system default (👍).
+    pub async fn like(
+        &self,
+        user_id: &str,
+        note_id: &str,
+        default_reaction: Option<&str>,
+    ) -> AppResult<reaction::Model> {
+        // Use user's default reaction, or fall back to system default
+        let reaction = default_reaction.unwrap_or(Self::DEFAULT_LIKE_EMOJI);
+        self.create(user_id, note_id, reaction).await
+    }
+
     /// Create a reaction on a note.
     pub async fn create(
         &self,
