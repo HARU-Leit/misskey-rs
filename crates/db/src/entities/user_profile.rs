@@ -90,6 +90,10 @@ pub struct Model {
     #[sea_orm(nullable)]
     pub moved_to_uri: Option<String>,
 
+    /// Hide notes from bot accounts in timeline
+    #[sea_orm(default_value = false)]
+    pub hide_bots: bool,
+
     pub created_at: DateTimeWithTimeZone,
 
     #[sea_orm(nullable)]

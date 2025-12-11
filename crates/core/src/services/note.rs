@@ -642,21 +642,37 @@ impl NoteService {
     }
 
     /// Get local public timeline.
+    ///
+    /// # Arguments
+    /// * `limit` - Maximum number of notes to return
+    /// * `until_id` - Return notes older than this ID (for pagination)
+    /// * `exclude_user_ids` - Optional list of user IDs to exclude (for bot filtering)
     pub async fn local_timeline(
         &self,
         limit: u64,
         until_id: Option<&str>,
+        exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
-        self.note_repo.find_local_public(limit, until_id).await
+        self.note_repo
+            .find_local_public(limit, until_id, exclude_user_ids)
+            .await
     }
 
     /// Get global public timeline.
+    ///
+    /// # Arguments
+    /// * `limit` - Maximum number of notes to return
+    /// * `until_id` - Return notes older than this ID (for pagination)
+    /// * `exclude_user_ids` - Optional list of user IDs to exclude (for bot filtering)
     pub async fn global_timeline(
         &self,
         limit: u64,
         until_id: Option<&str>,
+        exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
-        self.note_repo.find_global_public(limit, until_id).await
+        self.note_repo
+            .find_global_public(limit, until_id, exclude_user_ids)
+            .await
     }
 
     /// Get bubble timeline (local + whitelisted instances).
@@ -665,27 +681,35 @@ impl NoteService {
     /// whitelisted remote instances (bubble instances).
     ///
     /// # Arguments
-    ///
     /// * `bubble_hosts` - List of whitelisted instance hostnames
     /// * `limit` - Maximum number of notes to return
     /// * `until_id` - Return notes older than this ID (for pagination)
+    /// * `exclude_user_ids` - Optional list of user IDs to exclude (for bot filtering)
     pub async fn bubble_timeline(
         &self,
         bubble_hosts: &[String],
         limit: u64,
         until_id: Option<&str>,
+        exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
         self.note_repo
-            .find_bubble_timeline(bubble_hosts, limit, until_id)
+            .find_bubble_timeline(bubble_hosts, limit, until_id, exclude_user_ids)
             .await
     }
 
     /// Get home timeline (notes from followed users + own notes).
+    ///
+    /// # Arguments
+    /// * `user_id` - The user's ID
+    /// * `limit` - Maximum number of notes to return
+    /// * `until_id` - Return notes older than this ID (for pagination)
+    /// * `exclude_user_ids` - Optional list of user IDs to exclude (for bot filtering)
     pub async fn home_timeline(
         &self,
         user_id: &str,
         limit: u64,
         until_id: Option<&str>,
+        exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
         // Get IDs of users that the current user follows
         let followings = self
@@ -695,7 +719,7 @@ impl NoteService {
         let following_ids: Vec<String> = followings.iter().map(|f| f.followee_id.clone()).collect();
 
         self.note_repo
-            .find_home_timeline(user_id, &following_ids, limit, until_id)
+            .find_home_timeline(user_id, &following_ids, limit, until_id, exclude_user_ids)
             .await
     }
 

@@ -286,6 +286,20 @@ impl UserRepository {
             .await
             .map_err(|e| AppError::Database(e.to_string()))
     }
+
+    /// Get IDs of all bot users.
+    ///
+    /// Used for filtering out bot notes from timelines when hide_bots is enabled.
+    pub async fn find_bot_user_ids(&self) -> AppResult<Vec<String>> {
+        User::find()
+            .filter(user::Column::IsBot.eq(true))
+            .select_only()
+            .column(user::Column::Id)
+            .into_tuple::<String>()
+            .all(self.db.as_ref())
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
 }
 
 #[cfg(test)]

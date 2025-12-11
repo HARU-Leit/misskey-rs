@@ -230,9 +230,21 @@ async fn timeline(
     Json(req): Json<TimelineRequest>,
 ) -> AppResult<ApiResponse<Vec<NoteResponse>>> {
     let limit = req.limit.min(max_limit());
+
+    // Get bot user IDs to exclude if hide_bots is enabled
+    let exclude_user_ids = state
+        .user_service
+        .get_exclude_user_ids_for_timeline(&user.id)
+        .await?;
+
     let notes = state
         .note_service
-        .home_timeline(&user.id, limit, req.until_id.as_deref())
+        .home_timeline(
+            &user.id,
+            limit,
+            req.until_id.as_deref(),
+            exclude_user_ids.as_deref(),
+        )
         .await?;
 
     // Apply word filters
@@ -249,9 +261,20 @@ async fn local_timeline(
     Json(req): Json<TimelineRequest>,
 ) -> AppResult<ApiResponse<Vec<NoteResponse>>> {
     let limit = req.limit.min(max_limit());
+
+    // Get bot user IDs to exclude if user is authenticated and has hide_bots enabled
+    let exclude_user_ids = if let Some(ref user) = user {
+        state
+            .user_service
+            .get_exclude_user_ids_for_timeline(&user.id)
+            .await?
+    } else {
+        None
+    };
+
     let notes = state
         .note_service
-        .local_timeline(limit, req.until_id.as_deref())
+        .local_timeline(limit, req.until_id.as_deref(), exclude_user_ids.as_deref())
         .await?;
 
     // Apply word filters if user is authenticated
@@ -273,9 +296,20 @@ async fn global_timeline(
     Json(req): Json<TimelineRequest>,
 ) -> AppResult<ApiResponse<Vec<NoteResponse>>> {
     let limit = req.limit.min(max_limit());
+
+    // Get bot user IDs to exclude if user is authenticated and has hide_bots enabled
+    let exclude_user_ids = if let Some(ref user) = user {
+        state
+            .user_service
+            .get_exclude_user_ids_for_timeline(&user.id)
+            .await?
+    } else {
+        None
+    };
+
     let notes = state
         .note_service
-        .global_timeline(limit, req.until_id.as_deref())
+        .global_timeline(limit, req.until_id.as_deref(), exclude_user_ids.as_deref())
         .await?;
 
     // Apply word filters if user is authenticated

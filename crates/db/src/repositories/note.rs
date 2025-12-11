@@ -174,43 +174,75 @@ impl NoteRepository {
     }
 
     /// Get public timeline (local notes only).
+    ///
+    /// # Arguments
+    /// * `limit` - Maximum number of notes to return
+    /// * `until_id` - Return notes older than this ID (for pagination)
+    /// * `exclude_user_ids` - Optional list of user IDs to exclude (for bot filtering)
     pub async fn find_local_public(
         &self,
         limit: u64,
         until_id: Option<&str>,
+        exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
-        let mut query = Note::find()
-            .filter(note::Column::Visibility.eq(note::Visibility::Public))
-            .filter(note::Column::IsLocal.eq(true))
-            .order_by_desc(note::Column::Id)
-            .limit(limit);
+        use sea_orm::Condition;
+
+        let mut condition = Condition::all()
+            .add(note::Column::Visibility.eq(note::Visibility::Public))
+            .add(note::Column::IsLocal.eq(true));
 
         if let Some(until) = until_id {
-            query = query.filter(note::Column::Id.lt(until));
+            condition = condition.add(note::Column::Id.lt(until));
         }
 
-        query
+        // Exclude specified user IDs (for bot filtering)
+        if let Some(user_ids) = exclude_user_ids {
+            if !user_ids.is_empty() {
+                condition = condition.add(note::Column::UserId.is_not_in(user_ids.to_vec()));
+            }
+        }
+
+        Note::find()
+            .filter(condition)
+            .order_by_desc(note::Column::Id)
+            .limit(limit)
             .all(self.db.as_ref())
             .await
             .map_err(|e| AppError::Database(e.to_string()))
     }
 
     /// Get global timeline (all public notes).
+    ///
+    /// # Arguments
+    /// * `limit` - Maximum number of notes to return
+    /// * `until_id` - Return notes older than this ID (for pagination)
+    /// * `exclude_user_ids` - Optional list of user IDs to exclude (for bot filtering)
     pub async fn find_global_public(
         &self,
         limit: u64,
         until_id: Option<&str>,
+        exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
-        let mut query = Note::find()
-            .filter(note::Column::Visibility.eq(note::Visibility::Public))
-            .order_by_desc(note::Column::Id)
-            .limit(limit);
+        use sea_orm::Condition;
+
+        let mut condition = Condition::all()
+            .add(note::Column::Visibility.eq(note::Visibility::Public));
 
         if let Some(until) = until_id {
-            query = query.filter(note::Column::Id.lt(until));
+            condition = condition.add(note::Column::Id.lt(until));
         }
 
-        query
+        // Exclude specified user IDs (for bot filtering)
+        if let Some(user_ids) = exclude_user_ids {
+            if !user_ids.is_empty() {
+                condition = condition.add(note::Column::UserId.is_not_in(user_ids.to_vec()));
+            }
+        }
+
+        Note::find()
+            .filter(condition)
+            .order_by_desc(note::Column::Id)
+            .limit(limit)
             .all(self.db.as_ref())
             .await
             .map_err(|e| AppError::Database(e.to_string()))
@@ -224,11 +256,18 @@ impl NoteRepository {
     ///
     /// This is useful for creating a "trusted network" timeline between
     /// friendly instances.
+    ///
+    /// # Arguments
+    /// * `bubble_hosts` - List of whitelisted instance hosts
+    /// * `limit` - Maximum number of notes to return
+    /// * `until_id` - Return notes older than this ID (for pagination)
+    /// * `exclude_user_ids` - Optional list of user IDs to exclude (for bot filtering)
     pub async fn find_bubble_timeline(
         &self,
         bubble_hosts: &[String],
         limit: u64,
         until_id: Option<&str>,
+        exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
         use sea_orm::Condition;
 
@@ -247,6 +286,13 @@ impl NoteRepository {
 
         if let Some(until) = until_id {
             condition = condition.add(note::Column::Id.lt(until));
+        }
+
+        // Exclude specified user IDs (for bot filtering)
+        if let Some(user_ids) = exclude_user_ids {
+            if !user_ids.is_empty() {
+                condition = condition.add(note::Column::UserId.is_not_in(user_ids.to_vec()));
+            }
         }
 
         Note::find()
@@ -297,18 +343,32 @@ impl NoteRepository {
     }
 
     /// Get home timeline (notes from followed users + own notes).
+    ///
+    /// # Arguments
+    /// * `user_id` - The user's ID
+    /// * `following_ids` - List of user IDs the user is following
+    /// * `limit` - Maximum number of notes to return
+    /// * `until_id` - Return notes older than this ID (for pagination)
+    /// * `exclude_user_ids` - Optional list of user IDs to exclude (for bot filtering)
     pub async fn find_home_timeline(
         &self,
         user_id: &str,
         following_ids: &[String],
         limit: u64,
         until_id: Option<&str>,
+        exclude_user_ids: Option<&[String]>,
     ) -> AppResult<Vec<note::Model>> {
         use sea_orm::Condition;
 
         // Include own notes and notes from followed users
         let mut user_ids = following_ids.to_vec();
         user_ids.push(user_id.to_string());
+
+        // If we have user IDs to exclude, remove them from the source list
+        // (more efficient than NOT IN for followed users)
+        if let Some(exclude_ids) = exclude_user_ids {
+            user_ids.retain(|id| !exclude_ids.contains(id));
+        }
 
         let mut condition = Condition::all()
             .add(note::Column::UserId.is_in(user_ids))

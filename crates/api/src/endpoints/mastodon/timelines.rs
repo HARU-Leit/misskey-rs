@@ -103,9 +103,20 @@ async fn home_timeline(
 ) -> AppResult<Json<Vec<Status>>> {
     let limit = params.limit.min(40).max(1) as u64;
 
+    // Get bot user IDs to exclude if hide_bots is enabled
+    let exclude_user_ids = state
+        .user_service
+        .get_exclude_user_ids_for_timeline(&user.id)
+        .await?;
+
     let notes = state
         .note_service
-        .home_timeline(&user.id, limit, params.max_id.as_deref())
+        .home_timeline(
+            &user.id,
+            limit,
+            params.max_id.as_deref(),
+            exclude_user_ids.as_deref(),
+        )
         .await?;
 
     // TODO: Get base_url from config
@@ -126,15 +137,16 @@ async fn public_timeline(
     let limit = params.limit.min(40).max(1) as u64;
     let local_only = params.local.unwrap_or(false);
 
+    // Public timeline doesn't have authentication, so no bot filtering
     let notes = if local_only {
         state
             .note_service
-            .local_timeline(limit, params.max_id.as_deref())
+            .local_timeline(limit, params.max_id.as_deref(), None)
             .await?
     } else {
         state
             .note_service
-            .global_timeline(limit, params.max_id.as_deref())
+            .global_timeline(limit, params.max_id.as_deref(), None)
             .await?
     };
 
@@ -161,9 +173,10 @@ async fn bubble_timeline(
     // Get bubble instances from meta settings
     let bubble_hosts = state.meta_settings_service.get_bubble_instances().await?;
 
+    // Bubble timeline doesn't have authentication, so no bot filtering
     let notes = state
         .note_service
-        .bubble_timeline(&bubble_hosts, limit, params.max_id.as_deref())
+        .bubble_timeline(&bubble_hosts, limit, params.max_id.as_deref(), None)
         .await?;
 
     // TODO: Get base_url from config

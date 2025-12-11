@@ -68,6 +68,9 @@ pub struct UpdateUserInput {
     /// User pronouns (e.g., "they/them", "she/her", "he/him")
     #[validate(length(max = 128))]
     pub pronouns: Option<String>,
+
+    /// Hide notes from bot accounts in timeline
+    pub hide_bots: Option<bool>,
 }
 
 impl UserService {
@@ -256,11 +259,18 @@ impl UserService {
 
         active.updated_at = Set(Some(chrono::Utc::now().into()));
 
-        // Update pronouns in user profile if provided
-        if let Some(pronouns) = input.pronouns {
+        // Update profile fields if provided
+        if input.pronouns.is_some() || input.hide_bots.is_some() {
             let profile = self.profile_repo.get_by_user_id(id).await?;
             let mut profile_active: user_profile::ActiveModel = profile.into();
-            profile_active.pronouns = Set(Some(pronouns));
+
+            if let Some(pronouns) = input.pronouns {
+                profile_active.pronouns = Set(Some(pronouns));
+            }
+            if let Some(hide_bots) = input.hide_bots {
+                profile_active.hide_bots = Set(hide_bots);
+            }
+
             profile_active.updated_at = Set(Some(chrono::Utc::now().into()));
             self.profile_repo.update(profile_active).await?;
         }
@@ -326,6 +336,40 @@ impl UserService {
         self.profile_repo
             .reorder_pinned_notes(user_id, note_ids)
             .await
+    }
+
+    /// Get the hide_bots setting for a user.
+    ///
+    /// Returns true if the user has enabled hiding bot notes in their timeline.
+    pub async fn get_hide_bots(&self, user_id: &str) -> AppResult<bool> {
+        let profile = self.profile_repo.find_by_user_id(user_id).await?;
+        Ok(profile.map(|p| p.hide_bots).unwrap_or(false))
+    }
+
+    /// Get IDs of all bot users for timeline filtering.
+    ///
+    /// Used when a user has hide_bots enabled to filter out bot notes.
+    pub async fn get_bot_user_ids(&self) -> AppResult<Vec<String>> {
+        self.user_repo.find_bot_user_ids().await
+    }
+
+    /// Get bot user IDs to exclude if hide_bots is enabled for the user.
+    ///
+    /// Convenience method that checks hide_bots and returns bot IDs if enabled.
+    pub async fn get_exclude_user_ids_for_timeline(
+        &self,
+        user_id: &str,
+    ) -> AppResult<Option<Vec<String>>> {
+        if self.get_hide_bots(user_id).await? {
+            let bot_ids = self.get_bot_user_ids().await?;
+            if bot_ids.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(bot_ids))
+            }
+        } else {
+            Ok(None)
+        }
     }
 }
 
@@ -602,6 +646,7 @@ mod tests {
             is_cat: None,
             is_locked: None,
             pronouns: None,
+            hide_bots: None,
         };
         assert!(input.validate().is_err());
 
@@ -617,6 +662,7 @@ mod tests {
             is_cat: Some(true),
             is_locked: Some(false),
             pronouns: Some("they/them".to_string()),
+            hide_bots: Some(true),
         };
         assert!(input.validate().is_ok());
     }
