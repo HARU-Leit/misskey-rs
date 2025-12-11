@@ -180,8 +180,6 @@ impl OAuthRepository {
 
     /// Revoke all tokens for a user and application.
     pub async fn revoke_tokens_for_user_app(&self, user_id: &str, app_id: &str) -> AppResult<u64> {
-        use sea_orm::QueryTrait;
-
         let result = OAuthToken::update_many()
             .col_expr(oauth_token::Column::IsRevoked, Expr::value(true))
             .filter(oauth_token::Column::UserId.eq(user_id))

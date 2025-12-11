@@ -62,6 +62,7 @@ pub struct TestDatabase {
     pub conn: DatabaseConnection,
     /// Database configuration.
     pub config: TestDbConfig,
+    #[allow(dead_code)]
     cleanup_on_drop: bool,
 }
 
