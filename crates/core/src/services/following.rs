@@ -41,7 +41,7 @@ impl FollowingService {
         }
     }
 
-    /// Create a new following service with ActivityPub delivery support.
+    /// Create a new following service with `ActivityPub` delivery support.
     #[must_use]
     pub fn with_delivery(
         following_repo: FollowingRepository,
@@ -122,17 +122,14 @@ impl FollowingService {
             self.follow_request_repo.create(model).await?;
 
             // Queue ActivityPub Follow activity for remote users
-            if let Some(ref delivery) = self.delivery {
-                if followee.host.is_some() {
-                    if let Some(ref inbox) = followee.inbox {
-                        if let Err(e) = self
-                            .queue_follow_activity(&follower, &followee, inbox, delivery)
-                            .await
-                        {
-                            tracing::warn!(error = %e, "Failed to queue Follow activity");
-                        }
-                    }
-                }
+            if let Some(ref delivery) = self.delivery
+                && followee.host.is_some()
+                && let Some(ref inbox) = followee.inbox
+                && let Err(e) = self
+                    .queue_follow_activity(&follower, &followee, inbox, delivery)
+                    .await
+            {
+                tracing::warn!(error = %e, "Failed to queue Follow activity");
             }
 
             return Ok(FollowResult::Pending);
@@ -142,27 +139,23 @@ impl FollowingService {
         self.create_following(&follower, &followee).await?;
 
         // Queue ActivityPub Follow activity for remote users
-        if let Some(ref delivery) = self.delivery {
-            if followee.host.is_some() {
-                if let Some(ref inbox) = followee.inbox {
-                    if let Err(e) = self
-                        .queue_follow_activity(&follower, &followee, inbox, delivery)
-                        .await
-                    {
-                        tracing::warn!(error = %e, "Failed to queue Follow activity");
-                    }
-                }
-            }
+        if let Some(ref delivery) = self.delivery
+            && followee.host.is_some()
+            && let Some(ref inbox) = followee.inbox
+            && let Err(e) = self
+                .queue_follow_activity(&follower, &followee, inbox, delivery)
+                .await
+        {
+            tracing::warn!(error = %e, "Failed to queue Follow activity");
         }
 
         // Publish real-time event
-        if let Some(ref event_publisher) = self.event_publisher {
-            if let Err(e) = event_publisher
+        if let Some(ref event_publisher) = self.event_publisher
+            && let Err(e) = event_publisher
                 .publish_followed(follower_id, followee_id)
                 .await
-            {
-                tracing::warn!(error = %e, "Failed to publish followed event");
-            }
+        {
+            tracing::warn!(error = %e, "Failed to publish followed event");
         }
 
         Ok(FollowResult::Following)
@@ -226,27 +219,23 @@ impl FollowingService {
             .await?;
 
         // Queue ActivityPub Undo activity for remote users
-        if let Some(ref delivery) = self.delivery {
-            if followee.host.is_some() {
-                if let Some(ref inbox) = followee.inbox {
-                    if let Err(e) = self
-                        .queue_undo_follow_activity(&follower, &followee, inbox, delivery)
-                        .await
-                    {
-                        tracing::warn!(error = %e, "Failed to queue Undo Follow activity");
-                    }
-                }
-            }
+        if let Some(ref delivery) = self.delivery
+            && followee.host.is_some()
+            && let Some(ref inbox) = followee.inbox
+            && let Err(e) = self
+                .queue_undo_follow_activity(&follower, &followee, inbox, delivery)
+                .await
+        {
+            tracing::warn!(error = %e, "Failed to queue Undo Follow activity");
         }
 
         // Publish real-time event
-        if let Some(ref event_publisher) = self.event_publisher {
-            if let Err(e) = event_publisher
+        if let Some(ref event_publisher) = self.event_publisher
+            && let Err(e) = event_publisher
                 .publish_unfollowed(follower_id, followee_id)
                 .await
-            {
-                tracing::warn!(error = %e, "Failed to publish unfollowed event");
-            }
+        {
+            tracing::warn!(error = %e, "Failed to publish unfollowed event");
         }
 
         Ok(())
@@ -272,27 +261,23 @@ impl FollowingService {
         self.follow_request_repo.delete(&request.id).await?;
 
         // Queue ActivityPub Accept activity for remote followers
-        if let Some(ref delivery) = self.delivery {
-            if follower.host.is_some() {
-                if let Some(ref inbox) = follower.inbox {
-                    if let Err(e) = self
-                        .queue_accept_activity(&followee, &follower, inbox, delivery)
-                        .await
-                    {
-                        tracing::warn!(error = %e, "Failed to queue Accept activity");
-                    }
-                }
-            }
+        if let Some(ref delivery) = self.delivery
+            && follower.host.is_some()
+            && let Some(ref inbox) = follower.inbox
+            && let Err(e) = self
+                .queue_accept_activity(&followee, &follower, inbox, delivery)
+                .await
+        {
+            tracing::warn!(error = %e, "Failed to queue Accept activity");
         }
 
         // Publish real-time event (follow relationship established)
-        if let Some(ref event_publisher) = self.event_publisher {
-            if let Err(e) = event_publisher
+        if let Some(ref event_publisher) = self.event_publisher
+            && let Err(e) = event_publisher
                 .publish_followed(follower_id, followee_id)
                 .await
-            {
-                tracing::warn!(error = %e, "Failed to publish followed event");
-            }
+        {
+            tracing::warn!(error = %e, "Failed to publish followed event");
         }
 
         Ok(())
@@ -309,17 +294,14 @@ impl FollowingService {
             .await?;
 
         // Queue ActivityPub Reject activity for remote followers
-        if let Some(ref delivery) = self.delivery {
-            if follower.host.is_some() {
-                if let Some(ref inbox) = follower.inbox {
-                    if let Err(e) = self
-                        .queue_reject_activity(&followee, &follower, inbox, delivery)
-                        .await
-                    {
-                        tracing::warn!(error = %e, "Failed to queue Reject activity");
-                    }
-                }
-            }
+        if let Some(ref delivery) = self.delivery
+            && follower.host.is_some()
+            && let Some(ref inbox) = follower.inbox
+            && let Err(e) = self
+                .queue_reject_activity(&followee, &follower, inbox, delivery)
+                .await
+        {
+            tracing::warn!(error = %e, "Failed to queue Reject activity");
         }
 
         Ok(())
@@ -336,17 +318,14 @@ impl FollowingService {
             .await?;
 
         // Queue ActivityPub Undo activity for remote users
-        if let Some(ref delivery) = self.delivery {
-            if followee.host.is_some() {
-                if let Some(ref inbox) = followee.inbox {
-                    if let Err(e) = self
-                        .queue_undo_follow_activity(&follower, &followee, inbox, delivery)
-                        .await
-                    {
-                        tracing::warn!(error = %e, "Failed to queue Undo Follow activity");
-                    }
-                }
-            }
+        if let Some(ref delivery) = self.delivery
+            && followee.host.is_some()
+            && let Some(ref inbox) = followee.inbox
+            && let Err(e) = self
+                .queue_undo_follow_activity(&follower, &followee, inbox, delivery)
+                .await
+        {
+            tracing::warn!(error = %e, "Failed to queue Undo Follow activity");
         }
 
         Ok(())

@@ -26,7 +26,7 @@ pub struct PaginationQuery {
     pub limit: u64,
 }
 
-fn default_limit() -> u64 {
+const fn default_limit() -> u64 {
     40
 }
 

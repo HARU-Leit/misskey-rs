@@ -1,4 +1,4 @@
-//! Add two-factor backup codes to user_profile table.
+//! Add two-factor backup codes to `user_profile` table.
 
 use sea_orm_migration::prelude::*;
 

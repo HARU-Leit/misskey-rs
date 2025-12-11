@@ -27,7 +27,7 @@ pub struct CreateChannelInput {
     pub allow_anyone_to_post: bool,
 }
 
-fn default_true() -> bool {
+const fn default_true() -> bool {
     true
 }
 
@@ -135,16 +135,15 @@ impl ChannelService {
         let count = self.channel_repo.count_by_user(user_id).await?;
         if count >= MAX_CHANNELS_PER_USER {
             return Err(AppError::Validation(format!(
-                "Maximum of {} channels allowed per user",
-                MAX_CHANNELS_PER_USER
+                "Maximum of {MAX_CHANNELS_PER_USER} channels allowed per user"
             )));
         }
 
         // Validate color if provided
-        if let Some(ref color) = input.color {
-            if !is_valid_color(color) {
-                return Err(AppError::Validation("Invalid color format".to_string()));
-            }
+        if let Some(ref color) = input.color
+            && !is_valid_color(color)
+        {
+            return Err(AppError::Validation("Invalid color format".to_string()));
         }
 
         let id = self.id_gen.generate();
@@ -185,10 +184,10 @@ impl ChannelService {
         let channel = self.get_by_id_for_owner(&input.channel_id, user_id).await?;
 
         // Validate color if provided
-        if let Some(Some(ref color)) = input.color {
-            if !is_valid_color(color) {
-                return Err(AppError::Validation("Invalid color format".to_string()));
-            }
+        if let Some(Some(ref color)) = input.color
+            && !is_valid_color(color)
+        {
+            return Err(AppError::Validation("Invalid color format".to_string()));
         }
 
         let now = Utc::now();

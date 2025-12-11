@@ -23,7 +23,11 @@ pub struct CreateProcessor {
 impl CreateProcessor {
     /// Create a new create processor.
     #[must_use]
-    pub fn new(note_repo: NoteRepository, user_repo: UserRepository, ap_client: ApClient) -> Self {
+    pub const fn new(
+        note_repo: NoteRepository,
+        user_repo: UserRepository,
+        ap_client: ApClient,
+    ) -> Self {
         Self {
             note_repo,
             actor_fetcher: ActorFetcher::new(user_repo, ap_client),

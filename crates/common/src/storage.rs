@@ -210,7 +210,7 @@ impl StorageBackend for S3Storage {
             .content_type(content_type)
             .send()
             .await
-            .map_err(|e| AppError::Internal(format!("S3 upload failed: {}", e)))?;
+            .map_err(|e| AppError::Internal(format!("S3 upload failed: {e}")))?;
 
         Ok(UploadedFile {
             key: key.to_string(),
@@ -230,7 +230,7 @@ impl StorageBackend for S3Storage {
             .key(&full_key)
             .send()
             .await
-            .map_err(|e| AppError::Internal(format!("S3 delete failed: {}", e)))?;
+            .map_err(|e| AppError::Internal(format!("S3 delete failed: {e}")))?;
 
         Ok(())
     }
@@ -259,7 +259,7 @@ impl StorageBackend for S3Storage {
                 if e.to_string().contains("NotFound") || e.to_string().contains("404") {
                     Ok(false)
                 } else {
-                    Err(AppError::Internal(format!("S3 head_object failed: {}", e)))
+                    Err(AppError::Internal(format!("S3 head_object failed: {e}")))
                 }
             }
         }

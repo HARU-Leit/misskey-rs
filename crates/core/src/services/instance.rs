@@ -33,7 +33,7 @@ pub struct InstanceService {
 impl InstanceService {
     /// Create a new instance service.
     #[must_use]
-    pub fn new(instance_repo: InstanceRepository, user_repo: UserRepository) -> Self {
+    pub const fn new(instance_repo: InstanceRepository, user_repo: UserRepository) -> Self {
         Self {
             instance_repo,
             user_repo,

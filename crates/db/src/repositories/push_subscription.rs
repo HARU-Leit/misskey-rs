@@ -18,7 +18,8 @@ pub struct PushSubscriptionRepository {
 
 impl PushSubscriptionRepository {
     /// Create a new push subscription repository.
-    pub fn new(db: Arc<DatabaseConnection>) -> Self {
+    #[must_use]
+    pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
 
@@ -34,7 +35,7 @@ impl PushSubscriptionRepository {
     pub async fn get_by_id(&self, id: &str) -> AppResult<Model> {
         self.find_by_id(id)
             .await?
-            .ok_or_else(|| AppError::NotFound(format!("Push subscription {} not found", id)))
+            .ok_or_else(|| AppError::NotFound(format!("Push subscription {id} not found")))
     }
 
     /// Find a push subscription by endpoint.

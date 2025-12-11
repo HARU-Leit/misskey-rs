@@ -6,22 +6,18 @@ use serde::{Deserialize, Serialize};
 /// Group join policy type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::N(20))")]
+#[derive(Default)]
 pub enum GroupJoinPolicy {
     /// Anyone can join without approval.
     #[sea_orm(string_value = "open")]
     Open,
     /// Users need an invitation to join.
     #[sea_orm(string_value = "invite_only")]
+    #[default]
     InviteOnly,
     /// Users can request to join, owner/moderators approve.
     #[sea_orm(string_value = "approval")]
     Approval,
-}
-
-impl Default for GroupJoinPolicy {
-    fn default() -> Self {
-        Self::InviteOnly
-    }
 }
 
 /// Group entity - a community for users to share notes.

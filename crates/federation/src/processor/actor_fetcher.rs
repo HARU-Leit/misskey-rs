@@ -21,7 +21,7 @@ pub struct ActorFetcher {
 impl ActorFetcher {
     /// Create a new actor fetcher.
     #[must_use]
-    pub fn new(user_repo: UserRepository, ap_client: ApClient) -> Self {
+    pub const fn new(user_repo: UserRepository, ap_client: ApClient) -> Self {
         Self {
             user_repo,
             ap_client,
@@ -50,7 +50,7 @@ impl ActorFetcher {
             .await
     }
 
-    /// Create a remote user from an ActivityPub actor JSON.
+    /// Create a remote user from an `ActivityPub` actor JSON.
     async fn create_remote_user_from_actor(
         &self,
         actor: &Value,
@@ -123,8 +123,7 @@ impl ActorFetcher {
         let is_bot = actor
             .get("type")
             .and_then(Value::as_str)
-            .map(|t| t == "Service" || t == "Application")
-            .unwrap_or(false);
+            .is_some_and(|t| t == "Service" || t == "Application");
 
         let is_cat = actor.get("isCat").and_then(Value::as_bool).unwrap_or(false);
 

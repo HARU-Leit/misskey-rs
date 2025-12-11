@@ -10,7 +10,7 @@
 use axum::{
     Json, Router,
     extract::{Multipart, Path, State},
-    routing::{get, post, put},
+    routing::{get, post},
 };
 use misskey_common::AppResult;
 use misskey_core::drive::CreateFileInput;
@@ -100,7 +100,7 @@ fn drive_file_to_media_attachment(
                 (Some(w), Some(h)) => Some(MediaDimensions {
                     width: w,
                     height: h,
-                    size: Some(format!("{}x{}", w, h)),
+                    size: Some(format!("{w}x{h}")),
                     aspect: if h > 0 {
                         Some(f64::from(w) / f64::from(h))
                     } else {
@@ -142,9 +142,11 @@ async fn upload_media(
     let mut focus: Option<String> = None;
 
     // Parse multipart form
-    while let Some(field) = multipart.next_field().await.map_err(|e| {
-        misskey_common::AppError::BadRequest(format!("Invalid multipart data: {}", e))
-    })? {
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|e| misskey_common::AppError::BadRequest(format!("Invalid multipart data: {e}")))?
+    {
         let name = field.name().unwrap_or("").to_string();
 
         match name.as_str() {
@@ -161,8 +163,7 @@ async fn upload_media(
                         .await
                         .map_err(|e| {
                             misskey_common::AppError::BadRequest(format!(
-                                "Failed to read file: {}",
-                                e
+                                "Failed to read file: {e}"
                             ))
                         })?
                         .to_vec(),

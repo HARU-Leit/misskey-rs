@@ -1,4 +1,4 @@
-//! Create clip and clip_note tables migration.
+//! Create clip and `clip_note` tables migration.
 
 use sea_orm_migration::prelude::*;
 

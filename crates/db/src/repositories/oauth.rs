@@ -204,7 +204,7 @@ impl OAuthRepository {
         Ok(result.rows_affected)
     }
 
-    /// Update last_used_at for a token.
+    /// Update `last_used_at` for a token.
     pub async fn touch_token(&self, id: &str) -> AppResult<()> {
         let token = self
             .find_token_by_id(id)

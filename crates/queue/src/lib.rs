@@ -2,7 +2,7 @@
 //!
 //! This crate provides asynchronous job processing using Redis:
 //!
-//! - **Jobs**: ActivityPub delivery, inbox processing
+//! - **Jobs**: `ActivityPub` delivery, inbox processing
 //! - **Workers**: Concurrent job execution with Apalis
 //! - **Pub/Sub**: Real-time event broadcasting
 //! - **Rate limiting**: Per-instance federation rate limits

@@ -1,6 +1,6 @@
 //! Add community-requested features:
-//! - pronouns field to user_profile
-//! - meta_settings table for instance configuration
+//! - pronouns field to `user_profile`
+//! - `meta_settings` table for instance configuration
 //! - Extensions for drive cleanup
 
 use sea_orm_migration::prelude::*;

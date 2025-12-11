@@ -42,7 +42,7 @@ pub struct CreateScheduledNoteInput {
     pub scheduled_at: DateTime<Utc>,
 }
 
-fn default_visibility() -> ScheduledVisibility {
+const fn default_visibility() -> ScheduledVisibility {
     ScheduledVisibility::Public
 }
 
@@ -162,8 +162,7 @@ impl ScheduledNoteService {
             .await?;
         if pending_count >= MAX_PENDING_NOTES_PER_USER {
             return Err(AppError::Validation(format!(
-                "Maximum of {} pending scheduled notes allowed",
-                MAX_PENDING_NOTES_PER_USER
+                "Maximum of {MAX_PENDING_NOTES_PER_USER} pending scheduled notes allowed"
             )));
         }
 
@@ -174,15 +173,13 @@ impl ScheduledNoteService {
 
         if input.scheduled_at < min_time {
             return Err(AppError::Validation(format!(
-                "Scheduled time must be at least {} minute(s) in the future",
-                MIN_SCHEDULE_MINUTES
+                "Scheduled time must be at least {MIN_SCHEDULE_MINUTES} minute(s) in the future"
             )));
         }
 
         if input.scheduled_at > max_time {
             return Err(AppError::Validation(format!(
-                "Scheduled time must be within {} days",
-                MAX_SCHEDULE_DAYS
+                "Scheduled time must be within {MAX_SCHEDULE_DAYS} days"
             )));
         }
 
@@ -198,7 +195,7 @@ impl ScheduledNoteService {
             file_ids: Set(json!(input.file_ids)),
             reply_id: Set(input.reply_id),
             renote_id: Set(input.renote_id),
-            poll: Set(input.poll.map(Into::into)),
+            poll: Set(input.poll),
             scheduled_at: Set(input.scheduled_at.into()),
             status: Set(ScheduledStatus::Pending),
             posted_note_id: Set(None),
@@ -240,15 +237,13 @@ impl ScheduledNoteService {
 
             if scheduled_at < min_time {
                 return Err(AppError::Validation(format!(
-                    "Scheduled time must be at least {} minute(s) in the future",
-                    MIN_SCHEDULE_MINUTES
+                    "Scheduled time must be at least {MIN_SCHEDULE_MINUTES} minute(s) in the future"
                 )));
             }
 
             if scheduled_at > max_time {
                 return Err(AppError::Validation(format!(
-                    "Scheduled time must be within {} days",
-                    MAX_SCHEDULE_DAYS
+                    "Scheduled time must be within {MAX_SCHEDULE_DAYS} days"
                 )));
             }
         }
@@ -318,8 +313,7 @@ impl ScheduledNoteService {
         // Check retry count
         if note.retry_count >= MAX_RETRY_COUNT {
             return Err(AppError::Validation(format!(
-                "Maximum retry count ({}) exceeded",
-                MAX_RETRY_COUNT
+                "Maximum retry count ({MAX_RETRY_COUNT}) exceeded"
             )));
         }
 

@@ -163,7 +163,7 @@ async fn public_timeline(
 /// GET /api/v1/timelines/bubble - Get bubble timeline.
 ///
 /// Shows public notes from local users and whitelisted remote instances.
-/// The list of whitelisted instances is configured in meta_settings.bubble_instances.
+/// The list of whitelisted instances is configured in `meta_settings.bubble_instances`.
 async fn bubble_timeline(
     State(state): State<AppState>,
     Query(params): Query<TimelineQuery>,

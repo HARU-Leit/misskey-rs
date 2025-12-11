@@ -108,7 +108,7 @@ pub enum AppError {
 impl AppError {
     /// Returns the HTTP status code for this error.
     #[must_use]
-    pub fn status_code(&self) -> StatusCode {
+    pub const fn status_code(&self) -> StatusCode {
         match self {
             // 4xx Client Errors
             Self::NotFound(_) | Self::UserNotFound(_) | Self::NoteNotFound(_) => {
@@ -135,7 +135,7 @@ impl AppError {
 
     /// Returns the error code for API responses.
     #[must_use]
-    pub fn error_code(&self) -> &'static str {
+    pub const fn error_code(&self) -> &'static str {
         match self {
             Self::NotFound(_) => "NOT_FOUND",
             Self::UserNotFound(_) => "USER_NOT_FOUND",

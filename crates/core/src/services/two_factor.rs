@@ -86,7 +86,7 @@ impl TwoFactorService {
     /// Check if 2FA is enabled for a user.
     pub async fn is_enabled(&self, user_id: &str) -> AppResult<bool> {
         let profile = self.profile_repo.find_by_user_id(user_id).await?;
-        Ok(profile.map(|p| p.two_factor_enabled).unwrap_or(false))
+        Ok(profile.is_some_and(|p| p.two_factor_enabled))
     }
 
     /// Initiate 2FA setup for a user.
@@ -121,12 +121,12 @@ impl TwoFactorService {
             Some(issuer.to_string()),
             username.to_string(),
         )
-        .map_err(|e| AppError::Internal(format!("Failed to create TOTP: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to create TOTP: {e}")))?;
 
         // Generate QR code
         let qr_code = totp
             .get_qr_base64()
-            .map_err(|e| AppError::Internal(format!("Failed to generate QR code: {}", e)))?;
+            .map_err(|e| AppError::Internal(format!("Failed to generate QR code: {e}")))?;
 
         // Get otpauth URL
         let otpauth_url = totp.get_url();
@@ -203,10 +203,10 @@ impl TwoFactorService {
             .ok_or_else(|| AppError::Internal("2FA enabled but no secret found".to_string()))?;
 
         let is_valid_totp = self.verify_totp(secret, &input.token)?;
-        let is_valid_backup = if !is_valid_totp {
-            self.verify_backup_code(&profile, &input.token)?
-        } else {
+        let is_valid_backup = if is_valid_totp {
             false
+        } else {
+            self.verify_backup_code(&profile, &input.token)?
         };
 
         if !is_valid_totp && !is_valid_backup {
@@ -308,7 +308,7 @@ impl TwoFactorService {
         let secret = Secret::Encoded(secret_base32.to_string());
         let secret_bytes = secret
             .to_bytes()
-            .map_err(|e| AppError::Internal(format!("Invalid secret: {}", e)))?;
+            .map_err(|e| AppError::Internal(format!("Invalid secret: {e}")))?;
 
         let totp = TOTP::new(
             Algorithm::SHA1,
@@ -319,7 +319,7 @@ impl TwoFactorService {
             None,
             String::new(),
         )
-        .map_err(|e| AppError::Internal(format!("Failed to create TOTP: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to create TOTP: {e}")))?;
 
         Ok(totp.check_current(token).unwrap_or(false))
     }
@@ -359,7 +359,7 @@ impl TwoFactorService {
             let salt = SaltString::generate(&mut OsRng);
             let hash = argon2
                 .hash_password(code.as_bytes(), &salt)
-                .map_err(|e| AppError::Internal(format!("Failed to hash backup code: {}", e)))?
+                .map_err(|e| AppError::Internal(format!("Failed to hash backup code: {e}")))?
                 .to_string();
 
             plain_codes.push(code);
@@ -379,13 +379,12 @@ impl TwoFactorService {
         let argon2 = Argon2::default();
 
         for hash in &hashed_codes {
-            if let Ok(parsed_hash) = argon2::password_hash::PasswordHash::new(hash) {
-                if argon2
+            if let Ok(parsed_hash) = argon2::password_hash::PasswordHash::new(hash)
+                && argon2
                     .verify_password(code.as_bytes(), &parsed_hash)
                     .is_ok()
-                {
-                    return Ok(true);
-                }
+            {
+                return Ok(true);
             }
         }
 
@@ -408,14 +407,13 @@ impl TwoFactorService {
 
         let mut found_index = None;
         for (i, hash) in hashed_codes.iter().enumerate() {
-            if let Ok(parsed_hash) = argon2::password_hash::PasswordHash::new(hash) {
-                if argon2
+            if let Ok(parsed_hash) = argon2::password_hash::PasswordHash::new(hash)
+                && argon2
                     .verify_password(code.as_bytes(), &parsed_hash)
                     .is_ok()
-                {
-                    found_index = Some(i);
-                    break;
-                }
+            {
+                found_index = Some(i);
+                break;
             }
         }
 
@@ -452,7 +450,7 @@ mod tests {
             TOTP_DIGITS,
             TOTP_SKEW,
             TOTP_STEP,
-            secret_bytes.clone(),
+            secret_bytes,
             Some("TestIssuer".to_string()),
             "testuser".to_string(),
         )

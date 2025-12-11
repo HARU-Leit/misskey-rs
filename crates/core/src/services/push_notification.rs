@@ -38,6 +38,7 @@ pub enum PushNotificationType {
 
 impl PushNotificationType {
     /// Get all notification types.
+    #[must_use]
     pub fn all() -> Vec<Self> {
         vec![
             Self::Follow,
@@ -70,7 +71,7 @@ impl std::fmt::Display for PushNotificationType {
             Self::Message => "message",
             Self::App => "app",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -169,6 +170,7 @@ pub struct PushNotificationService {
 
 impl PushNotificationService {
     /// Create a new push notification service.
+    #[must_use]
     pub fn new(repo: PushSubscriptionRepository, vapid_config: Option<VapidConfig>) -> Self {
         Self {
             repo,
@@ -178,11 +180,13 @@ impl PushNotificationService {
     }
 
     /// Check if push notifications are enabled.
-    pub fn is_enabled(&self) -> bool {
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
         self.vapid_config.is_some()
     }
 
     /// Get VAPID public key.
+    #[must_use]
     pub fn get_public_key(&self) -> Option<&str> {
         self.vapid_config.as_ref().map(|c| c.public_key.as_str())
     }
@@ -210,18 +214,17 @@ impl PushNotificationService {
                         },
                     )
                     .await;
-            } else {
-                // Different user trying to use the same endpoint
-                return Err(AppError::Conflict(
-                    "This push endpoint is already registered to another user".to_string(),
-                ));
             }
+            // Different user trying to use the same endpoint
+            return Err(AppError::Conflict(
+                "This push endpoint is already registered to another user".to_string(),
+            ));
         }
 
         let types = input.types.unwrap_or_else(|| {
             PushNotificationType::all()
                 .iter()
-                .map(|t| t.to_string())
+                .map(std::string::ToString::to_string)
                 .collect()
         });
 
@@ -364,7 +367,7 @@ impl PushNotificationService {
 
         for subscription in subscriptions {
             match self.send_push(&subscription, &payload).await {
-                Ok(_) => {
+                Ok(()) => {
                     let _ = self.repo.mark_push_success(&subscription.id).await;
                     success_count += 1;
                 }
@@ -395,7 +398,7 @@ impl PushNotificationService {
 
         // Build Web Push message using VAPID
         let payload_json = serde_json::to_string(payload)
-            .map_err(|e| AppError::Internal(format!("Failed to serialize payload: {}", e)))?;
+            .map_err(|e| AppError::Internal(format!("Failed to serialize payload: {e}")))?;
 
         // In a real implementation, we'd use a proper Web Push library like web-push
         // For now, we'll use the low-level HTTP API approach
@@ -420,7 +423,7 @@ impl PushNotificationService {
             )
             .body(payload_json)
             .build()
-            .map_err(|e| AppError::Internal(format!("Failed to build request: {}", e)))?;
+            .map_err(|e| AppError::Internal(format!("Failed to build request: {e}")))?;
 
         // For now, we'll just simulate success
         // In production, uncomment the actual send:
@@ -450,7 +453,7 @@ impl PushNotificationService {
         // Mask the endpoint for security (show only domain)
         let masked_endpoint = url::Url::parse(&model.endpoint)
             .ok()
-            .and_then(|u| u.host_str().map(|h| format!("https://{}/***/", h)))
+            .and_then(|u| u.host_str().map(|h| format!("https://{h}/***/")))
             .unwrap_or_else(|| "***".to_string());
 
         PushSubscriptionResponse {

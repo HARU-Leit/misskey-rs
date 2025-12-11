@@ -196,10 +196,10 @@ impl NoteRepository {
         }
 
         // Exclude specified user IDs (for bot filtering)
-        if let Some(user_ids) = exclude_user_ids {
-            if !user_ids.is_empty() {
-                condition = condition.add(note::Column::UserId.is_not_in(user_ids.to_vec()));
-            }
+        if let Some(user_ids) = exclude_user_ids
+            && !user_ids.is_empty()
+        {
+            condition = condition.add(note::Column::UserId.is_not_in(user_ids.to_vec()));
         }
 
         Note::find()
@@ -225,18 +225,18 @@ impl NoteRepository {
     ) -> AppResult<Vec<note::Model>> {
         use sea_orm::Condition;
 
-        let mut condition = Condition::all()
-            .add(note::Column::Visibility.eq(note::Visibility::Public));
+        let mut condition =
+            Condition::all().add(note::Column::Visibility.eq(note::Visibility::Public));
 
         if let Some(until) = until_id {
             condition = condition.add(note::Column::Id.lt(until));
         }
 
         // Exclude specified user IDs (for bot filtering)
-        if let Some(user_ids) = exclude_user_ids {
-            if !user_ids.is_empty() {
-                condition = condition.add(note::Column::UserId.is_not_in(user_ids.to_vec()));
-            }
+        if let Some(user_ids) = exclude_user_ids
+            && !user_ids.is_empty()
+        {
+            condition = condition.add(note::Column::UserId.is_not_in(user_ids.to_vec()));
         }
 
         Note::find()
@@ -251,8 +251,8 @@ impl NoteRepository {
     /// Get bubble timeline (local + whitelisted instances).
     ///
     /// Shows public notes from:
-    /// - Local users (user_host IS NULL / is_local = true)
-    /// - Users from whitelisted remote instances (user_host IN bubble_hosts)
+    /// - Local users (`user_host` IS NULL / `is_local` = true)
+    /// - Users from whitelisted remote instances (`user_host` IN `bubble_hosts`)
     ///
     /// This is useful for creating a "trusted network" timeline between
     /// friendly instances.
@@ -289,10 +289,10 @@ impl NoteRepository {
         }
 
         // Exclude specified user IDs (for bot filtering)
-        if let Some(user_ids) = exclude_user_ids {
-            if !user_ids.is_empty() {
-                condition = condition.add(note::Column::UserId.is_not_in(user_ids.to_vec()));
-            }
+        if let Some(user_ids) = exclude_user_ids
+            && !user_ids.is_empty()
+        {
+            condition = condition.add(note::Column::UserId.is_not_in(user_ids.to_vec()));
         }
 
         Note::find()

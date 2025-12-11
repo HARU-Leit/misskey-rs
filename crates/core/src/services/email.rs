@@ -12,7 +12,7 @@ pub enum EmailProvider {
     Smtp(SmtpConfig),
     /// Amazon SES
     Ses(SesConfig),
-    /// SendGrid
+    /// `SendGrid`
     SendGrid(SendGridConfig),
     /// Mailgun
     Mailgun(MailgunConfig),
@@ -44,10 +44,10 @@ pub struct SesConfig {
     pub secret_access_key: String,
 }
 
-/// SendGrid configuration.
+/// `SendGrid` configuration.
 #[derive(Debug, Clone)]
 pub struct SendGridConfig {
-    /// SendGrid API key
+    /// `SendGrid` API key
     pub api_key: String,
 }
 
@@ -116,7 +116,7 @@ impl std::fmt::Display for EmailNotificationType {
             Self::SecurityAlert => "security_alert",
             Self::Welcome => "welcome",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -183,6 +183,7 @@ pub struct EmailService {
 
 impl EmailService {
     /// Create a new email service.
+    #[must_use]
     pub fn new(config: Option<EmailConfig>) -> Self {
         Self {
             config,
@@ -191,7 +192,8 @@ impl EmailService {
     }
 
     /// Check if email service is enabled.
-    pub fn is_enabled(&self) -> bool {
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
         self.config.is_some()
     }
 
@@ -534,7 +536,7 @@ impl EmailService {
             .json(&body)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("SendGrid request failed: {}", e)))?;
+            .map_err(|e| AppError::ExternalService(format!("SendGrid request failed: {e}")))?;
 
         if response.status().is_success() {
             let message_id = response
@@ -590,7 +592,7 @@ impl EmailService {
             .form(&form_params)
             .send()
             .await
-            .map_err(|e| AppError::ExternalService(format!("Mailgun request failed: {}", e)))?;
+            .map_err(|e| AppError::ExternalService(format!("Mailgun request failed: {e}")))?;
 
         if response.status().is_success() {
             #[derive(Deserialize)]

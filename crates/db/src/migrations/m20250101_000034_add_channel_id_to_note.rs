@@ -1,4 +1,4 @@
-//! Migration to add channel_id field to note table.
+//! Migration to add `channel_id` field to note table.
 
 use sea_orm_migration::prelude::*;
 

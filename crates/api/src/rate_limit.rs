@@ -34,6 +34,7 @@ pub struct RateLimitConfig {
 
 impl RateLimitConfig {
     /// Create a new rate limit config.
+    #[must_use]
     pub const fn new(max_requests: u32, window_secs: u64) -> Self {
         Self {
             max_requests,
@@ -184,7 +185,7 @@ impl RedisApiRateLimiter {
 
     /// Create with a custom key prefix.
     #[must_use]
-    pub fn with_prefix(redis: Arc<RedisClient>, prefix: String) -> Self {
+    pub const fn with_prefix(redis: Arc<RedisClient>, prefix: String) -> Self {
         Self {
             redis,
             key_prefix: prefix,
@@ -218,21 +219,28 @@ impl RedisApiRateLimiter {
         };
 
         // Set expiry on first increment
-        if count == 1 {
-            if let Err(e) = self
+        if count == 1
+            && let Err(e) = self
                 .redis
                 .expire::<(), _>(redis_key.clone(), config.window_secs as i64, None)
                 .await
-            {
-                warn!(error = %e, key = %redis_key, "Failed to set rate limit key expiry");
-            }
+        {
+            warn!(error = %e, key = %redis_key, "Failed to set rate limit key expiry");
         }
 
         // Check if rate limited
         if count > u64::from(config.max_requests) {
             // Get TTL for retry-after header
-            let ttl: i64 = self.redis.ttl(redis_key).await.unwrap_or(config.window_secs as i64);
-            let retry_after = if ttl > 0 { ttl as u64 } else { config.window_secs };
+            let ttl: i64 = self
+                .redis
+                .ttl(redis_key)
+                .await
+                .unwrap_or(config.window_secs as i64);
+            let retry_after = if ttl > 0 {
+                ttl as u64
+            } else {
+                config.window_secs
+            };
 
             debug!(
                 key = %key,
@@ -251,8 +259,16 @@ impl RedisApiRateLimiter {
         let remaining = config.max_requests.saturating_sub(count as u32);
 
         // Get TTL for reset header
-        let ttl: i64 = self.redis.ttl(redis_key).await.unwrap_or(config.window_secs as i64);
-        let reset = if ttl > 0 { ttl as u64 } else { config.window_secs };
+        let ttl: i64 = self
+            .redis
+            .ttl(redis_key)
+            .await
+            .unwrap_or(config.window_secs as i64);
+        let reset = if ttl > 0 {
+            ttl as u64
+        } else {
+            config.window_secs
+        };
 
         debug!(
             key = %key,
@@ -277,7 +293,11 @@ impl RedisApiRateLimiter {
         let ttl: i64 = self.redis.ttl(redis_key).await.unwrap_or(-1);
 
         let count = count.unwrap_or(0);
-        let reset = if ttl > 0 { ttl as u64 } else { config.window_secs };
+        let reset = if ttl > 0 {
+            ttl as u64
+        } else {
+            config.window_secs
+        };
 
         Some(RateLimitStatus {
             key: key.to_string(),
@@ -362,6 +382,7 @@ impl Default for RateLimiterState {
 
 impl RateLimiterState {
     /// Create a new in-memory rate limiter state (single-instance only).
+    #[must_use]
     pub fn new() -> Self {
         Self {
             user_limiter: RateLimiterBackend::InMemory(ApiRateLimiter::new()),
@@ -373,6 +394,7 @@ impl RateLimiterState {
     ///
     /// Use this for multi-instance deployments to ensure consistent
     /// rate limiting across all servers.
+    #[must_use]
     pub fn with_redis(redis: Arc<RedisClient>) -> Self {
         Self {
             user_limiter: RateLimiterBackend::Redis(RedisApiRateLimiter::with_prefix(
@@ -387,7 +409,8 @@ impl RateLimiterState {
     }
 
     /// Check if using Redis backend.
-    pub fn is_distributed(&self) -> bool {
+    #[must_use]
+    pub const fn is_distributed(&self) -> bool {
         matches!(self.user_limiter, RateLimiterBackend::Redis(_))
     }
 }
@@ -423,23 +446,20 @@ impl IntoResponse for RateLimitError {
 /// Extract client IP from request.
 fn extract_client_ip(req: &Request<Body>) -> Option<IpAddr> {
     // Try X-Forwarded-For header first
-    if let Some(xff) = req.headers().get("x-forwarded-for") {
-        if let Ok(xff_str) = xff.to_str() {
-            if let Some(first_ip) = xff_str.split(',').next() {
-                if let Ok(ip) = first_ip.trim().parse::<IpAddr>() {
-                    return Some(ip);
-                }
-            }
-        }
+    if let Some(xff) = req.headers().get("x-forwarded-for")
+        && let Ok(xff_str) = xff.to_str()
+        && let Some(first_ip) = xff_str.split(',').next()
+        && let Ok(ip) = first_ip.trim().parse::<IpAddr>()
+    {
+        return Some(ip);
     }
 
     // Try X-Real-IP header
-    if let Some(real_ip) = req.headers().get("x-real-ip") {
-        if let Ok(ip_str) = real_ip.to_str() {
-            if let Ok(ip) = ip_str.parse::<IpAddr>() {
-                return Some(ip);
-            }
-        }
+    if let Some(real_ip) = req.headers().get("x-real-ip")
+        && let Ok(ip_str) = real_ip.to_str()
+        && let Ok(ip) = ip_str.parse::<IpAddr>()
+    {
+        return Some(ip);
     }
 
     None

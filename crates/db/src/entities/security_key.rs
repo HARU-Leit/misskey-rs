@@ -17,11 +17,11 @@ pub struct Model {
     /// User-provided name for this key.
     pub name: String,
 
-    /// WebAuthn credential ID (base64url encoded).
+    /// `WebAuthn` credential ID (base64url encoded).
     #[sea_orm(column_type = "Text", unique)]
     pub credential_id: String,
 
-    /// WebAuthn public key (CBOR encoded, base64 stored).
+    /// `WebAuthn` public key (CBOR encoded, base64 stored).
     #[sea_orm(column_type = "Text")]
     pub public_key: String,
 

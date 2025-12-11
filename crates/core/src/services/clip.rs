@@ -92,12 +92,12 @@ impl ClipService {
         }
 
         // Validate description length
-        if let Some(ref desc) = description {
-            if desc.len() > 2048 {
-                return Err(AppError::Validation(
-                    "Clip description must be at most 2048 characters".to_string(),
-                ));
-            }
+        if let Some(ref desc) = description
+            && desc.len() > 2048
+        {
+            return Err(AppError::Validation(
+                "Clip description must be at most 2048 characters".to_string(),
+            ));
         }
 
         let id = self.id_gen.generate();
@@ -128,21 +128,21 @@ impl ClipService {
         }
 
         // Validate name if provided
-        if let Some(ref n) = name {
-            if n.is_empty() || n.len() > 128 {
-                return Err(AppError::Validation(
-                    "Clip name must be between 1 and 128 characters".to_string(),
-                ));
-            }
+        if let Some(ref n) = name
+            && (n.is_empty() || n.len() > 128)
+        {
+            return Err(AppError::Validation(
+                "Clip name must be between 1 and 128 characters".to_string(),
+            ));
         }
 
         // Validate description if provided
-        if let Some(Some(ref desc)) = description {
-            if desc.len() > 2048 {
-                return Err(AppError::Validation(
-                    "Clip description must be at most 2048 characters".to_string(),
-                ));
-            }
+        if let Some(Some(ref desc)) = description
+            && desc.len() > 2048
+        {
+            return Err(AppError::Validation(
+                "Clip description must be at most 2048 characters".to_string(),
+            ));
         }
 
         self.clip_repo
@@ -172,12 +172,12 @@ impl ClipService {
             // Verify ownership
             let clip = self.clip_repo.find_by_id(clip_id).await?;
 
-            if let Some(c) = clip {
-                if c.user_id == user_id {
-                    self.clip_repo
-                        .update_display_order(clip_id, index as i32)
-                        .await?;
-                }
+            if let Some(c) = clip
+                && c.user_id == user_id
+            {
+                self.clip_repo
+                    .update_display_order(clip_id, index as i32)
+                    .await?;
             }
         }
 
@@ -237,12 +237,12 @@ impl ClipService {
         }
 
         // Validate comment length
-        if let Some(ref c) = comment {
-            if c.len() > 512 {
-                return Err(AppError::Validation(
-                    "Comment must be at most 512 characters".to_string(),
-                ));
-            }
+        if let Some(ref c) = comment
+            && c.len() > 512
+        {
+            return Err(AppError::Validation(
+                "Comment must be at most 512 characters".to_string(),
+            ));
         }
 
         let id = self.id_gen.generate();
@@ -294,12 +294,12 @@ impl ClipService {
         }
 
         // Validate comment length
-        if let Some(ref c) = comment {
-            if c.len() > 512 {
-                return Err(AppError::Validation(
-                    "Comment must be at most 512 characters".to_string(),
-                ));
-            }
+        if let Some(ref c) = comment
+            && c.len() > 512
+        {
+            return Err(AppError::Validation(
+                "Comment must be at most 512 characters".to_string(),
+            ));
         }
 
         self.clip_repo

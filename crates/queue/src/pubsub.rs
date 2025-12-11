@@ -443,7 +443,7 @@ impl RedisPubSub {
     }
 }
 
-/// Implementation of EventPublisher for RedisPubSub.
+/// Implementation of `EventPublisher` for `RedisPubSub`.
 /// This allows core services to publish events without depending on the queue crate directly.
 #[async_trait]
 impl EventPublisher for RedisPubSub {
@@ -460,25 +460,25 @@ impl EventPublisher for RedisPubSub {
     }
 
     async fn publish_note_deleted(&self, id: &str, user_id: &str) -> AppResult<()> {
-        RedisPubSub::publish_note_deleted(self, id, user_id)
+        Self::publish_note_deleted(self, id, user_id)
             .await
             .map_err(|e| misskey_common::AppError::Internal(e.to_string()))
     }
 
     async fn publish_note_updated(&self, id: &str) -> AppResult<()> {
-        RedisPubSub::publish_note_updated(self, id)
+        Self::publish_note_updated(self, id)
             .await
             .map_err(|e| misskey_common::AppError::Internal(e.to_string()))
     }
 
     async fn publish_followed(&self, follower_id: &str, followee_id: &str) -> AppResult<()> {
-        RedisPubSub::publish_followed(self, follower_id, followee_id)
+        Self::publish_followed(self, follower_id, followee_id)
             .await
             .map_err(|e| misskey_common::AppError::Internal(e.to_string()))
     }
 
     async fn publish_unfollowed(&self, follower_id: &str, followee_id: &str) -> AppResult<()> {
-        RedisPubSub::publish_unfollowed(self, follower_id, followee_id)
+        Self::publish_unfollowed(self, follower_id, followee_id)
             .await
             .map_err(|e| misskey_common::AppError::Internal(e.to_string()))
     }
@@ -490,7 +490,7 @@ impl EventPublisher for RedisPubSub {
         reaction: &str,
         note_author_id: &str,
     ) -> AppResult<()> {
-        RedisPubSub::publish_reaction_added(self, note_id, user_id, reaction, note_author_id)
+        Self::publish_reaction_added(self, note_id, user_id, reaction, note_author_id)
             .await
             .map_err(|e| misskey_common::AppError::Internal(e.to_string()))
     }
@@ -502,7 +502,7 @@ impl EventPublisher for RedisPubSub {
         reaction: &str,
         note_author_id: &str,
     ) -> AppResult<()> {
-        RedisPubSub::publish_reaction_removed(self, note_id, user_id, reaction, note_author_id)
+        Self::publish_reaction_removed(self, note_id, user_id, reaction, note_author_id)
             .await
             .map_err(|e| misskey_common::AppError::Internal(e.to_string()))
     }
@@ -515,7 +515,7 @@ impl EventPublisher for RedisPubSub {
         source_user_id: Option<&str>,
         note_id: Option<&str>,
     ) -> AppResult<()> {
-        RedisPubSub::publish_notification(
+        Self::publish_notification(
             self,
             id,
             user_id,
@@ -534,7 +534,7 @@ impl EventPublisher for RedisPubSub {
         recipient_id: &str,
         text: Option<&str>,
     ) -> AppResult<()> {
-        RedisPubSub::publish_direct_message(self, id, sender_id, recipient_id, text)
+        Self::publish_direct_message(self, id, sender_id, recipient_id, text)
             .await
             .map_err(|e| misskey_common::AppError::Internal(e.to_string()))
     }
@@ -547,7 +547,7 @@ impl EventPublisher for RedisPubSub {
         text: Option<&str>,
         visibility: &str,
     ) -> AppResult<()> {
-        RedisPubSub::publish_channel_note_created(self, channel_id, note_id, user_id, text, visibility)
+        Self::publish_channel_note_created(self, channel_id, note_id, user_id, text, visibility)
             .await
             .map_err(|e| misskey_common::AppError::Internal(e.to_string()))
     }

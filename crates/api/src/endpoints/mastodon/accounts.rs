@@ -3,7 +3,7 @@
 //! Provides account-related endpoints for Mastodon compatibility.
 //!
 //! Endpoints:
-//! - GET /api/v1/accounts/verify_credentials - Get current user
+//! - GET /`api/v1/accounts/verify_credentials` - Get current user
 //! - GET /api/v1/accounts/:id - Get account by ID
 //! - GET /api/v1/accounts/:id/followers - Get account followers
 //! - GET /api/v1/accounts/:id/following - Get account following
@@ -73,7 +73,7 @@ pub struct PaginationQuery {
     pub limit: u64,
 }
 
-fn default_limit() -> u64 {
+const fn default_limit() -> u64 {
     40
 }
 
@@ -97,7 +97,7 @@ pub struct StatusesQuery {
     pub tagged: Option<String>,
 }
 
-fn default_statuses_limit() -> u64 {
+const fn default_statuses_limit() -> u64 {
     20
 }
 

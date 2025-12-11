@@ -23,7 +23,8 @@ pub enum ImageFormat {
 
 impl ImageFormat {
     /// Get MIME type for this format.
-    pub fn mime_type(&self) -> &'static str {
+    #[must_use]
+    pub const fn mime_type(&self) -> &'static str {
         match self {
             Self::Jpeg => "image/jpeg",
             Self::Png => "image/png",
@@ -34,7 +35,8 @@ impl ImageFormat {
     }
 
     /// Get file extension for this format.
-    pub fn extension(&self) -> &'static str {
+    #[must_use]
+    pub const fn extension(&self) -> &'static str {
         match self {
             Self::Jpeg => "jpg",
             Self::Png => "png",
@@ -45,6 +47,7 @@ impl ImageFormat {
     }
 
     /// Detect format from file extension.
+    #[must_use]
     pub fn from_extension(ext: &str) -> Option<Self> {
         match ext.to_lowercase().as_str() {
             "jpg" | "jpeg" => Some(Self::Jpeg),
@@ -57,6 +60,7 @@ impl ImageFormat {
     }
 
     /// Detect format from MIME type.
+    #[must_use]
     pub fn from_mime_type(mime: &str) -> Option<Self> {
         match mime {
             "image/jpeg" => Some(Self::Jpeg),
@@ -93,7 +97,8 @@ pub enum ThumbnailSize {
 
 impl ThumbnailSize {
     /// Get dimensions for this size.
-    pub fn dimensions(&self) -> (u32, u32) {
+    #[must_use]
+    pub const fn dimensions(&self) -> (u32, u32) {
         match self {
             Self::Small => (150, 150),
             Self::Medium => (400, 400),
@@ -231,7 +236,7 @@ pub struct MediaConfig {
     pub thumbnail_quality: u8,
     /// Strip image metadata by default
     pub strip_metadata: bool,
-    /// FFmpeg path
+    /// `FFmpeg` path
     pub ffmpeg_path: Option<String>,
 }
 
@@ -258,7 +263,8 @@ pub struct MediaService {
 
 impl MediaService {
     /// Create a new media service.
-    pub fn new(config: MediaConfig) -> Self {
+    #[must_use]
+    pub const fn new(config: MediaConfig) -> Self {
         Self { config }
     }
 
@@ -320,10 +326,10 @@ impl MediaService {
         }
 
         // AVIF: ftyp....avif or ftyp....mif1
-        if data[4..8] == [0x66, 0x74, 0x79, 0x70] {
-            if data[8..12] == [0x61, 0x76, 0x69, 0x66] || data[8..12] == [0x6D, 0x69, 0x66, 0x31] {
-                return Ok(ImageFormat::Avif);
-            }
+        if data[4..8] == [0x66, 0x74, 0x79, 0x70]
+            && (data[8..12] == [0x61, 0x76, 0x69, 0x66] || data[8..12] == [0x6D, 0x69, 0x66, 0x31])
+        {
+            return Ok(ImageFormat::Avif);
         }
 
         Err(AppError::Validation(
@@ -503,12 +509,14 @@ impl MediaService {
     }
 
     /// Check if a file type is supported.
+    #[must_use]
     pub fn is_supported_image(&self, mime_type: &str) -> bool {
         ImageFormat::from_mime_type(mime_type).is_some()
     }
 
     /// Check if video transcoding is available.
-    pub fn is_video_transcoding_available(&self) -> bool {
+    #[must_use]
+    pub const fn is_video_transcoding_available(&self) -> bool {
         self.config.enable_video_transcoding && self.config.ffmpeg_path.is_some()
     }
 }
@@ -533,6 +541,7 @@ pub struct MediaStatusResponse {
 
 impl MediaService {
     /// Get service status.
+    #[must_use]
     pub fn status(&self) -> MediaStatusResponse {
         MediaStatusResponse {
             supported_image_formats: vec![

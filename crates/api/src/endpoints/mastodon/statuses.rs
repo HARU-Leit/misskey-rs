@@ -17,7 +17,7 @@
 use axum::{
     Json, Router,
     extract::{Path, State},
-    routing::{delete, get, post},
+    routing::{get, post},
 };
 use misskey_common::{AppError, AppResult};
 use misskey_core::note::CreateNoteInput;
@@ -287,7 +287,7 @@ pub fn note_to_status(note: note::Model, author: Option<&user::Model>, base_url:
         replies_count: note.replies_count,
         reblogs_count: note.renote_count,
         favourites_count: note.reaction_count,
-        content: note.text.clone().unwrap_or_default(),
+        content: note.text.unwrap_or_default(),
         reblog: None,
         account,
         media_attachments: vec![],

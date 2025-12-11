@@ -16,7 +16,8 @@ pub struct RegistrationApprovalService {
 
 impl RegistrationApprovalService {
     /// Create a new registration approval service.
-    pub fn new(db: Arc<DatabaseConnection>) -> Self {
+    #[must_use]
+    pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
 

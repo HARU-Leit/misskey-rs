@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-/// ActivityPub Move type.
+/// `ActivityPub` Move type.
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct MoveType;
 
@@ -18,7 +18,7 @@ impl MoveType {
 /// The actor (origin) sends this activity to notify followers that they should
 /// now follow the target account instead.
 ///
-/// Per ActivityPub spec and FEP-7628:
+/// Per `ActivityPub` spec and FEP-7628:
 /// - `actor`: The old account URI
 /// - `object`: The old account URI (same as actor)
 /// - `target`: The new account URI to follow
@@ -51,13 +51,13 @@ impl MoveActivity {
 
     /// Get the source account URI (the account being moved from).
     #[must_use]
-    pub fn source(&self) -> &Url {
+    pub const fn source(&self) -> &Url {
         &self.actor
     }
 
     /// Get the destination account URI (the account being moved to).
     #[must_use]
-    pub fn destination(&self) -> &Url {
+    pub const fn destination(&self) -> &Url {
         &self.target
     }
 }
@@ -93,10 +93,7 @@ mod tests {
 
         let activity: MoveActivity = serde_json::from_str(json).unwrap();
         assert_eq!(activity.kind, "Move");
-        assert_eq!(
-            activity.actor.as_str(),
-            "https://example.com/users/alice"
-        );
+        assert_eq!(activity.actor.as_str(), "https://example.com/users/alice");
         assert_eq!(
             activity.target.as_str(),
             "https://newinstance.com/users/alice"

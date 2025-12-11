@@ -1,6 +1,6 @@
-//! EmojiReact activity processor.
+//! `EmojiReact` activity processor.
 //!
-//! Handles incoming EmojiReact activities from Pleroma/Akkoma instances.
+//! Handles incoming `EmojiReact` activities from Pleroma/Akkoma instances.
 
 use misskey_common::{AppError, AppResult, IdGenerator};
 use misskey_db::{
@@ -13,7 +13,7 @@ use tracing::info;
 use super::ActorFetcher;
 use crate::{activities::EmojiReactActivity, client::ApClient};
 
-/// Processor for EmojiReact activities (Pleroma/Akkoma style reactions).
+/// Processor for `EmojiReact` activities (Pleroma/Akkoma style reactions).
 #[derive(Clone)]
 pub struct EmojiReactProcessor {
     actor_fetcher: ActorFetcher,
@@ -23,9 +23,9 @@ pub struct EmojiReactProcessor {
 }
 
 impl EmojiReactProcessor {
-    /// Create a new EmojiReact processor.
+    /// Create a new `EmojiReact` processor.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         user_repo: UserRepository,
         note_repo: NoteRepository,
         reaction_repo: ReactionRepository,
@@ -39,7 +39,7 @@ impl EmojiReactProcessor {
         }
     }
 
-    /// Process an incoming EmojiReact activity.
+    /// Process an incoming `EmojiReact` activity.
     pub async fn process(&self, activity: &EmojiReactActivity) -> AppResult<reaction::Model> {
         info!(
             actor = %activity.actor,
@@ -99,7 +99,7 @@ impl EmojiReactProcessor {
         self.actor_fetcher.find_or_fetch(actor_url).await
     }
 
-    /// Normalize reaction content from EmojiReact activity.
+    /// Normalize reaction content from `EmojiReact` activity.
     fn normalize_reaction(
         &self,
         content: &str,
@@ -115,12 +115,13 @@ impl EmojiReactProcessor {
             // Try to get the remote emoji host from tags
             if let Some(tag_list) = tags {
                 for tag in tag_list {
-                    if tag.kind == "Emoji" && tag.name == content {
-                        if let Some(ref icon) = tag.icon {
-                            // Store as remote emoji format: :emoji@host:
-                            if let Some(host) = icon.url.host_str() {
-                                return format!(":{}@{}:", content.trim_matches(':'), host);
-                            }
+                    if tag.kind == "Emoji"
+                        && tag.name == content
+                        && let Some(ref icon) = tag.icon
+                    {
+                        // Store as remote emoji format: :emoji@host:
+                        if let Some(host) = icon.url.host_str() {
+                            return format!(":{}@{}:", content.trim_matches(':'), host);
                         }
                     }
                 }
@@ -149,12 +150,13 @@ mod tests {
             // Try to get the remote emoji host from tags
             if let Some(tag_list) = tags {
                 for tag in tag_list {
-                    if tag.kind == "Emoji" && tag.name == content {
-                        if let Some(ref icon) = tag.icon {
-                            // Store as remote emoji format: :emoji@host:
-                            if let Some(host) = icon.url.host_str() {
-                                return format!(":{}@{}:", content.trim_matches(':'), host);
-                            }
+                    if tag.kind == "Emoji"
+                        && tag.name == content
+                        && let Some(ref icon) = tag.icon
+                    {
+                        // Store as remote emoji format: :emoji@host:
+                        if let Some(host) = icon.url.host_str() {
+                            return format!(":{}@{}:", content.trim_matches(':'), host);
                         }
                     }
                 }

@@ -1,4 +1,4 @@
-//! Create scheduled_note table.
+//! Create `scheduled_note` table.
 
 use sea_orm_migration::prelude::*;
 

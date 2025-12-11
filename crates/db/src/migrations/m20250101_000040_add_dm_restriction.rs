@@ -1,4 +1,4 @@
-//! Migration to add DM restriction setting to user_profile.
+//! Migration to add DM restriction setting to `user_profile`.
 
 use sea_orm_migration::prelude::*;
 

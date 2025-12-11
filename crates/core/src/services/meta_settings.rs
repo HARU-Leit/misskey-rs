@@ -41,7 +41,8 @@ pub struct MetaSettingsService {
 
 impl MetaSettingsService {
     /// Create a new meta settings service.
-    pub fn new(db: Arc<DatabaseConnection>) -> Self {
+    #[must_use]
+    pub const fn new(db: Arc<DatabaseConnection>) -> Self {
         Self { db }
     }
 
@@ -52,46 +53,45 @@ impl MetaSettingsService {
             .await
             .map_err(|e| AppError::Database(e.to_string()))?;
 
-        match settings {
-            Some(s) => Ok(s),
-            None => {
-                // Create default settings
-                let now = chrono::Utc::now();
-                let model = meta_settings::ActiveModel {
-                    id: Set(META_SETTINGS_ID.to_string()),
-                    name: Set(Some("Misskey-RS Instance".to_string())),
-                    short_name: Set(Some("misskey-rs".to_string())),
-                    description: Set(None),
-                    maintainer_name: Set(None),
-                    maintainer_email: Set(None),
-                    langs: Set(serde_json::json!(["en"])),
-                    icon_url: Set(None),
-                    banner_url: Set(None),
-                    theme_color: Set(Some("#86b300".to_string())),
-                    disable_registration: Set(false),
-                    email_required_for_signup: Set(false),
-                    require_registration_approval: Set(false),
-                    force_nsfw_media: Set(false),
-                    default_blur_nsfw: Set(true),
-                    default_hide_ads: Set(false),
-                    max_note_text_length: Set(3000),
-                    max_remote_note_text_length: Set(10000),
-                    max_page_content_length: Set(65536),
-                    max_pages_per_user: Set(100),
-                    default_drive_capacity_mb: Set(1024),
-                    max_file_size_mb: Set(256),
-                    bubble_instances: Set(Some(serde_json::json!([]))),
-                    created_at: Set(now.into()),
-                    updated_at: Set(None),
-                };
+        if let Some(s) = settings {
+            Ok(s)
+        } else {
+            // Create default settings
+            let now = chrono::Utc::now();
+            let model = meta_settings::ActiveModel {
+                id: Set(META_SETTINGS_ID.to_string()),
+                name: Set(Some("Misskey-RS Instance".to_string())),
+                short_name: Set(Some("misskey-rs".to_string())),
+                description: Set(None),
+                maintainer_name: Set(None),
+                maintainer_email: Set(None),
+                langs: Set(serde_json::json!(["en"])),
+                icon_url: Set(None),
+                banner_url: Set(None),
+                theme_color: Set(Some("#86b300".to_string())),
+                disable_registration: Set(false),
+                email_required_for_signup: Set(false),
+                require_registration_approval: Set(false),
+                force_nsfw_media: Set(false),
+                default_blur_nsfw: Set(true),
+                default_hide_ads: Set(false),
+                max_note_text_length: Set(3000),
+                max_remote_note_text_length: Set(10000),
+                max_page_content_length: Set(65536),
+                max_pages_per_user: Set(100),
+                default_drive_capacity_mb: Set(1024),
+                max_file_size_mb: Set(256),
+                bubble_instances: Set(Some(serde_json::json!([]))),
+                created_at: Set(now.into()),
+                updated_at: Set(None),
+            };
 
-                let result = model
-                    .insert(self.db.as_ref())
-                    .await
-                    .map_err(|e| AppError::Database(e.to_string()))?;
+            let result = model
+                .insert(self.db.as_ref())
+                .await
+                .map_err(|e| AppError::Database(e.to_string()))?;
 
-                Ok(result)
-            }
+            Ok(result)
         }
     }
 

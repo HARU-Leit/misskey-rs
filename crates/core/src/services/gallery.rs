@@ -83,7 +83,7 @@ pub struct GalleryService {
 impl GalleryService {
     /// Create a new gallery service.
     #[must_use]
-    pub fn new(gallery_repo: GalleryRepository) -> Self {
+    pub const fn new(gallery_repo: GalleryRepository) -> Self {
         Self {
             gallery_repo,
             id_gen: IdGenerator::new(),
@@ -104,12 +104,12 @@ impl GalleryService {
         }
 
         // Validate description
-        if let Some(ref desc) = input.description {
-            if desc.len() > 2048 {
-                return Err(AppError::Validation(
-                    "Description must be at most 2048 characters".to_string(),
-                ));
-            }
+        if let Some(ref desc) = input.description
+            && desc.len() > 2048
+        {
+            return Err(AppError::Validation(
+                "Description must be at most 2048 characters".to_string(),
+            ));
         }
 
         // Validate file_ids
@@ -120,16 +120,14 @@ impl GalleryService {
         }
         if input.file_ids.len() > MAX_FILES_PER_POST {
             return Err(AppError::Validation(format!(
-                "Maximum of {} files allowed per post",
-                MAX_FILES_PER_POST
+                "Maximum of {MAX_FILES_PER_POST} files allowed per post"
             )));
         }
 
         // Validate tags
         if input.tags.len() > MAX_TAGS_PER_POST {
             return Err(AppError::Validation(format!(
-                "Maximum of {} tags allowed per post",
-                MAX_TAGS_PER_POST
+                "Maximum of {MAX_TAGS_PER_POST} tags allowed per post"
             )));
         }
         for tag in &input.tags {
@@ -195,12 +193,12 @@ impl GalleryService {
         }
 
         if let Some(description) = input.description {
-            if let Some(ref desc) = description {
-                if desc.len() > 2048 {
-                    return Err(AppError::Validation(
-                        "Description must be at most 2048 characters".to_string(),
-                    ));
-                }
+            if let Some(ref desc) = description
+                && desc.len() > 2048
+            {
+                return Err(AppError::Validation(
+                    "Description must be at most 2048 characters".to_string(),
+                ));
             }
             active.description = Set(description);
         }
@@ -213,8 +211,7 @@ impl GalleryService {
             }
             if file_ids.len() > MAX_FILES_PER_POST {
                 return Err(AppError::Validation(format!(
-                    "Maximum of {} files allowed per post",
-                    MAX_FILES_PER_POST
+                    "Maximum of {MAX_FILES_PER_POST} files allowed per post"
                 )));
             }
             active.file_ids = Set(json!(file_ids));
@@ -227,8 +224,7 @@ impl GalleryService {
         if let Some(tags) = input.tags {
             if tags.len() > MAX_TAGS_PER_POST {
                 return Err(AppError::Validation(format!(
-                    "Maximum of {} tags allowed per post",
-                    MAX_TAGS_PER_POST
+                    "Maximum of {MAX_TAGS_PER_POST} tags allowed per post"
                 )));
             }
             for tag in &tags {

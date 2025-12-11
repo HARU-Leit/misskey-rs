@@ -8,6 +8,7 @@ use axum::{
     Router, middleware,
     routing::{get, post},
 };
+use fred::prelude::*;
 use misskey_api::{
     SseBroadcaster, StreamingState, middleware::AppState, rate_limit::RateLimiterState,
     router as api_router, streaming_handler,
@@ -40,7 +41,6 @@ use misskey_federation::{
 };
 use misskey_queue::workers::{DeliverContext, deliver_worker};
 use misskey_queue::{DeliverJob, RedisDeliveryService};
-use fred::prelude::*;
 use sea_orm::{ConnectOptions, Database};
 use tokio::signal;
 use tower_http::{
@@ -128,7 +128,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Failed to parse Redis URL for rate limiter");
     let fred_client = fred::clients::Client::new(fred_config, None, None, None);
     fred_client.connect();
-    fred_client.wait_for_connect().await.expect("Failed to connect fred client to Redis");
+    fred_client
+        .wait_for_connect()
+        .await
+        .expect("Failed to connect fred client to Redis");
     let fred_client = Arc::new(fred_client);
     info!("Connected to Redis for distributed rate limiting");
 

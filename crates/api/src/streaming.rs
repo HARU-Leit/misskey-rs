@@ -310,16 +310,15 @@ async fn handle_socket(socket: WebSocket, query: StreamQuery, state: AppState) {
             // Handle channel-specific events
             Ok(channel_event) = channel_rx.recv() => {
                 // Find if user is subscribed to this specific channel
-                for (conn_id, stream_channel) in connected_channels.iter() {
-                    if let StreamChannel::Channel { channel_id } = stream_channel {
-                        if *channel_id == channel_event.channel_id {
+                for (conn_id, stream_channel) in &connected_channels {
+                    if let StreamChannel::Channel { channel_id } = stream_channel
+                        && *channel_id == channel_event.channel_id {
                             let msg = event_to_server_message(conn_id, &channel_event.event);
                             let json = serde_json::to_string(&msg).unwrap_or_default();
                             if sender.send(Message::Text(json.into())).await.is_err() {
                                 break;
                             }
                         }
-                    }
                 }
             }
         }
@@ -335,7 +334,11 @@ async fn handle_client_message(
     _user_id: Option<&str>,
 ) -> Option<ServerMessage> {
     match msg {
-        ClientMessage::Connect { channel, id, params } => {
+        ClientMessage::Connect {
+            channel,
+            id,
+            params,
+        } => {
             let stream_channel = match channel.as_str() {
                 "homeTimeline" => StreamChannel::HomeTimeline,
                 "localTimeline" => StreamChannel::LocalTimeline,
@@ -362,8 +365,8 @@ async fn handle_client_message(
             };
 
             let channel_desc = match &stream_channel {
-                StreamChannel::Channel { channel_id } => format!("channel:{}", channel_id),
-                _ => channel.clone(),
+                StreamChannel::Channel { channel_id } => format!("channel:{channel_id}"),
+                _ => channel,
             };
 
             connected_channels.insert(id.clone(), stream_channel);

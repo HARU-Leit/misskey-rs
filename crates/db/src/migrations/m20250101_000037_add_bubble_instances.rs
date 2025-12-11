@@ -1,4 +1,4 @@
-//! Migration to add bubble_instances column to meta_settings table.
+//! Migration to add `bubble_instances` column to `meta_settings` table.
 //!
 //! This adds support for the "bubble timeline" feature, which shows posts
 //! from local users and whitelisted remote instances.

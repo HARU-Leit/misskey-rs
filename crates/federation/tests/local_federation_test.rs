@@ -98,7 +98,7 @@ impl TestInstance {
             .post(format!("{}/api/{}", self.base_url, endpoint));
 
         if let Some(ref token) = self.token {
-            req = req.header("Authorization", format!("Bearer {}", token));
+            req = req.header("Authorization", format!("Bearer {token}"));
         }
 
         req.json(&body).send().await?.json::<Value>().await
@@ -174,11 +174,10 @@ async fn wait_for_instances() -> bool {
 
 #[tokio::test]
 async fn test_instances_are_running() {
-    if !wait_for_instances().await {
-        panic!(
-            "Federation instances are not running. Start them with: docker-compose -f docker-compose.test.yml --profile federation up -d"
-        );
-    }
+    assert!(
+        wait_for_instances().await,
+        "Federation instances are not running. Start them with: docker-compose -f docker-compose.test.yml --profile federation up -d"
+    );
 }
 
 #[tokio::test]
@@ -238,7 +237,7 @@ async fn test_actor_endpoint() {
 
     // Fetch actor via ActivityPub
     let actor = alpha
-        .fetch_actor(&format!("{}/users/actortest", ALPHA_URL))
+        .fetch_actor(&format!("{ALPHA_URL}/users/actortest"))
         .await
         .expect("Failed to fetch actor");
 
@@ -358,7 +357,7 @@ async fn test_note_federation() {
     sleep(Duration::from_secs(1)).await;
 
     // The note should be accessible via its URI
-    let note_uri = format!("{}/notes/{}", ALPHA_URL, note_id);
+    let note_uri = format!("{ALPHA_URL}/notes/{note_id}");
 
     let fetched = alpha
         .client
@@ -392,7 +391,7 @@ async fn test_nodeinfo_endpoint() {
     // Get nodeinfo links
     let well_known = alpha
         .client
-        .get(format!("{}/.well-known/nodeinfo", ALPHA_URL))
+        .get(format!("{ALPHA_URL}/.well-known/nodeinfo"))
         .send()
         .await
         .expect("Failed to get nodeinfo well-known")
@@ -438,7 +437,7 @@ async fn test_inbox_signature_verification() {
     // Send an unsigned request to inbox - should be rejected
     let result = alpha
         .client
-        .post(format!("{}/inbox", ALPHA_URL))
+        .post(format!("{ALPHA_URL}/inbox"))
         .header("Content-Type", "application/activity+json")
         .json(&json!({
             "@context": "https://www.w3.org/ns/activitystreams",
@@ -511,10 +510,7 @@ async fn test_full_follow_flow() {
 
     // Note: The exact response structure depends on implementation
     // This verifies the federation flow completed without errors
-    println!(
-        "Follow flow completed. Followers response: {:?}",
-        alice_followers
-    );
+    println!("Follow flow completed. Followers response: {alice_followers:?}");
 }
 
 /// Test that reactions are federated
@@ -554,5 +550,5 @@ async fn test_reaction_federation() {
     // 2. Add reaction from beta
     // 3. Verify reaction appears on alpha
 
-    println!("Note created for reaction test: {}", note_id);
+    println!("Note created for reaction test: {note_id}");
 }

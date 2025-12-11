@@ -1,4 +1,4 @@
-//! Create channel and channel_following tables.
+//! Create channel and `channel_following` tables.
 
 use sea_orm_migration::prelude::*;
 

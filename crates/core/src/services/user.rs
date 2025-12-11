@@ -352,24 +352,24 @@ impl UserService {
             .await
     }
 
-    /// Get the hide_bots setting for a user.
+    /// Get the `hide_bots` setting for a user.
     ///
     /// Returns true if the user has enabled hiding bot notes in their timeline.
     pub async fn get_hide_bots(&self, user_id: &str) -> AppResult<bool> {
         let profile = self.profile_repo.find_by_user_id(user_id).await?;
-        Ok(profile.map(|p| p.hide_bots).unwrap_or(false))
+        Ok(profile.is_some_and(|p| p.hide_bots))
     }
 
     /// Get IDs of all bot users for timeline filtering.
     ///
-    /// Used when a user has hide_bots enabled to filter out bot notes.
+    /// Used when a user has `hide_bots` enabled to filter out bot notes.
     pub async fn get_bot_user_ids(&self) -> AppResult<Vec<String>> {
         self.user_repo.find_bot_user_ids().await
     }
 
-    /// Get bot user IDs to exclude if hide_bots is enabled for the user.
+    /// Get bot user IDs to exclude if `hide_bots` is enabled for the user.
     ///
-    /// Convenience method that checks hide_bots and returns bot IDs if enabled.
+    /// Convenience method that checks `hide_bots` and returns bot IDs if enabled.
     pub async fn get_exclude_user_ids_for_timeline(
         &self,
         user_id: &str,

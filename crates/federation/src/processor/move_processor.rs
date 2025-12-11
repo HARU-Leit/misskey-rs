@@ -142,7 +142,7 @@ impl MoveProcessor {
 
     /// Verify that a move is legitimate.
     ///
-    /// Per ActivityPub best practices (FEP-7628):
+    /// Per `ActivityPub` best practices (FEP-7628):
     /// - The target account should have the source account in its alsoKnownAs
     async fn verify_move(&self, source: &Url, target: &Url) -> AppResult<()> {
         // Fetch the target actor
@@ -189,49 +189,50 @@ impl MoveProcessor {
         // Try to find existing profile
         let profile = self.profile_repo.find_by_user_id(user_id).await?;
 
-        match profile {
-            Some(p) => {
-                // Update existing profile
-                let mut active: user_profile::ActiveModel = p.into();
-                active.moved_to_uri = Set(Some(target_uri.to_string()));
-                active.updated_at = Set(Some(chrono::Utc::now().into()));
-                self.profile_repo.update(active).await?;
-            }
-            None => {
-                // Create profile for remote user with moved_to_uri
-                let model = user_profile::ActiveModel {
-                    user_id: Set(user_id.to_string()),
-                    password: Set(None),
-                    email: Set(None),
-                    email_verified: Set(false),
-                    two_factor_secret: Set(None),
-                    two_factor_enabled: Set(false),
-                    two_factor_pending: Set(None),
-                    two_factor_backup_codes: Set(None),
-                    auto_accept_followed: Set(false),
-                    always_mark_nsfw: Set(false),
-                    pinned_page_ids: Set(serde_json::json!([])),
-                    pinned_note_ids: Set(serde_json::json!([])),
-                    fields: Set(serde_json::json!([])),
-                    muted_words: Set(serde_json::json!([])),
-                    user_css: Set(None),
-                    birthday: Set(None),
-                    location: Set(None),
-                    lang: Set(None),
-                    pronouns: Set(None),
-                    also_known_as: Set(None),
-                    moved_to_uri: Set(Some(target_uri.to_string())),
-                    hide_bots: Set(false),
-                    default_reaction: Set(None),
-                    receive_dm_from_followers_only: Set(false),
-                    created_at: Set(chrono::Utc::now().into()),
-                    updated_at: Set(None),
-                };
-                self.profile_repo.create(model).await?;
-            }
+        if let Some(p) = profile {
+            // Update existing profile
+            let mut active: user_profile::ActiveModel = p.into();
+            active.moved_to_uri = Set(Some(target_uri.to_string()));
+            active.updated_at = Set(Some(chrono::Utc::now().into()));
+            self.profile_repo.update(active).await?;
+        } else {
+            // Create profile for remote user with moved_to_uri
+            let model = user_profile::ActiveModel {
+                user_id: Set(user_id.to_string()),
+                password: Set(None),
+                email: Set(None),
+                email_verified: Set(false),
+                two_factor_secret: Set(None),
+                two_factor_enabled: Set(false),
+                two_factor_pending: Set(None),
+                two_factor_backup_codes: Set(None),
+                auto_accept_followed: Set(false),
+                always_mark_nsfw: Set(false),
+                pinned_page_ids: Set(serde_json::json!([])),
+                pinned_note_ids: Set(serde_json::json!([])),
+                fields: Set(serde_json::json!([])),
+                muted_words: Set(serde_json::json!([])),
+                user_css: Set(None),
+                birthday: Set(None),
+                location: Set(None),
+                lang: Set(None),
+                pronouns: Set(None),
+                also_known_as: Set(None),
+                moved_to_uri: Set(Some(target_uri.to_string())),
+                hide_bots: Set(false),
+                default_reaction: Set(None),
+                receive_dm_from_followers_only: Set(false),
+                created_at: Set(chrono::Utc::now().into()),
+                updated_at: Set(None),
+            };
+            self.profile_repo.create(model).await?;
         }
 
-        info!(user_id = user_id, target = target_uri, "Move recorded in database");
+        info!(
+            user_id = user_id,
+            target = target_uri,
+            "Move recorded in database"
+        );
 
         Ok(())
     }

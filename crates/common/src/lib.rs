@@ -4,7 +4,7 @@
 //!
 //! - **Configuration**: Application settings via [`Config`]
 //! - **Error handling**: Unified error types via [`AppError`] and [`AppResult`]
-//! - **Cryptography**: RSA key generation for ActivityPub signatures
+//! - **Cryptography**: RSA key generation for `ActivityPub` signatures
 //! - **HTTP Signatures**: Implementation of HTTP Signatures for federation
 //! - **ID Generation**: ULID-based unique identifiers via [`IdGenerator`]
 //! - **Metrics**: Performance monitoring via [`Metrics`]

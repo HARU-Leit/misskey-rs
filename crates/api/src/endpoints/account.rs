@@ -4,9 +4,8 @@ use axum::{Json, Router, extract::State, routing::post};
 use misskey_common::AppResult;
 use misskey_core::{
     AccountService, CreateExportInput, CreateImportInput, DeleteAccountInput, DeletionRecord,
-    DeletionStatusResponse, ExportDataType, ExportFormat, ExportJob, ExportNotesInput,
-    ExportedFollow, ExportedNote, ExportedProfile, ImportJob, MigrateAccountInput, MigrationRecord,
-    MigrationStatusResponse,
+    DeletionStatusResponse, ExportDataType, ExportJob, ExportedFollow, ExportedNote,
+    ExportedProfile, ImportJob, MigrateAccountInput, MigrationRecord, MigrationStatusResponse,
 };
 use serde::{Deserialize, Serialize};
 
@@ -212,7 +211,7 @@ pub struct ExportNotesRequest {
     pub format: Option<String>,
 }
 
-fn default_export_limit() -> u32 {
+const fn default_export_limit() -> u32 {
     10000
 }
 
@@ -433,34 +432,31 @@ async fn import_blocking(
         let host_ref = host.as_deref();
 
         // Find user
-        match state
+        if let Ok(target) = state
             .user_service
             .get_by_username(&username, host_ref)
             .await
         {
-            Ok(target) => {
-                // Try to block
-                match state.blocking_service.block(&user.id, &target.id).await {
-                    Ok(_) => result.imported += 1,
-                    Err(misskey_common::AppError::Conflict(_)) => result.skipped += 1,
-                    Err(e) => {
-                        result.failed += 1;
-                        result.errors.push(ImportErrorDetail {
-                            index: index as u32,
-                            account: acct.clone(),
-                            error: e.to_string(),
-                        });
-                    }
+            // Try to block
+            match state.blocking_service.block(&user.id, &target.id).await {
+                Ok(_) => result.imported += 1,
+                Err(misskey_common::AppError::Conflict(_)) => result.skipped += 1,
+                Err(e) => {
+                    result.failed += 1;
+                    result.errors.push(ImportErrorDetail {
+                        index: index as u32,
+                        account: acct.clone(),
+                        error: e.to_string(),
+                    });
                 }
             }
-            Err(_) => {
-                result.failed += 1;
-                result.errors.push(ImportErrorDetail {
-                    index: index as u32,
-                    account: acct.clone(),
-                    error: "User not found".to_string(),
-                });
-            }
+        } else {
+            result.failed += 1;
+            result.errors.push(ImportErrorDetail {
+                index: index as u32,
+                account: acct.clone(),
+                error: "User not found".to_string(),
+            });
         }
     }
 
@@ -488,34 +484,31 @@ async fn import_muting(
         let host_ref = host.as_deref();
 
         // Find user
-        match state
+        if let Ok(target) = state
             .user_service
             .get_by_username(&username, host_ref)
             .await
         {
-            Ok(target) => {
-                // Try to mute (permanent)
-                match state.muting_service.mute(&user.id, &target.id, None).await {
-                    Ok(_) => result.imported += 1,
-                    Err(misskey_common::AppError::Conflict(_)) => result.skipped += 1,
-                    Err(e) => {
-                        result.failed += 1;
-                        result.errors.push(ImportErrorDetail {
-                            index: index as u32,
-                            account: acct.clone(),
-                            error: e.to_string(),
-                        });
-                    }
+            // Try to mute (permanent)
+            match state.muting_service.mute(&user.id, &target.id, None).await {
+                Ok(_) => result.imported += 1,
+                Err(misskey_common::AppError::Conflict(_)) => result.skipped += 1,
+                Err(e) => {
+                    result.failed += 1;
+                    result.errors.push(ImportErrorDetail {
+                        index: index as u32,
+                        account: acct.clone(),
+                        error: e.to_string(),
+                    });
                 }
             }
-            Err(_) => {
-                result.failed += 1;
-                result.errors.push(ImportErrorDetail {
-                    index: index as u32,
-                    account: acct.clone(),
-                    error: "User not found".to_string(),
-                });
-            }
+        } else {
+            result.failed += 1;
+            result.errors.push(ImportErrorDetail {
+                index: index as u32,
+                account: acct.clone(),
+                error: "User not found".to_string(),
+            });
         }
     }
 

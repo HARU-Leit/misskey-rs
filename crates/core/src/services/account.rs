@@ -84,7 +84,7 @@ pub struct DeletionRecord {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum ExportFormat {
-    /// ActivityPub Actor JSON
+    /// `ActivityPub` Actor JSON
     ActivityPub,
     /// Misskey-specific JSON format
     #[default]
@@ -268,7 +268,7 @@ pub struct ProfileField {
 pub struct ExportedFollow {
     /// User's acct (username@host or just username for local)
     pub acct: String,
-    /// ActivityPub URI (if available)
+    /// `ActivityPub` URI (if available)
     pub uri: Option<String>,
 }
 
@@ -292,7 +292,7 @@ pub struct ExportedNote {
     pub file_ids: Vec<String>,
     /// Hashtags
     pub tags: Vec<String>,
-    /// ActivityPub URI
+    /// `ActivityPub` URI
     pub uri: Option<String>,
     /// Human-readable URL
     pub url: Option<String>,
@@ -314,7 +314,7 @@ pub struct ExportNotesInput {
     pub format: ExportFormat,
 }
 
-fn default_export_limit() -> u32 {
+const fn default_export_limit() -> u32 {
     10000
 }
 
@@ -436,51 +436,48 @@ impl AccountService {
 
         // Update user profile's moved_to_uri field
         let profile = self.profile_repo.find_by_user_id(user_id).await?;
-        match profile {
-            Some(p) => {
-                let mut active: user_profile::ActiveModel = p.into();
-                active.moved_to_uri = Set(Some(input.target_uri.clone()));
-                active.updated_at = Set(Some(Utc::now().into()));
-                self.profile_repo.update(active).await?;
-            }
-            None => {
-                // Create profile with moved_to_uri
-                let model = user_profile::ActiveModel {
-                    user_id: Set(user_id.to_string()),
-                    password: Set(None),
-                    email: Set(None),
-                    email_verified: Set(false),
-                    two_factor_secret: Set(None),
-                    two_factor_enabled: Set(false),
-                    two_factor_pending: Set(None),
-                    two_factor_backup_codes: Set(None),
-                    auto_accept_followed: Set(false),
-                    always_mark_nsfw: Set(false),
-                    pinned_page_ids: Set(serde_json::json!([])),
-                    pinned_note_ids: Set(serde_json::json!([])),
-                    fields: Set(serde_json::json!([])),
-                    muted_words: Set(serde_json::json!([])),
-                    user_css: Set(None),
-                    birthday: Set(None),
-                    location: Set(None),
-                    lang: Set(None),
-                    pronouns: Set(None),
-                    also_known_as: Set(None),
-                    moved_to_uri: Set(Some(input.target_uri.clone())),
-                    hide_bots: Set(false),
-                    default_reaction: Set(None),
-                    receive_dm_from_followers_only: Set(false),
-                    created_at: Set(Utc::now().into()),
-                    updated_at: Set(None),
-                };
-                self.profile_repo.create(model).await?;
-            }
+        if let Some(p) = profile {
+            let mut active: user_profile::ActiveModel = p.into();
+            active.moved_to_uri = Set(Some(input.target_uri.clone()));
+            active.updated_at = Set(Some(Utc::now().into()));
+            self.profile_repo.update(active).await?;
+        } else {
+            // Create profile with moved_to_uri
+            let model = user_profile::ActiveModel {
+                user_id: Set(user_id.to_string()),
+                password: Set(None),
+                email: Set(None),
+                email_verified: Set(false),
+                two_factor_secret: Set(None),
+                two_factor_enabled: Set(false),
+                two_factor_pending: Set(None),
+                two_factor_backup_codes: Set(None),
+                auto_accept_followed: Set(false),
+                always_mark_nsfw: Set(false),
+                pinned_page_ids: Set(serde_json::json!([])),
+                pinned_note_ids: Set(serde_json::json!([])),
+                fields: Set(serde_json::json!([])),
+                muted_words: Set(serde_json::json!([])),
+                user_css: Set(None),
+                birthday: Set(None),
+                location: Set(None),
+                lang: Set(None),
+                pronouns: Set(None),
+                also_known_as: Set(None),
+                moved_to_uri: Set(Some(input.target_uri.clone())),
+                hide_bots: Set(false),
+                default_reaction: Set(None),
+                receive_dm_from_followers_only: Set(false),
+                created_at: Set(Utc::now().into()),
+                updated_at: Set(None),
+            };
+            self.profile_repo.create(model).await?;
         }
 
         // Build Move activity
         let actor_url = format!("{}/users/{}", self.server_url, user.id);
         let activity_id = format!("{}/move/{}", actor_url, crate::generate_id());
-        let followers_url = format!("{}/followers", actor_url);
+        let followers_url = format!("{actor_url}/followers");
 
         let move_activity = serde_json::json!({
             "@context": "https://www.w3.org/ns/activitystreams",
@@ -543,10 +540,7 @@ impl AccountService {
         // Validate aliases are valid URIs
         for alias in &aliases {
             if !alias.starts_with("https://") && !alias.starts_with("http://") {
-                return Err(AppError::Validation(format!(
-                    "Invalid alias URI: {}",
-                    alias
-                )));
+                return Err(AppError::Validation(format!("Invalid alias URI: {alias}")));
             }
         }
 
@@ -579,7 +573,7 @@ impl AccountService {
 
         if let Some(aliases_json) = profile.also_known_as {
             let aliases: Vec<String> = serde_json::from_value(aliases_json)
-                .map_err(|e| AppError::Internal(format!("Failed to parse aliases: {}", e)))?;
+                .map_err(|e| AppError::Internal(format!("Failed to parse aliases: {e}")))?;
             Ok(aliases)
         } else {
             Ok(Vec::new())
@@ -725,7 +719,7 @@ impl AccountService {
         } else {
             // Anonymize user
             let mut active: user::ActiveModel = user.into();
-            active.username = Set(format!("deleted_{}", user_id));
+            active.username = Set(format!("deleted_{user_id}"));
             active.name = Set(None);
             active.description = Set(None);
             active.avatar_url = Set(None);
@@ -789,7 +783,7 @@ impl AccountService {
 
         // Parse pinned notes (pinned_note_ids is JsonBinary, not Option)
         let pinned_notes: Vec<String> =
-            serde_json::from_value(profile.pinned_note_ids.clone()).unwrap_or_default();
+            serde_json::from_value(profile.pinned_note_ids).unwrap_or_default();
 
         Ok(ExportedProfile {
             username: user.username,
@@ -855,26 +849,22 @@ impl AccountService {
     ///
     /// Returns notes in chronological order (newest first) with pagination support.
     /// Each note includes text, CW, visibility, timestamps, and metadata.
-    pub async fn export_notes(
-        &self,
-        user_id: &str,
-        limit: u32,
-    ) -> AppResult<Vec<ExportedNote>> {
+    pub async fn export_notes(&self, user_id: &str, limit: u32) -> AppResult<Vec<ExportedNote>> {
         let notes = self
             .note_repo
-            .find_by_user(user_id, limit as u64, None)
+            .find_by_user(user_id, u64::from(limit), None)
             .await?;
 
         let result: Vec<ExportedNote> = notes
             .into_iter()
             .map(|note| {
                 // Parse file_ids from JSON
-                let file_ids: Vec<String> = serde_json::from_value(note.file_ids.clone())
-                    .unwrap_or_default();
+                let file_ids: Vec<String> =
+                    serde_json::from_value(note.file_ids.clone()).unwrap_or_default();
 
                 // Parse tags from JSON
-                let tags: Vec<String> = serde_json::from_value(note.tags.clone())
-                    .unwrap_or_default();
+                let tags: Vec<String> =
+                    serde_json::from_value(note.tags.clone()).unwrap_or_default();
 
                 // Convert visibility enum to string
                 let visibility = match note.visibility {
@@ -902,20 +892,19 @@ impl AccountService {
             })
             .collect();
 
-        tracing::info!(
-            user_id = user_id,
-            count = result.len(),
-            "Notes exported"
-        );
+        tracing::info!(user_id = user_id, count = result.len(), "Notes exported");
 
         Ok(result)
     }
 
     /// Export user's notes as CSV string.
     ///
-    /// CSV format: id,created_at,visibility,cw,text,reply_id,renote_id,tags,file_ids,uri,url
+    /// CSV format: `id,created_at,visibility,cw,text,reply_id,renote_id,tags,file_ids,uri,url`
+    #[must_use]
     pub fn export_notes_as_csv(notes: &[ExportedNote]) -> String {
-        let mut csv = String::from("id,created_at,visibility,cw,text,reply_id,renote_id,tags,file_ids,uri,url\n");
+        let mut csv = String::from(
+            "id,created_at,visibility,cw,text,reply_id,renote_id,tags,file_ids,uri,url\n",
+        );
 
         for note in notes {
             // Escape CSV fields (double quotes and newlines)
@@ -958,10 +947,7 @@ impl AccountService {
     /// Get export job status.
     pub async fn get_export_status(&self, _user_id: &str, job_id: &str) -> AppResult<ExportJob> {
         // TODO: Fetch from database
-        Err(AppError::NotFound(format!(
-            "Export job {} not found",
-            job_id
-        )))
+        Err(AppError::NotFound(format!("Export job {job_id} not found")))
     }
 
     // =====================
@@ -1131,10 +1117,7 @@ impl AccountService {
     /// Get import job status.
     pub async fn get_import_status(&self, _user_id: &str, job_id: &str) -> AppResult<ImportJob> {
         // TODO: Fetch from database
-        Err(AppError::NotFound(format!(
-            "Import job {} not found",
-            job_id
-        )))
+        Err(AppError::NotFound(format!("Import job {job_id} not found")))
     }
 
     /// Parse Mastodon-format CSV data (handles header row and column extraction).
@@ -1145,6 +1128,7 @@ impl AccountService {
     /// Supported formats:
     /// - Simple list: one account per line (username@host)
     /// - Mastodon CSV: header row + comma-separated data
+    #[must_use]
     pub fn parse_mastodon_csv(data: &str) -> Vec<String> {
         let mut accounts = Vec::new();
         let lines: Vec<&str> = data.lines().collect();
@@ -1159,7 +1143,7 @@ impl AccountService {
             || first_line.contains("address")
             || first_line.starts_with('#');
 
-        let start_index = if has_header { 1 } else { 0 };
+        let start_index = usize::from(has_header);
 
         for line in lines.into_iter().skip(start_index) {
             let line = line.trim();
@@ -1186,11 +1170,15 @@ impl AccountService {
     }
 
     /// Parse account string into (username, host) tuple.
+    #[must_use]
     pub fn parse_acct(acct: &str) -> (String, Option<String>) {
         let acct = acct.trim().trim_start_matches('@');
         if acct.contains('@') {
             let parts: Vec<&str> = acct.splitn(2, '@').collect();
-            (parts[0].to_string(), Some(parts.get(1).copied().unwrap_or("").to_string()))
+            (
+                parts[0].to_string(),
+                Some(parts.get(1).copied().unwrap_or("").to_string()),
+            )
         } else {
             (acct.to_string(), None)
         }

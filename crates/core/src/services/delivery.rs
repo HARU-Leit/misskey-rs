@@ -1,6 +1,6 @@
-//! ActivityPub delivery service.
+//! `ActivityPub` delivery service.
 //!
-//! Provides an abstraction for queueing ActivityPub activity delivery.
+//! Provides an abstraction for queueing `ActivityPub` activity delivery.
 //! The actual implementation is provided by the queue crate.
 
 use async_trait::async_trait;
@@ -8,9 +8,9 @@ use misskey_common::AppResult;
 use serde_json::Value;
 use std::sync::Arc;
 
-/// Trait for ActivityPub delivery.
+/// Trait for `ActivityPub` delivery.
 ///
-/// This allows the core services to queue ActivityPub activities
+/// This allows the core services to queue `ActivityPub` activities
 /// without directly depending on the queue implementation.
 #[async_trait]
 pub trait ActivityDelivery: Send + Sync {
@@ -147,7 +147,7 @@ pub trait ActivityDelivery: Send + Sync {
     ) -> AppResult<()>;
 }
 
-/// A no-op implementation of ActivityDelivery for testing or when federation is disabled.
+/// A no-op implementation of `ActivityDelivery` for testing or when federation is disabled.
 #[derive(Clone, Default)]
 pub struct NoOpDelivery;
 
@@ -247,5 +247,5 @@ impl ActivityDelivery for NoOpDelivery {
     }
 }
 
-/// Wrapper for boxed ActivityDelivery trait object.
+/// Wrapper for boxed `ActivityDelivery` trait object.
 pub type DeliveryService = Arc<dyn ActivityDelivery>;

@@ -1,4 +1,4 @@
-//! Create page and page_like tables.
+//! Create page and `page_like` tables.
 
 use sea_orm_migration::prelude::*;
 

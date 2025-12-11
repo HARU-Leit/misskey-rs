@@ -6,9 +6,11 @@ use serde::{Deserialize, Serialize};
 /// Status of a group invitation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::N(20))")]
+#[derive(Default)]
 pub enum InviteStatus {
     /// Invitation is pending response.
     #[sea_orm(string_value = "pending")]
+    #[default]
     Pending,
     /// Invitation was accepted.
     #[sea_orm(string_value = "accepted")]
@@ -24,28 +26,18 @@ pub enum InviteStatus {
     Expired,
 }
 
-impl Default for InviteStatus {
-    fn default() -> Self {
-        Self::Pending
-    }
-}
-
 /// Type of invitation/join request.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::N(20))")]
+#[derive(Default)]
 pub enum InviteType {
     /// Group member invited the user.
     #[sea_orm(string_value = "invite")]
+    #[default]
     Invite,
     /// User requested to join the group.
     #[sea_orm(string_value = "request")]
     Request,
-}
-
-impl Default for InviteType {
-    fn default() -> Self {
-        Self::Invite
-    }
 }
 
 /// Group invite - tracks invitations and join requests for groups.

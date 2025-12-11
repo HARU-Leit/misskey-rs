@@ -80,7 +80,7 @@ impl ReactionService {
     /// Like a note using the user's default reaction or system default.
     ///
     /// This is the "one-button like" feature that simplifies reacting to notes.
-    /// It uses the user's configured default_reaction if set, otherwise falls back
+    /// It uses the user's configured `default_reaction` if set, otherwise falls back
     /// to the system default (👍).
     pub async fn like(
         &self,
@@ -131,33 +131,24 @@ impl ReactionService {
             // Get note author
             if let Ok(note_author) = user_repo.get_by_id(&note.user_id).await {
                 // Only send Like to remote users
-                if note_author.host.is_some() {
-                    if let Some(ref inbox) = note_author.inbox {
-                        if let Err(e) = self
-                            .queue_like_activity(
-                                user_id,
-                                &note,
-                                &normalized_reaction,
-                                inbox,
-                                delivery,
-                            )
-                            .await
-                        {
-                            tracing::warn!(error = %e, "Failed to queue Like activity");
-                        }
-                    }
+                if note_author.host.is_some()
+                    && let Some(ref inbox) = note_author.inbox
+                    && let Err(e) = self
+                        .queue_like_activity(user_id, &note, &normalized_reaction, inbox, delivery)
+                        .await
+                {
+                    tracing::warn!(error = %e, "Failed to queue Like activity");
                 }
             }
         }
 
         // Publish real-time event
-        if let Some(ref event_publisher) = self.event_publisher {
-            if let Err(e) = event_publisher
+        if let Some(ref event_publisher) = self.event_publisher
+            && let Err(e) = event_publisher
                 .publish_reaction_added(note_id, user_id, &normalized_reaction, &note.user_id)
                 .await
-            {
-                tracing::warn!(error = %e, "Failed to publish reaction added event");
-            }
+        {
+            tracing::warn!(error = %e, "Failed to publish reaction added event");
         }
 
         Ok(created)
@@ -181,35 +172,24 @@ impl ReactionService {
         self.note_repo.decrement_reactions_count(note_id).await?;
 
         // Queue ActivityPub Undo Like activity for remote note authors
-        if let (Some(delivery), Some(user_repo)) = (&self.delivery, &self.user_repo) {
-            if let Ok(note_author) = user_repo.get_by_id(&note.user_id).await {
-                if note_author.host.is_some() {
-                    if let Some(ref inbox) = note_author.inbox {
-                        if let Err(e) = self
-                            .queue_undo_like_activity(
-                                user_id,
-                                &note,
-                                &reaction.reaction,
-                                inbox,
-                                delivery,
-                            )
-                            .await
-                        {
-                            tracing::warn!(error = %e, "Failed to queue Undo Like activity");
-                        }
-                    }
-                }
-            }
+        if let (Some(delivery), Some(user_repo)) = (&self.delivery, &self.user_repo)
+            && let Ok(note_author) = user_repo.get_by_id(&note.user_id).await
+            && note_author.host.is_some()
+            && let Some(ref inbox) = note_author.inbox
+            && let Err(e) = self
+                .queue_undo_like_activity(user_id, &note, &reaction.reaction, inbox, delivery)
+                .await
+        {
+            tracing::warn!(error = %e, "Failed to queue Undo Like activity");
         }
 
         // Publish real-time event
-        if let Some(ref event_publisher) = self.event_publisher {
-            if let Err(e) = event_publisher
+        if let Some(ref event_publisher) = self.event_publisher
+            && let Err(e) = event_publisher
                 .publish_reaction_removed(note_id, user_id, &reaction.reaction, &note.user_id)
                 .await
-            {
-                tracing::warn!(error = %e, "Failed to publish reaction removed event");
-            }
+        {
+            tracing::warn!(error = %e, "Failed to publish reaction removed event");
         }
 
         Ok(())
