@@ -484,6 +484,69 @@ pub fn router() -> Router<AppState> {
         .route("/children", post(children))
         .route("/update", post(update_note))
         .route("/history", post(get_history))
+        .route("/like", post(like_note))
+        .route("/unlike", post(unlike_note))
+}
+
+// ==================== One-Button Like ====================
+
+/// Like note request (one-button like).
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LikeNoteRequest {
+    pub note_id: String,
+}
+
+/// Like response.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LikeResponse {
+    /// The reaction that was used.
+    pub reaction: String,
+}
+
+/// Like a note using user's default reaction (one-button like).
+///
+/// This endpoint simplifies the reaction process by automatically using
+/// the user's configured default_reaction, or falling back to 👍.
+async fn like_note(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<LikeNoteRequest>,
+) -> AppResult<ApiResponse<LikeResponse>> {
+    // Get user's default reaction
+    let default_reaction = state.user_service.get_default_reaction(&user.id).await?;
+
+    // Create the reaction
+    let reaction = state
+        .reaction_service
+        .like(&user.id, &req.note_id, default_reaction.as_deref())
+        .await?;
+
+    // Get the note to check author
+    let note = state.note_service.get(&req.note_id).await?;
+
+    // Create notification for the note author (if not self-reaction)
+    if note.user_id != user.id {
+        let _ = state
+            .notification_service
+            .create_reaction_notification(&note.user_id, &user.id, &req.note_id, &reaction.reaction)
+            .await;
+    }
+
+    Ok(ApiResponse::ok(LikeResponse {
+        reaction: reaction.reaction,
+    }))
+}
+
+/// Unlike (remove like/reaction from) a note.
+async fn unlike_note(
+    AuthUser(user): AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<LikeNoteRequest>,
+) -> AppResult<ApiResponse<()>> {
+    state.reaction_service.delete(&user.id, &req.note_id).await?;
+    Ok(ApiResponse::ok(()))
 }
 
 // ==================== Note Editing ====================

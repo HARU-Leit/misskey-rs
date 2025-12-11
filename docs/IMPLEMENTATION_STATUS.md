@@ -350,8 +350,8 @@ crates/core/src/services/drive.rs:475     // TODO: Check for circular references
 
 | 項目 | 内容 |
 |-----|------|
-| ストリーミング | チャンネルタイムラインのストリーミング対応 |
-| UI/UX | ワンボタンいいね（Like/Reaction分離） |
+| ストリーミング | ✅ チャンネルタイムラインのストリーミング対応 |
+| UI/UX | ✅ ワンボタンいいね（Like/Reaction分離） |
 | フェデレーション | チャンネルのGroup actor対応 |
 
 ### 中期
@@ -566,6 +566,34 @@ crates/core/src/services/drive.rs:475     // TODO: Check for circular references
 - ホーム/ローカル/グローバルタイムラインにワードフィルターを適用
 - フィルターアクションに応じた処理（非表示/警告/CW付与）
 - フィルターマッチ情報をレスポンスに含める
+
+### ワンボタンいいね (2025-12-11 新規)
+
+**機能概要**:
+- シンプルな「いいね」API（ワンボタンでリアクション）
+- ユーザーのデフォルトリアクション設定を自動適用
+- 未設定の場合は👍にフォールバック
+
+**エンドポイント**:
+- `POST /api/notes/like` - ノートにいいね（デフォルトリアクションを使用）
+- `POST /api/notes/unlike` - いいねを解除
+
+**リクエスト例**:
+```json
+{
+  "noteId": "target-note-id"
+}
+```
+
+**レスポンス例**:
+```json
+{
+  "ok": true,
+  "data": {
+    "reaction": "👍"
+  }
+}
+```
 
 ---
 

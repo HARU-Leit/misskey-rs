@@ -2,7 +2,7 @@
 
 優先順位付きの統合タスクリスト。全ての機能要望・改善項目を一元管理。
 
-*Last Updated: 2025-12-11* (チャンネルタイムラインのストリーミング実装)
+*Last Updated: 2025-12-11* (ワンボタンいいね実装)
 
 ---
 
@@ -83,7 +83,7 @@
 
 | タスク | 状況 | 参照 |
 |--------|------|------|
-| ワンボタンいいね（Like/Reaction分離） | 未実装 | FORK_FEATURES.md |
+| ワンボタンいいね（Like/Reaction分離） | ✅ 完了 | notes.rs, reaction.rs |
 | デフォルトリアクション設定 | ✅ 完了 | user_profile, users.rs |
 | ユーザー単位Authorized Fetch | 未実装 | FORK_FEATURES.md |
 
@@ -233,6 +233,9 @@
 ### ストリーミング拡張 (2025-12-11)
 - **チャンネルタイムラインのストリーミング** - WebSocket経由でチャンネルタイムラインのリアルタイム更新を購読可能。`StreamChannel::Channel { channel_id }`で特定のチャンネルに接続し、チャンネルに投稿されたノートをリアルタイムで受信。Redis Pub/Subの`misskey:channel:{channel_id}`チャンネルを使用してイベントを配信。
 
+### ワンボタンいいね (2025-12-11)
+- **シンプルないいねAPI** - `/api/notes/like`エンドポイントでワンボタンいいねを実現。ユーザーの`default_reaction`設定を使用し、未設定の場合は👍にフォールバック。`/api/notes/unlike`でいいね解除。`ReactionService.like()`メソッドがユーザーのデフォルトリアクションを自動的に適用。
+
 ### データ管理 (2025-12-11)
 - **ノートエクスポート（JSON/CSV）** - `/api/i/account/export/notes`エンドポイントでユーザーのノートをエクスポート可能。JSON形式（デフォルト）とCSV形式をサポート。各ノートはID、テキスト、CW、公開範囲、返信先、リノート先、ファイルID、タグ、URI、URL、作成日時、更新日時を含む。`limit`パラメータで最大件数指定（デフォルト10000）、`format`パラメータで形式選択（`json`または`csv`）。
 - **ブロック/ミュートエクスポート** - `/api/i/account/export/blocking`および`/api/i/account/export/muting`エンドポイントでブロック・ミュートしているユーザーをエクスポート可能。`ExportedFollow`形式（acct、uri）で最大10000件まで出力。
@@ -244,7 +247,7 @@
 
 1. **フェデレーション**: チャンネルのフェデレーション（Group actor）
 2. **検索**: Meilisearch連携
-3. **UI/UX**: ワンボタンいいね（Like/Reaction分離）
+3. **セキュリティ**: ユーザー単位Authorized Fetch
 
 ---
 
