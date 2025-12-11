@@ -226,10 +226,9 @@ pub fn extract_mentions(text: &str) -> Vec<Mention> {
         .map(|cap| {
             let username = cap.get(1).unwrap().as_str().to_string();
             let host = cap.get(2).map(|h| h.as_str().to_string());
-            let acct = host.as_ref().map_or_else(
-                || format!("@{username}"),
-                |h| format!("@{username}@{h}"),
-            );
+            let acct = host
+                .as_ref()
+                .map_or_else(|| format!("@{username}"), |h| format!("@{username}@{h}"));
             Mention {
                 username,
                 host,

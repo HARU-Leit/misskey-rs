@@ -291,8 +291,8 @@ fn convert_blockquotes(html: &str) -> String {
 fn convert_links(html: &str) -> String {
     use regex::Regex;
 
-    let link_re = Regex::new(r#"<a[^>]*href="([^"]*)"[^>]*>([^<]*)</a>"#)
-        .expect("valid regex pattern");
+    let link_re =
+        Regex::new(r#"<a[^>]*href="([^"]*)"[^>]*>([^<]*)</a>"#).expect("valid regex pattern");
     link_re
         .replace_all(html, |caps: &regex::Captures| {
             let url = &caps[1];
@@ -311,9 +311,8 @@ fn convert_links(html: &str) -> String {
 fn convert_code_blocks(html: &str) -> String {
     use regex::Regex;
 
-    let code_re =
-        Regex::new(r#"<pre><code(?:\s+class="language-(\w+)")?>([^<]*)</code></pre>"#)
-            .expect("valid regex pattern");
+    let code_re = Regex::new(r#"<pre><code(?:\s+class="language-(\w+)")?>([^<]*)</code></pre>"#)
+        .expect("valid regex pattern");
 
     code_re
         .replace_all(html, |caps: &regex::Captures| {
