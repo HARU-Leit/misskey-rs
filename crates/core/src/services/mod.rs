@@ -45,9 +45,10 @@ pub mod word_filter;
 
 pub use account::{
     AccountService, CreateExportInput, CreateImportInput, DeleteAccountInput, DeletionRecord,
-    DeletionStatus, DeletionStatusResponse, ExportDataType, ExportFormat, ExportJob, ExportStatus,
-    ExportedFollow, ExportedProfile, ImportItemError, ImportJob, ImportStatus, MigrateAccountInput,
-    MigrationRecord, MigrationStatus, MigrationStatusResponse, ProfileField,
+    DeletionStatus, DeletionStatusResponse, ExportDataType, ExportFormat, ExportJob,
+    ExportNotesInput, ExportStatus, ExportedFollow, ExportedNote, ExportedProfile, ImportItemError,
+    ImportJob, ImportStatus, MigrateAccountInput, MigrationRecord, MigrationStatus,
+    MigrationStatusResponse, ProfileField,
 };
 pub use announcement::AnnouncementService;
 pub use antenna::{AntennaService, CreateAntennaInput, NoteMatchContext, UpdateAntennaInput};
