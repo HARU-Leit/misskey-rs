@@ -393,3 +393,234 @@ fn test_mastodon_compatibility_note() {
     assert!(json["published"].is_string());
     assert!(json["to"].is_array());
 }
+
+// =============================================================================
+// Edge Case Tests
+// =============================================================================
+
+#[test]
+fn test_note_with_empty_content() {
+    let note = ApNote::new(
+        test_url("/notes/empty"),
+        test_url("/users/alice"),
+        String::new(),
+        Utc::now(),
+    );
+
+    let json = serde_json::to_value(&note).unwrap();
+    assert_eq!(json["content"], "");
+}
+
+#[test]
+fn test_note_with_very_long_content() {
+    let long_content = "a".repeat(50000);
+    let note = ApNote::new(
+        test_url("/notes/long"),
+        test_url("/users/alice"),
+        long_content.clone(),
+        Utc::now(),
+    );
+
+    let json = serde_json::to_value(&note).unwrap();
+    assert_eq!(json["content"].as_str().unwrap().len(), 50000);
+}
+
+#[test]
+fn test_note_with_unicode_content() {
+    let unicode_content = "こんにちは 🌸 مرحبا 🎉 שלום 🚀";
+    let note = ApNote::new(
+        test_url("/notes/unicode"),
+        test_url("/users/alice"),
+        unicode_content.to_string(),
+        Utc::now(),
+    );
+
+    let json = serde_json::to_value(&note).unwrap();
+    assert_eq!(json["content"], unicode_content);
+}
+
+#[test]
+fn test_note_with_special_html_characters() {
+    let html_content = "<script>alert('xss')</script>&amp;&lt;&gt;";
+    let note = ApNote::new(
+        test_url("/notes/html-escape"),
+        test_url("/users/alice"),
+        html_content.to_string(),
+        Utc::now(),
+    );
+
+    let json = serde_json::to_value(&note).unwrap();
+    // Content should be preserved as-is (HTML is expected in content)
+    assert!(json["content"].as_str().unwrap().contains("script"));
+}
+
+#[test]
+fn test_note_with_many_tags() {
+    let mut note = ApNote::new(
+        test_url("/notes/many-tags"),
+        test_url("/users/alice"),
+        "Post with many tags".to_string(),
+        Utc::now(),
+    );
+
+    // Add 100 tags
+    let tags: Vec<ApTag> = (0..100)
+        .map(|i| ApTag {
+            kind: "Hashtag".to_string(),
+            href: Some(test_url(&format!("/tags/tag{i}"))),
+            name: Some(format!("#tag{i}")),
+        })
+        .collect();
+
+    note.tag = Some(tags);
+
+    let json = serde_json::to_value(&note).unwrap();
+    assert_eq!(json["tag"].as_array().unwrap().len(), 100);
+}
+
+#[test]
+fn test_note_with_many_attachments() {
+    let mut note = ApNote::new(
+        test_url("/notes/many-attachments"),
+        test_url("/users/alice"),
+        "Post with many attachments".to_string(),
+        Utc::now(),
+    );
+
+    // Add 16 attachments (Misskey's limit)
+    let attachments: Vec<ApAttachment> = (0..16)
+        .map(|i| ApAttachment {
+            kind: "Document".to_string(),
+            url: test_url(&format!("/files/file{i}.png")),
+            media_type: Some("image/png".to_string()),
+            name: Some(format!("File {i}")),
+            width: Some(1920),
+            height: Some(1080),
+            blurhash: None,
+        })
+        .collect();
+
+    note.attachment = Some(attachments);
+
+    let json = serde_json::to_value(&note).unwrap();
+    assert_eq!(json["attachment"].as_array().unwrap().len(), 16);
+}
+
+#[test]
+fn test_question_with_many_options() {
+    let options: Vec<String> = (0..10).map(|i| format!("Option {i}")).collect();
+
+    let question = ApNote::new_question(
+        test_url("/notes/many-options"),
+        test_url("/users/alice"),
+        "Poll with many options".to_string(),
+        Utc::now(),
+        options,
+        false,
+        None,
+    );
+
+    let json = serde_json::to_value(&question).unwrap();
+    assert_eq!(json["oneOf"].as_array().unwrap().len(), 10);
+}
+
+#[test]
+fn test_question_with_multiple_choice() {
+    let question = ApNote::new_question(
+        test_url("/notes/multi-choice"),
+        test_url("/users/alice"),
+        "Multiple choice poll".to_string(),
+        Utc::now(),
+        vec!["A".to_string(), "B".to_string(), "C".to_string()],
+        true, // Multiple choice
+        None,
+    );
+
+    let json = serde_json::to_value(&question).unwrap();
+    // Multiple choice uses anyOf instead of oneOf
+    assert!(json["anyOf"].is_array());
+}
+
+#[test]
+fn test_note_roundtrip_serialization() {
+    let note = ApNote::new(
+        test_url("/notes/roundtrip"),
+        test_url("/users/alice"),
+        "Roundtrip test".to_string(),
+        Utc::now(),
+    )
+    .public();
+
+    let json_str = serde_json::to_string(&note).unwrap();
+    let parsed: ApNote = serde_json::from_str(&json_str).unwrap();
+
+    assert_eq!(note.id, parsed.id);
+    assert_eq!(note.attributed_to, parsed.attributed_to);
+    assert_eq!(note.content, parsed.content);
+}
+
+#[test]
+fn test_note_with_null_fields() {
+    // Parsing a note with explicit null values
+    let json = r#"{
+        "type": "Note",
+        "id": "https://example.com/notes/null-test",
+        "attributedTo": "https://example.com/users/alice",
+        "content": "Test",
+        "published": "2025-01-01T00:00:00Z",
+        "inReplyTo": null,
+        "summary": null,
+        "sensitive": null
+    }"#;
+
+    let note: ApNote = serde_json::from_str(json).unwrap();
+    assert!(note.in_reply_to.is_none());
+    assert!(note.summary.is_none());
+    assert!(note.sensitive.is_none());
+}
+
+#[test]
+fn test_note_with_quote_url_in_different_formats() {
+    // quoteUrl as string
+    let json1 = r#"{
+        "type": "Note",
+        "id": "https://example.com/notes/1",
+        "attributedTo": "https://example.com/users/alice",
+        "content": "Test",
+        "published": "2025-01-01T00:00:00Z",
+        "quoteUrl": "https://example.com/notes/quoted"
+    }"#;
+
+    let note1: ApNote = serde_json::from_str(json1).unwrap();
+    assert!(note1.quote_url.is_some());
+}
+
+#[test]
+fn test_attachment_with_minimal_fields() {
+    let attachment = ApAttachment {
+        kind: "Document".to_string(),
+        url: test_url("/files/minimal.png"),
+        media_type: None,
+        name: None,
+        width: None,
+        height: None,
+        blurhash: None,
+    };
+
+    let json = serde_json::to_value(&attachment).unwrap();
+    assert_eq!(json["type"], "Document");
+    assert!(json["url"].is_string());
+}
+
+#[test]
+fn test_tag_with_minimal_fields() {
+    let tag = ApTag {
+        kind: "Hashtag".to_string(),
+        href: None,
+        name: Some("#minimal".to_string()),
+    };
+
+    let json = serde_json::to_value(&tag).unwrap();
+    assert_eq!(json["type"], "Hashtag");
+    assert_eq!(json["name"], "#minimal");
+}
