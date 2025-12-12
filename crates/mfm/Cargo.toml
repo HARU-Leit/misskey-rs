@@ -3,6 +3,7 @@ name = "misskey-mfm"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+publish = false
 
 [dependencies]
 # Regex for parsing
