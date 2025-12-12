@@ -43,6 +43,8 @@ confidence-threshold = 0.8
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
+# Allow workspace path dependencies (internal crates without version specifiers)
+allow-wildcard-paths = true
 highlight = "all"
 workspace-default-features = "allow"
 external-default-features = "allow"
