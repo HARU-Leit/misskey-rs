@@ -20,6 +20,21 @@ use tokio::time::sleep;
 const ALPHA_URL: &str = "http://localhost:3001";
 const BETA_URL: &str = "http://localhost:3002";
 
+/// Check if federation tests should be skipped (e.g., in CI).
+fn should_skip() -> bool {
+    std::env::var("SKIP_FEDERATION_TEST").is_ok()
+}
+
+/// Macro to skip test if SKIP_FEDERATION_TEST is set.
+macro_rules! skip_if_ci {
+    () => {
+        if should_skip() {
+            eprintln!("Skipping federation test (SKIP_FEDERATION_TEST is set)");
+            return;
+        }
+    };
+}
+
 /// Test client for interacting with a Misskey instance
 struct TestInstance {
     client: Client,
@@ -174,6 +189,7 @@ async fn wait_for_instances() -> bool {
 
 #[tokio::test]
 async fn test_instances_are_running() {
+    skip_if_ci!();
     assert!(
         wait_for_instances().await,
         "Federation instances are not running. Start them with: docker-compose -f docker-compose.test.yml --profile federation up -d"
@@ -182,6 +198,7 @@ async fn test_instances_are_running() {
 
 #[tokio::test]
 async fn test_webfinger_resolution() {
+    skip_if_ci!();
     if !wait_for_instances().await {
         eprintln!("Skipping: Federation instances not running");
         return;
@@ -222,6 +239,7 @@ async fn test_webfinger_resolution() {
 
 #[tokio::test]
 async fn test_actor_endpoint() {
+    skip_if_ci!();
     if !wait_for_instances().await {
         eprintln!("Skipping: Federation instances not running");
         return;
@@ -250,6 +268,7 @@ async fn test_actor_endpoint() {
 
 #[tokio::test]
 async fn test_cross_instance_user_resolution() {
+    skip_if_ci!();
     if !wait_for_instances().await {
         eprintln!("Skipping: Federation instances not running");
         return;
@@ -281,6 +300,7 @@ async fn test_cross_instance_user_resolution() {
 
 #[tokio::test]
 async fn test_follow_between_instances() {
+    skip_if_ci!();
     if !wait_for_instances().await {
         eprintln!("Skipping: Federation instances not running");
         return;
@@ -325,6 +345,7 @@ async fn test_follow_between_instances() {
 
 #[tokio::test]
 async fn test_note_federation() {
+    skip_if_ci!();
     if !wait_for_instances().await {
         eprintln!("Skipping: Federation instances not running");
         return;
@@ -381,6 +402,7 @@ async fn test_note_federation() {
 
 #[tokio::test]
 async fn test_nodeinfo_endpoint() {
+    skip_if_ci!();
     if !wait_for_instances().await {
         eprintln!("Skipping: Federation instances not running");
         return;
@@ -427,6 +449,7 @@ async fn test_nodeinfo_endpoint() {
 
 #[tokio::test]
 async fn test_inbox_signature_verification() {
+    skip_if_ci!();
     if !wait_for_instances().await {
         eprintln!("Skipping: Federation instances not running");
         return;
@@ -459,6 +482,7 @@ async fn test_inbox_signature_verification() {
 /// Integration test for the complete follow flow
 #[tokio::test]
 async fn test_full_follow_flow() {
+    skip_if_ci!();
     if !wait_for_instances().await {
         eprintln!("Skipping: Federation instances not running");
         return;
@@ -516,6 +540,7 @@ async fn test_full_follow_flow() {
 /// Test that reactions are federated
 #[tokio::test]
 async fn test_reaction_federation() {
+    skip_if_ci!();
     if !wait_for_instances().await {
         eprintln!("Skipping: Federation instances not running");
         return;

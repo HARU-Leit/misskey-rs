@@ -93,8 +93,9 @@ jobs:
         env:
           DATABASE_URL: postgres://misskey:misskey@localhost:5432/misskey_test
           REDIS_URL: redis://localhost:6379
-          # Skip query-analysis tests in CI (they require specific local setup)
+          # Skip tests that require specific local setup
           SKIP_QUERY_ANALYSIS: "1"
+          SKIP_FEDERATION_TEST: "1"
 
       - name: Run tests (unit only)
         if: matrix.os != 'ubuntu-latest'
@@ -231,8 +232,9 @@ jobs:
         env:
           DATABASE_URL: postgres://misskey:misskey@localhost:5432/misskey_test
           REDIS_URL: redis://localhost:6379
-          # Skip query-analysis tests in CI (they require specific local setup)
+          # Skip tests that require specific local setup
           SKIP_QUERY_ANALYSIS: "1"
+          SKIP_FEDERATION_TEST: "1"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
