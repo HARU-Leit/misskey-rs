@@ -43,7 +43,7 @@ pub struct Status {
     pub reblogs_count: i32,
     pub favourites_count: i32,
     pub content: String,
-    pub reblog: Option<Box<Status>>,
+    pub reblog: Option<Box<Self>>,
     pub account: Account,
     pub media_attachments: Vec<MediaAttachment>,
     pub mentions: Vec<Mention>,

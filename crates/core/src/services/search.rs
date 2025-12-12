@@ -537,13 +537,13 @@ mod tests {
             host: None,
             tags: vec!["rust".to_string()],
             visibility: "Public".to_string(),
-            created_at: 1234567890,
+            created_at: 1_234_567_890,
             reaction_count: 5,
             renote_count: 2,
             reply_count: 1,
         };
 
-        let json = serde_json::to_string(&doc).expect("serialization should succeed");
+        let json = serde_json::to_string(&doc).unwrap();
         assert!(json.contains("Hello world"));
     }
 }
