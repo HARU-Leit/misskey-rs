@@ -25,7 +25,7 @@ fn should_skip() -> bool {
     std::env::var("SKIP_FEDERATION_TEST").is_ok()
 }
 
-/// Macro to skip test if SKIP_FEDERATION_TEST is set.
+/// Macro to skip test if `SKIP_FEDERATION_TEST` is set.
 macro_rules! skip_if_ci {
     () => {
         if should_skip() {

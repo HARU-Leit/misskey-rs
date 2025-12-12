@@ -25,7 +25,7 @@ fn should_skip() -> bool {
     std::env::var("SKIP_QUERY_ANALYSIS").is_ok()
 }
 
-/// Macro to skip test if SKIP_QUERY_ANALYSIS is set.
+/// Macro to skip test if `SKIP_QUERY_ANALYSIS` is set.
 macro_rules! skip_if_ci {
     () => {
         if should_skip() {
